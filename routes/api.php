@@ -27,6 +27,8 @@ Route::group([
     'prefix' => 'user'
 ], function(){
     Route::post('/register', [UserController::class, 'register']);
+    Route::get('/list', [UserController::class, 'list']);
+    Route::get('/userById/{id}', [UserController::class, 'userById']);
 });
 
 Route::group([
@@ -34,4 +36,6 @@ Route::group([
     'prefix' => 'vendor'
 ], function(){
     Route::post('/create', [VendorController::class, 'create']);
+    Route::get('/list', [VendorController::class, 'list']);
+    Route::get('/vendorById/{id}', [VendorController::class, 'vendorById']);
 });
