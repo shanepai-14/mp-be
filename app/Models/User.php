@@ -4,9 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -47,4 +48,9 @@ class User extends Authenticatable
     ];
 
     protected $attributes = [ 'user_role' => 'user' ];
+
+    public function vendor(): HasOne
+    {
+        return $this->hasOne(Vendor::class);
+    }
 }
