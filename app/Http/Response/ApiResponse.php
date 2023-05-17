@@ -15,11 +15,11 @@ class ApiResponse
         ], 200);
     }
 
-    public function ErrorResponse($message): JsonResponse
+    public function ErrorResponse($message, $errorCode): JsonResponse
     {
         return new JsonResponse([
             'status' => true,
             'message' => $message,
-        ], 409);
+        ], $errorCode);
     }
 }

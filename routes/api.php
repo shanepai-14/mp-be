@@ -29,6 +29,7 @@ Route::group([
     Route::post('/register', [UserController::class, 'register']);
     Route::get('/list', [UserController::class, 'list']);
     Route::get('/userById/{id}', [UserController::class, 'userById']);
+    Route::put('/update/{id}', [UserController::class, 'update']);
 });
 
 Route::group([
@@ -38,4 +39,5 @@ Route::group([
     Route::post('/create', [VendorController::class, 'create']);
     Route::get('/list', [VendorController::class, 'list']);
     Route::get('/vendorById/{id}', [VendorController::class, 'vendorById']);
+    Route::put('/update/{id}', [VendorController::class, 'update']);
 });

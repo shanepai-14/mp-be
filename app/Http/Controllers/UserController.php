@@ -22,31 +22,30 @@ class UserController extends Controller
 
     public function userById($id)
     {
-       return User::find($id);
+       $user = User::find($id);
+
+       if($user) return $user;
+
+       $response = new ApiResponse();
+       return $response->ErrorResponse('User not found!', 404);
     }
 
-    // public function updateUser($id, Request $request)
-    // {
-    //     $response = new ApiResponse();
+    public function update($id, Request $request)
+    {
+        $response = new ApiResponse();
 
-    //     if ($id == $request->id) {
-    //         $user = User::find($id);
+        if ($id == $request->id) {
+            $user = User::find($id);
 
-    //         if (!is_null($user)) {
-    //             $isExisted = Sitio::where('sitio_name', '=', $request->sitio_name)
-    //                 ->orWhere('sitio_sname', '=', $request->sitio_sname)
-    //                 ->count();
-    //             if (!$isExisted) {
-    //                 $user->update($request->all());
-    //                 return $user;
-    //             } else {
-    //                 return new JsonResponse([
-    //                     'message' => $request->sitio_name . ' or ' . $request->sitio_sname . ' is already added.'
-    //                 ], 409);
-    //             }
-    //         } else return new JsonResponse([], 204);
-    //     } else {
-    //         $response->ErrorResponse('User Id does not matched!');
-    //     }
-    // }
+            if($user) 
+            {
+                $user->update($request->all());
+                return $response->SuccessResponse('User is successfully updated!', $user); 
+            }
+
+            return $response->ErrorResponse('User not found!', 404);
+        } 
+
+        return $response->ErrorResponse('User Id does not matched!', 409);
+    }
 }

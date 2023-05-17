@@ -2,6 +2,7 @@
 
 namespace App\Traits\Auth;
 
+use App\Http\Response\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,18 +42,13 @@ trait AuthenticateUser
 
     public function loginSuccessResponse($data)
     {
-        return new JsonResponse([
-            'status' => true,
-            'message' => 'Ok.',
-            'data' => $data
-        ], 200);
+        $response = new ApiResponse();
+        return $response->SuccessResponse('Ok', $data); 
     }
 
     public function loginErrorResponse()
     {
-        return new JsonResponse([
-            'status' => false,
-            'message' => 'Email or Password is incorrect!'
-        ], 401);
+        $response = new ApiResponse();
+        return $response->ErrorResponse('Email or Password is incorrect!', 401);
     }
 }

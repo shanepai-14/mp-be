@@ -20,14 +20,13 @@ trait Register
      */
     public function register(Request $request)
     {
+        $response = new ApiResponse();
+
         // $this->validateInput($request);
         $emailExist = User::where('username_email', $request->username_email)->exists();
 
         if ($emailExist)
-            return new JsonResponse([
-                'status' => true,
-                'message' => 'Email address already exist!'
-            ], 409);
+            return $response->ErrorResponse('Email address already exist!', 409);
 
         else {
             $isUserExist = User::where('first_name', $request->first_name)
@@ -36,25 +35,18 @@ trait Register
                 ->where('user_role', $request->user_role)
                 ->exists();
 
-            if ($isUserExist) {
-                return new JsonResponse([
-                    'status' => true,
-                    'message' => 'User already exist!'
-                ], 409);
-            } else {
-                $user = $this->createUser($request);
-                $response = new ApiResponse();
+            if ($isUserExist)
+                return $response->ErrorResponse('User already exist!', 409);
 
+            else {
+                $user = $this->createUser($request);
 
                 if ($user) {
-                    $responseData = [
-                        'user' => $user,
-                    ];
-
+                    $responseData = ['user' => $user];
                     return $response->SuccessResponse('User successfully registered', $responseData);
                 }
 
-                return $response->ErrorResponse('Server Error');
+                return $response->ErrorResponse('Server Error', 500);
             }
         }
     }

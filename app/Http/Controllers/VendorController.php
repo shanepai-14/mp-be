@@ -12,13 +12,11 @@ class VendorController extends Controller
 
     public function create(Request $request)
     {
+        $response = new ApiResponse();
         $isVendorExist = Vendor::where('vendor_code', $request->vendor_code)->exists();
 
         if ($isVendorExist)
-            return new JsonResource([
-                'status' => true,
-                'message' => 'Vendor already exist'
-            ], 409);
+            return $response->ErrorResponse('Vendor already exist!', 409);
 
         else {
             $newVendor = Vendor::create([
@@ -29,15 +27,12 @@ class VendorController extends Controller
                 'vendor_key' => $request->vendor_key
             ]);
 
-            $response = new ApiResponse();
-
             if ($newVendor) {
-                $responseData = [
-                    'vendor' => $newVendor
-                ];
+                $responseData = ['vendor' => $newVendor];
                 return $response->SuccessResponse('Vendor successfully registered', $responseData);
-            } else
-                return $response->ErrorResponse('Server Error');
+            }
+
+            return $response->ErrorResponse('Server Error', 500);
         }
     }
 
@@ -48,6 +43,30 @@ class VendorController extends Controller
 
     public function vendorById($id)
     {
-        return Vendor::find($id);
+        $vendor = Vendor::find($id);
+
+        if($vendor) return $vendor;
+
+        $response = new ApiResponse();
+        return $response->ErrorResponse('Vendor not found!', 404);
+    }
+
+    public function update($id, Request $request)
+    {
+        $response = new ApiResponse();
+
+        if ($id == $request->id) {
+            $vendor = Vendor::find($id);
+
+            if($vendor) 
+            {
+                $vendor->update($request->all());
+                return $response->SuccessResponse('Vendor is successfully updated!', $vendor); 
+            }
+
+            return $response->ErrorResponse('Vendor not found!', 404);
+        } 
+
+        return $response->ErrorResponse('Vendor Id does not matched!', 409);
     }
 }
