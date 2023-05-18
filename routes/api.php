@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -40,4 +41,14 @@ Route::group([
     Route::get('/list', [VendorController::class, 'list']);
     Route::get('/vendorById/{id}', [VendorController::class, 'vendorById']);
     Route::put('/update/{id}', [VendorController::class, 'update']);
+});
+
+Route::group([
+    'middleware' => 'auth:api',
+    'prefix' => 'vehicle'
+], function(){
+    Route::post('/create', [VehicleController::class, 'create']);
+    Route::get('/list', [VehicleController::class, 'list']);
+    Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
+    Route::put('/update/{id}', [VehicleController::class, 'update']);
 });

@@ -15,8 +15,11 @@ class UserController extends Controller
 {
     use Register, AuthenticateUser;
 
-    public function list()
+    public function list(Request $request)
     {
+        if ($request->vendor_id)
+            return User::where('vendor_id', $request->vendor_id)->get();
+
         return User::all();
     }
 

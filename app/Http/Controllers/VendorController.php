@@ -29,7 +29,7 @@ class VendorController extends Controller
 
             if ($newVendor) {
                 $responseData = ['vendor' => $newVendor];
-                return $response->SuccessResponse('Vendor successfully registered', $responseData);
+                return $response->SuccessResponse('Vendor is successfully registered', $responseData);
             }
 
             return $response->ErrorResponse('Server Error', 500);
