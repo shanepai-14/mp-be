@@ -35,8 +35,11 @@ class VehicleController extends Controller
         }
     }
 
-    public function list()
+    public function list(Request $request)
     {
+        if ($request->vendor_id)
+            return Vehicle::where('vendor_id', $request->vendor_id)->get();
+
         return Vehicle::all();
     }
 

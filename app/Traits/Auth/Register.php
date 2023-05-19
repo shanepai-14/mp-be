@@ -61,7 +61,7 @@ trait Register
     {
         return User::create([
             'username_email' => $request->username_email,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make($request->username_email),
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'vendor_id' => $request->vendor_id,
