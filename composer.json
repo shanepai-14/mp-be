@@ -12,7 +12,9 @@
         "laravel/sanctum": "^3.2",
         "laravel/tinker": "^2.8",
         "league/oauth2-server": "^8.5",
-        "psr/http-message": "1.1"
+        "psr/http-message": "1.1",
+        "symfony/http-client": "^6.2",
+        "symfony/mailgun-mailer": "^6.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

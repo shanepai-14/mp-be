@@ -2,16 +2,13 @@
 
 namespace App\Traits\Auth;
 
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 
 use App\Models\User;
-use App\Models\Vendor;
-use Illuminate\Support\Facades\DB;
-use App\Http\Response;
 use App\Http\Response\ApiResponse;
+use App\Mail\UserAccount;
+use Illuminate\Support\Facades\Mail;
 
 trait Register
 {
@@ -39,9 +36,19 @@ trait Register
                 return $response->ErrorResponse('User already exist!', 409);
 
             else {
-                $user = $this->createUser($request);
-
+                $generatedPwd = bin2hex(random_bytes(5));
+                $user = User::create([
+                    'username_email' => $request->username_email,
+                    'password' => Hash::make($generatedPwd),
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'vendor_id' => $request->vendor_id,
+                    'contact_no' => $request->contact_no,
+                    'user_role' => $request->user_role,
+                ]);
+                
                 if ($user) {
+                    Mail::to($request->username_email)->send(new UserAccount($generatedPwd));
                     $responseData = ['user' => $user];
                     return $response->SuccessResponse('User successfully registered', $responseData);
                 }
@@ -50,26 +57,6 @@ trait Register
             }
         }
     }
-
-
-
-
-    /**
-     * 	@param $request
-     */
-    public function createUser($request)
-    {
-        return User::create([
-            'username_email' => $request->username_email,
-            'password' => Hash::make($request->username_email),
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'vendor_id' => $request->vendor_id,
-            'contact_no' => $request->contact_no,
-            'user_role' => $request->user_role,
-        ]);
-    }
-
 
 
     /**

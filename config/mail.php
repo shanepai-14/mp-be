@@ -13,6 +13,7 @@ return [
     |
     */
 
+    // 'default' => env('MAIL_MAILER', 'smtp'),
     'default' => env('MAIL_MAILER', 'smtp'),
 
     /*
@@ -44,6 +45,7 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
+            // 'local_domain' => env('MAIL_AUTH_MODE'),
         ],
 
         'ses' => [
@@ -82,7 +84,7 @@ return [
             'transport' => 'failover',
             'mailers' => [
                 'smtp',
-                'log',
+                'mailgun',
             ],
         ],
     ],
@@ -99,8 +101,8 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', 'Example'),
+        'address' => env('MAIL_FROM_ADDRESS', 'wlocate.mgt@gmail.com'),
+        'name' => env('MAIL_FROM_NAME', 'WLocate Management'),
     ],
 
     /*
