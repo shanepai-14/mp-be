@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Response\ApiResponse;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
+
+
 
 class VendorController extends Controller
 {
-
     public function create(Request $request)
     {
         $response = new ApiResponse();
@@ -24,7 +25,7 @@ class VendorController extends Controller
                 'vendor_address' => $request->vendor_address,
                 'vendor_contact_no' => $request->vendor_contact_no,
                 'vendor_code' => $request->vendor_code,
-                'vendor_key' => $request->vendor_key
+                'vendor_key' => Str::uuid()->toString()
             ]);
 
             if ($newVendor) {
@@ -45,7 +46,7 @@ class VendorController extends Controller
     {
         $vendor = Vendor::find($id);
 
-        if($vendor) return $vendor;
+        if ($vendor) return $vendor;
 
         $response = new ApiResponse();
         return $response->ErrorResponse('Vendor not found!', 404);
@@ -58,14 +59,13 @@ class VendorController extends Controller
         if ($id == $request->id) {
             $vendor = Vendor::find($id);
 
-            if($vendor) 
-            {
+            if ($vendor) {
                 $vendor->update($request->all());
-                return $response->SuccessResponse('Vendor is successfully updated!', $vendor); 
+                return $response->SuccessResponse('Vendor is successfully updated!', $vendor);
             }
 
             return $response->ErrorResponse('Vendor not found!', 404);
-        } 
+        }
 
         return $response->ErrorResponse('Vendor Id does not matched!', 409);
     }
