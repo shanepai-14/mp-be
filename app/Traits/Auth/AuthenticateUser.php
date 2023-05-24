@@ -3,8 +3,6 @@
 namespace App\Traits\Auth;
 
 use App\Http\Response\ApiResponse;
-use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,8 +26,6 @@ trait AuthenticateUser
         return $this->loginErrorResponse();
     }
 
-
-
     public function attempt($request)
     {
         return Auth::guard()->attempt($this->credentials($request));
@@ -43,7 +39,7 @@ trait AuthenticateUser
     public function loginSuccessResponse($data)
     {
         $response = new ApiResponse();
-        return $response->SuccessResponse('Ok', $data); 
+        return $response->SuccessResponse('Ok', $data);
     }
 
     public function loginErrorResponse()

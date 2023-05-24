@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('vendor_code', 10);
             $table->string('vendor_key');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

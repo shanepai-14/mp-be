@@ -19,7 +19,7 @@ class VehicleController extends Controller
         else {
             $newVehicle = Vehicle::create([
                 'driver_name' => $request->driver_name,
-                'is_registered' => $request->is_registered,
+                'vehicle_status' => $request->vehicle_status,
                 'contact_no' => $request->contact_no,
                 'device_id_plate_no' => $request->device_id_plate_no,
                 'vendor_id' => $request->vendor_id,
@@ -71,4 +71,18 @@ class VehicleController extends Controller
 
         return $response->ErrorResponse('Vehicle Id does not matched!', 409);
     }
+
+    public function delete($id)
+    {
+        $response = new ApiResponse();
+        $vehicle = Vehicle::find($id);
+
+        if ($vehicle) {
+            $vehicle->delete();
+            return $response->SuccessResponse('Vehicle is successfully deleted!', $vehicle); 
+        } 
+
+        return $response->ErrorResponse('Vehicle does not exist!', 404);
+    }
 }
+

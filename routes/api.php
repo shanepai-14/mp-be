@@ -32,6 +32,7 @@ Route::group([
     Route::get('/userById/{id}', [UserController::class, 'userById']);
     Route::put('/update/{id}', [UserController::class, 'update']);
     Route::put('/updatePassword/{id}', [UserController::class, 'updatePassword']);
+    Route::post('/logout', [UserController::class, 'logout']);
 });
 
 Route::group([
@@ -42,6 +43,7 @@ Route::group([
     Route::get('/list', [VendorController::class, 'list']);
     Route::get('/vendorById/{id}', [VendorController::class, 'vendorById']);
     Route::put('/update/{id}', [VendorController::class, 'update']);
+    Route::delete('/delete/{id}', [VendorController::class, 'delete']);
 });
 
 Route::group([
@@ -52,4 +54,5 @@ Route::group([
     Route::get('/list', [VehicleController::class, 'list']);
     Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
     Route::put('/update/{id}', [VehicleController::class, 'update']);
+    Route::delete('/delete/{id}', [VehicleController::class, 'delete']);
 });

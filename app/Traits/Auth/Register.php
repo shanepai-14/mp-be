@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Http\Response\ApiResponse;
 use App\Mail\UserAccount;
+use App\Models\Vendor;
 use Illuminate\Support\Facades\Mail;
 
 trait Register
@@ -26,6 +27,9 @@ trait Register
             return $response->ErrorResponse('Email address already exist!', 409);
 
         else {
+            if (!Vendor::find($request->vendor_id))
+                return $response->ErrorResponse('Vendor id does not exist!', 404);
+
             $isUserExist = User::where('first_name', $request->first_name)
                 ->where('last_name', $request->last_name)
                 ->where('vendor_id', $request->vendor_id)
@@ -36,7 +40,9 @@ trait Register
                 return $response->ErrorResponse('User already exist!', 409);
 
             else {
+                // Generate random password
                 $generatedPwd = bin2hex(random_bytes(5));
+
                 $user = User::create([
                     'username_email' => $request->username_email,
                     'password' => Hash::make($generatedPwd),
@@ -46,7 +52,7 @@ trait Register
                     'contact_no' => $request->contact_no,
                     'user_role' => $request->user_role,
                 ]);
-                
+
                 if ($user) {
                     Mail::to($request->username_email)->send(new UserAccount($generatedPwd));
                     $responseData = ['user' => $user];

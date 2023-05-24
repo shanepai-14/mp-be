@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Traits\Auth\AuthenticateUser;
 use App\Traits\Auth\Register;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -74,5 +75,12 @@ class UserController extends Controller
         }
 
         return $response->ErrorResponse('User not found!', 404);
+    }
+
+    public function logout()
+    {
+        $user = Auth::user()->token();
+        $user->revoke();
+        return 'logged out';
     }
 }

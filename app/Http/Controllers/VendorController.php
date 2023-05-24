@@ -67,6 +67,19 @@ class VendorController extends Controller
             return $response->ErrorResponse('Vendor not found!', 404);
         }
 
-        return $response->ErrorResponse('Vendor Id does not matched!', 409);
+        return $response->ErrorResponse('Vendor Id does not matched!', 400);
+    }
+
+    public function delete($id)
+    {
+        $response = new ApiResponse();
+        $vendor = Vendor::find($id);
+
+        if ($vendor) {
+            $vendor->delete();
+            return $response->SuccessResponse('Vendor is successfully deleted!', $vendor); 
+        } 
+
+        return $response->ErrorResponse('Vendor does not exist!', 404);
     }
 }
