@@ -37,10 +37,13 @@ class VehicleController extends Controller
 
     public function list(Request $request)
     {
+        $vehicleReq = Vehicle::select();
         if ($request->vendor_id)
-            return Vehicle::where('vendor_id', $request->vendor_id)->get();
+            $vehicleReq->where('vendor_id', $request->vendor_id);
+        if ($request->vehicle_status)
+            $vehicleReq->where('vehicle_status', $request->vehicle_status);
 
-        return Vehicle::all();
+        return $vehicleReq->get();
     }
 
     public function vehicleById($id)
@@ -60,15 +63,28 @@ class VehicleController extends Controller
         if ($id == $request->id) {
             $vehicle = Vehicle::find($id);
 
-            if($vehicle) 
+            if($vehicle)
             {
                 $vehicle->update($request->all());
-                return $response->SuccessResponse('Vehicle is successfully updated!', $vehicle); 
+                return $response->SuccessResponse('Vehicle is successfully updated!', $vehicle);
             }
 
             return $response->ErrorResponse('Vehicle not found!', 404);
-        } 
+        }
 
         return $response->ErrorResponse('Vehicle Id does not matched!', 409);
+    }
+
+    public function delete($id)
+    {
+        $response = new ApiResponse();
+        $vehicle = Vehicle::find($id);
+
+        if ($vehicle) {
+            $vehicle->delete();
+            return $response->SuccessResponse('Vehicle is successfully deleted!', $vehicle);
+        }
+
+        return $response->ErrorResponse('Vehicle does not exist!', 404);
     }
 }
