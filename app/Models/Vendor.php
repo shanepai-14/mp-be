@@ -16,6 +16,7 @@ class Vendor extends Model
         'vendor_name',
         'vendor_address',
         'vendor_contact_no',
+        'vendor_email',
         'vendor_code',
         'vendor_key'
     ];

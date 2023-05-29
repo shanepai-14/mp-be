@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $sampleAdminUser = [
-            "username_email"=> "admin@gmail.com",
+            "username_email"=> "wlocate@gmail.com",
             "password"=> Hash::make("adminadmin"),
             "first_name"=> "Admin",
             "last_name"=> "Admin",

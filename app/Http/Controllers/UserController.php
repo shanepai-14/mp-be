@@ -70,8 +70,14 @@ class UserController extends Controller
                 return $response->ErrorResponse('Incorrect old password', 409);
 
             $user->password = Hash::make($request->newPassword);
-            $user->save();
-            return $response->SuccessResponse('Password is successfully updated!', $user);
+            if($user->save())
+            {
+                $user->first_login = 0;
+                $user->save();
+                return $response->SuccessResponse('Password is successfully updated!', $user);
+            }
+
+            return $response->ErrorResponse('Failed to update password!', 500);
         }
 
         return $response->ErrorResponse('User not found!', 404);

@@ -54,5 +54,6 @@ Route::group([
     Route::get('/list', [VehicleController::class, 'list']);
     Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
     Route::put('/update/{id}', [VehicleController::class, 'update']);
+    Route::put('/massUpdate', [VehicleController::class, 'massUpdate']);
     Route::delete('/delete/{id}', [VehicleController::class, 'delete']);
 });

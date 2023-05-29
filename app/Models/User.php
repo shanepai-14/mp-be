@@ -26,6 +26,7 @@ class User extends Authenticatable
         'vendor_id',
         'contact_no',
         'user_role',
+        'first_login'
     ];
 
     /**

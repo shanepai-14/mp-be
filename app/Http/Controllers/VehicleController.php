@@ -75,6 +75,24 @@ class VehicleController extends Controller
         return $response->ErrorResponse('Vehicle Id does not matched!', 409);
     }
 
+    public function massUpdate(Request $request)
+    {
+        $response = new ApiResponse();
+        $datas = $request->collect();
+
+        foreach($datas as $vehicleData){
+            $exist = Vehicle::find($vehicleData['id']);
+
+            if($exist) 
+                $exist->update($vehicleData);
+
+            else
+                return $response->ErrorResponse('Vehicle id ' .$vehicleData['id']. ' not found!', 404);
+        }
+
+        return $response->SuccessResponse('Vehicle is successfully updated!', []);
+    }
+
     public function delete($id)
     {
         $response = new ApiResponse();
