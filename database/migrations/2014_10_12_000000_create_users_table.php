@@ -15,8 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('username_email', 30)->unique();
             $table->string('password');
-            $table->string('first_name', 50);
-            $table->string('last_name', 50);
+            $table->string('full_name', 50);
             $table->unsignedBigInteger('vendor_id');
             $table->string('contact_no', 50)->nullable();
             $table->tinyInteger('user_role')->default(0);

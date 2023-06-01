@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Response\ApiResponse;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class VehicleController extends Controller
 {
@@ -23,7 +24,8 @@ class VehicleController extends Controller
                 'contact_no' => $request->contact_no,
                 'device_id_plate_no' => $request->device_id_plate_no,
                 'vendor_id' => $request->vendor_id,
-                'mileage' => $request->mileage
+                'mileage' => $request->mileage,
+                'register_by_user_id' => Auth::user()->id
             ]);
 
             if ($newVehicle) {
@@ -43,14 +45,37 @@ class VehicleController extends Controller
         if ($request->vehicle_status)
             $vehicleReq->where('vehicle_status', $request->vehicle_status);
 
-        return $vehicleReq->get();
+        $data = $vehicleReq->with(['vendor', 'register_by', 'updated_by'])->get();
+        foreach ($data as $rec) {
+            $rec->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
+            $rec->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+
+            if ($rec->updated_by)
+                $rec->updated_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+
+            else
+                $rec->updated_at = null;
+        }
+
+        return $data;
     }
 
     public function vehicleById($id)
     {
-        $vehicle = Vehicle::find($id);
+        $vehicle = Vehicle::with(['vendor', 'register_by', 'updated_by'])->find($id);
 
-        if($vehicle) return $vehicle;
+        if ($vehicle) {
+            $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
+            $vehicle->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+
+            if ($vehicle->updated_by)
+                $vehicle->updated_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+
+            else
+                $vehicle->updated_at = null;
+
+            return $vehicle;
+        }
 
         $response = new ApiResponse();
         return $response->ErrorResponse('Vehicle not found!', 404);
@@ -63,9 +88,16 @@ class VehicleController extends Controller
         if ($id == $request->id) {
             $vehicle = Vehicle::find($id);
 
-            if($vehicle)
-            {
-                $vehicle->update($request->all());
+            if ($vehicle) {
+                $vehicle->update([
+                    'driver_name' => $request->driver_name,
+                    'vehicle_status' => $request->vehicle_status,
+                    'contact_no' => $request->contact_no,
+                    'device_id_plate_no' => $request->device_id_plate_no,
+                    'vendor_id' => $request->vendor_id,
+                    'mileage' => $request->mileage,
+                    'updated_by_user_id' => Auth::user()->id
+                ]);
                 return $response->SuccessResponse('Vehicle is successfully updated!', $vehicle);
             }
 
@@ -80,14 +112,22 @@ class VehicleController extends Controller
         $response = new ApiResponse();
         $datas = $request->collect();
 
-        foreach($datas as $vehicleData){
+        foreach ($datas as $vehicleData) {
             $exist = Vehicle::find($vehicleData['id']);
 
-            if($exist) 
-                $exist->update($vehicleData);
+            if ($exist)
+                $exist->update([
+                    'driver_name' => $vehicleData['driver_name'],
+                    'vehicle_status' => $vehicleData['vehicle_status'],
+                    'contact_no' => $vehicleData['contact_no'],
+                    'device_id_plate_no' => $vehicleData['device_id_plate_no'],
+                    'vendor_id' => $vehicleData['vendor_id'],
+                    'mileage' => $vehicleData['mileage'],
+                    'updated_by_user_id' => Auth::user()->id
+                ]);
 
             else
-                return $response->ErrorResponse('Vehicle id ' .$vehicleData['id']. ' not found!', 404);
+                return $response->ErrorResponse('Vehicle id ' . $vehicleData['id'] . ' not found!', 404);
         }
 
         return $response->SuccessResponse('Vehicle is successfully updated!', []);
@@ -106,4 +146,3 @@ class VehicleController extends Controller
         return $response->ErrorResponse('Vehicle does not exist!', 404);
     }
 }
-

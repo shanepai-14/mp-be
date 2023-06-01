@@ -18,14 +18,14 @@ class UserController extends Controller
     public function list(Request $request)
     {
         if ($request->vendor_id)
-            return User::where('vendor_id', $request->vendor_id)->get();
+            return User::with(['vendor'])->where('vendor_id', $request->vendor_id)->get();
 
-        return User::all();
+        return User::with(['vendor'])->get();
     }
 
     public function userById($id)
     {
-        $user = User::find($id);
+        $user = User::with(['vendor'])->find($id);
 
         if ($user) return $user;
 

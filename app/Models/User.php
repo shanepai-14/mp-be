@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
@@ -21,8 +22,7 @@ class User extends Authenticatable
     protected $fillable = [
         'username_email',
         'password',
-        'first_name',
-        'last_name',
+        'full_name',
         'vendor_id',
         'contact_no',
         'user_role',
@@ -55,5 +55,15 @@ class User extends Authenticatable
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class);
+    }
+
+    public function vehicle_register_by(): HasMany
+    {
+        return $this->hasMany(Vehicle::class);
+    }
+
+    public function vehicle_updated_by(): HasMany
+    {
+        return $this->hasMany(Vehicle::class);
     }
 }

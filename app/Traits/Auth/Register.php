@@ -32,8 +32,7 @@ trait Register
             if (!Vendor::find($request->vendor_id))
                 return $response->ErrorResponse('Vendor id does not exist!', 404);
 
-            $isUserExist = User::where('first_name', $request->first_name)
-                ->where('last_name', $request->last_name)
+            $isUserExist = User::where('full_name', $request->first_name)
                 ->where('vendor_id', $request->vendor_id)
                 ->where('user_role', $request->user_role)
                 ->exists();
@@ -50,8 +49,7 @@ trait Register
                     'username_email' => $request->username_email,
                     // 'password' => Hash::make($generatedPwd),     // Temporarily Disable Password generation
                     'password' => Hash::make($request->password),   // Temporary Password for testing only
-                    'first_name' => $request->first_name,
-                    'last_name' => $request->last_name,
+                    'full_name' => $request->full_name,
                     'vendor_id' => $request->vendor_id,
                     'contact_no' => $request->contact_no,
                     'user_role' => $request->user_role,
