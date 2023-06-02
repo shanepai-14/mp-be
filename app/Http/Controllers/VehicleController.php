@@ -21,7 +21,7 @@ class VehicleController extends Controller
             $newVehicle = Vehicle::create([
                 'driver_name' => $request->driver_name,
                 'vehicle_status' => $request->vehicle_status,
-                'contact_no' => $request->contact_no,
+                // 'contact_no' => $request->contact_no,
                 'device_id_plate_no' => $request->device_id_plate_no,
                 'vendor_id' => $request->vendor_id,
                 'mileage' => $request->mileage,
