@@ -2,6 +2,7 @@
 
 namespace App\Traits\Auth;
 
+use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -58,7 +59,11 @@ trait Register
                 if ($user) {
                     // Temporarily Disable Emailling of Password Generated
                     // Mail::to($request->username_email)->send(new UserAccount($generatedPwd));
-                    $responseData = ['user' => $user];
+
+                    $userCtrl = new UserController();
+                    $userData = $userCtrl->userById($user->id);
+
+                    $responseData = ['user' => $userData];
                     return $response->SuccessResponse('User successfully registered', $responseData);
                 }
 

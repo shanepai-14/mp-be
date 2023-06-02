@@ -42,7 +42,9 @@ class UserController extends Controller
 
             if ($user) {
                 $user->update($request->all());
-                return $response->SuccessResponse('User is successfully updated!', $user);
+                $userData = $this->userById($user->id);
+
+                return $response->SuccessResponse('User is successfully updated!', $userData);
             }
 
             return $response->ErrorResponse('User not found!', 404);

@@ -29,7 +29,9 @@ class VehicleController extends Controller
             ]);
 
             if ($newVehicle) {
-                $responseData = ['vehicle' => $newVehicle];
+                $newVehicleRec = $this->vehicleById($newVehicle->id);
+
+                $responseData = ['vehicle' => $this->hideFields($newVehicleRec)];
                 return $response->SuccessResponse('Vehicle is successfully registered', $responseData);
             }
 
@@ -47,14 +49,7 @@ class VehicleController extends Controller
 
         $data = $vehicleReq->with(['vendor', 'register_by', 'updated_by'])->get();
         foreach ($data as $rec) {
-            $rec->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
-            $rec->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
-
-            if ($rec->updated_by)
-                $rec->updated_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
-
-            else
-                $rec->updated_at = null;
+            $this->hideFields($rec);
         }
 
         return $data;
@@ -65,16 +60,7 @@ class VehicleController extends Controller
         $vehicle = Vehicle::with(['vendor', 'register_by', 'updated_by'])->find($id);
 
         if ($vehicle) {
-            $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
-            $vehicle->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
-
-            if ($vehicle->updated_by)
-                $vehicle->updated_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
-
-            else
-                $vehicle->updated_at = null;
-
-            return $vehicle;
+            return $this->hideFields($vehicle);
         }
 
         $response = new ApiResponse();
@@ -98,7 +84,10 @@ class VehicleController extends Controller
                     'mileage' => $request->mileage,
                     'updated_by_user_id' => Auth::user()->id
                 ]);
-                return $response->SuccessResponse('Vehicle is successfully updated!', $vehicle);
+
+                $vehicleData = $this->vehicleById($vehicle->id);
+
+                return $response->SuccessResponse('Vehicle is successfully updated!', $vehicleData);
             }
 
             return $response->ErrorResponse('Vehicle not found!', 404);
@@ -115,7 +104,7 @@ class VehicleController extends Controller
         foreach ($datas as $vehicleData) {
             $exist = Vehicle::find($vehicleData['id']);
 
-            if ($exist)
+            if ($exist) 
                 $exist->update([
                     'driver_name' => $vehicleData['driver_name'],
                     'vehicle_status' => $vehicleData['vehicle_status'],
@@ -144,5 +133,19 @@ class VehicleController extends Controller
         }
 
         return $response->ErrorResponse('Vehicle does not exist!', 404);
+    }
+
+    private function hideFields($vehicle)
+    {
+        $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
+        $vehicle->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+
+        if ($vehicle->updated_by)
+            $vehicle->updated_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+
+        else
+            $vehicle->updated_at = null;
+
+        return $vehicle;
     }
 }
