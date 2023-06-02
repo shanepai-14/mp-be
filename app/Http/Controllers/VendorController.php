@@ -25,6 +25,7 @@ class VendorController extends Controller
                 'vendor_address' => $request->vendor_address,
                 'vendor_contact_no' => $request->vendor_contact_no,
                 'vendor_code' => $request->vendor_code,
+                'vendor_email' => $request->vendor_email,
                 'vendor_key' => Str::uuid()->toString()
             ]);
 
