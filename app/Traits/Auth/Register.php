@@ -81,7 +81,7 @@ trait Register
         return Validator::make($request->all(), [
             // 'username_email' => 'required|email|unique:username_email',
             'username_email' => 'email:rfc,dns',
-            'password' => ['required', Password::min(6)],
+            'password' => ['required', Password::min(6)->mixedCase()->numbers()],
         ])->validate();
     }
 
