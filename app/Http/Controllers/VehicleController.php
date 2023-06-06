@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\ProvisioningVehiclesExport;
+use App\Exports\UnregisteredVehiclesExport;
+use App\Exports\VehiclesExport;
 use App\Http\Response\ApiResponse;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\Console\Input\Input;
 
 class VehicleController extends Controller
 {
@@ -104,7 +109,7 @@ class VehicleController extends Controller
         foreach ($datas as $vehicleData) {
             $exist = Vehicle::find($vehicleData['id']);
 
-            if ($exist) 
+            if ($exist)
                 $exist->update([
                     'driver_name' => $vehicleData['driver_name'],
                     'vehicle_status' => $vehicleData['vehicle_status'],
@@ -133,6 +138,26 @@ class VehicleController extends Controller
         }
 
         return $response->ErrorResponse('Vehicle does not exist!', 404);
+    }
+
+    public function vehicleExport(Request $request)
+    {
+        $vendor_id = $request->query('vendor_id');
+        $vehicle_status =$request->query('vehicle_status');
+        return (new VehiclesExport($vendor_id, $vehicle_status))->download('vehicles.xlsx');
+    }
+
+    public function provisioningExport(Request $request)
+    {
+        $vendor_id = $request->query('vendor_id');
+        $vehicle_status =$request->query('vehicle_status');
+        return (new ProvisioningVehiclesExport($vendor_id, $vehicle_status))->download('provisioning_vehicles.xlsx');
+    }
+
+    public function unregisteredExport(Request $request)
+    {
+        $vendor_id = $request->query('vendor_id');
+        return (new UnregisteredVehiclesExport($vendor_id))->download('unregistered_vehicles.xlsx');
     }
 
     private function hideFields($vehicle)

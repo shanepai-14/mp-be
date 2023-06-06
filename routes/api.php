@@ -53,6 +53,9 @@ Route::group([
     Route::post('/create', [VehicleController::class, 'create']);
     Route::get('/list', [VehicleController::class, 'list']);
     Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
+    Route::get('/export', [VehicleController::class, 'vehicleExport']);
+    Route::get('/provisioning/export', [VehicleController::class, 'provisioningExport']);
+    Route::get('/unregistered/export', [VehicleController::class, 'unregisteredExport']);
     Route::put('/update/{id}', [VehicleController::class, 'update']);
     Route::put('/massUpdate', [VehicleController::class, 'massUpdate']);
     Route::delete('/delete/{id}', [VehicleController::class, 'delete']);
