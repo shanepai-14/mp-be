@@ -17,7 +17,7 @@ return new class extends Migration
             $table->tinyInteger('vehicle_status')->default(4);
             // $table->string('contact_no', 50)->nullable();
             $table->string('device_id_plate_no', 100)->nullable();
-            $table->unsignedBigInteger('vendor_id');
+            $table->unsignedBigInteger('vendor_id')->nullable();
             $table->integer('mileage');
             $table->softDeletes();
             $table->timestamps();
