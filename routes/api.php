@@ -5,6 +5,7 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GpsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::post('/login', [UserController::class, 'login']);
+Route::post('/position', [GpsController::class, 'sendGPS']);
 
 Route::group([
     'middleware' => 'auth:api',

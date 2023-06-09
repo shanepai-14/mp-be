@@ -7,10 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Jenssegers\Mongodb\Eloquent\HybridRelations;
 
 class Vehicle extends Model
 {
+    use HybridRelations;
     use HasFactory, SoftDeletes;
+
+    protected $connection = 'mysql';
 
     protected $fillable = [
         'driver_name',
@@ -42,5 +46,10 @@ class Vehicle extends Model
     public function updated_by(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by_user_id', 'id');
+    }
+
+    public function Gps(): HasMany
+    {
+        return $this->hasMany(Gps::class);
     }
 }
