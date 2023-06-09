@@ -32,90 +32,70 @@ class GpsController extends Controller
     {
         $response = new ApiResponse();
 
-        // $gps = Gps::with(['vehicle'])->get();
-        // return $gps;
-
-        // Sample data
-        // "gps_data": "$110731093059,2,1.304431,103.834510,23,68,108,8,12.8,3.68,18,180699,12,K3G0001\r"
-        // $gps_data = $request->gps_data;
-        // $result = $this->formatGpsData($gps_data);
-
-        $isExist = Vehicle::where('device_id_plate_no', $request->device_ID)->exists();
+        $isExist = Vehicle::where('device_id_plate_no', $request->Device_ID)->exists();
 
         if (!$isExist) {
             $newVehicle = Vehicle::create([
-                'driver_name' => $request->Driver_Name ?? null,
                 'vehicle_status' => 3,
                 'device_id_plate_no' => $request->Device_ID,
-                'vendor_id' => $request->vendor_id ?? null,
                 'mileage' => $request->Mileage
             ]);
 
-            if ($newVehicle) 
+            if ($newVehicle)
                 return $response->SuccessResponse('Unrecognized vehicle is saved.', $newVehicle);
 
             return $response->ErrorResponse('Server Error', 500);
         }
 
+        $transformedData = $this->dataTransformation($request->collect());
+
         $newGps = Gps::create([
-            'timestamp' => $request->timestamp,
-            'gps' => $request->gps,
-            'ignition' => $request->ignition,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'altitude' => $request->altitude,
-            'speed' => $request->speed,
-            'course' => $request->course,
-            'satellite_count' => $request->satellite_count,
-            'adc1' => $request->adc1,
-            'adc2' => $request->adc2,
-            'drum_status' => $request->drum_status,
-            'mileage' => $request->mileage,
-            'rpm' => $request->rpm,
-            'device_id' => $request->device_ID
+            'Timestamp' => $request->Timestamp,
+            'GPS' => $request->GPS,
+            'Ignition' => $request->Ignition,
+            'Latitude' => $request->Latitude,
+            'Longitude' => $request->Longitude,
+            'Altitude' => $request->Altitude,
+            'Speed' => $request->Speed,
+            'Course' => $request->Course,
+            'Satellite_Count' => $request->Satellite_Count,
+            'ADC1' => $request->ADC1,
+            'ADC2' => $request->ADC2,
+            'Drum_Status' => $request->Drum_Status,
+            'Mileage' => $request->Mileage,
+            'RPM' => $request->RPM,
+            'Device_ID' => $request->Device_ID,
+            'Position' => $transformedData
         ]);
 
         if ($newGps) {
-            return $response->SuccessResponse('Position is successfully saved.', $newGps);
+            return $response->SuccessResponse('Position is successfully saved.', $request->collect());
         }
-        
+
         return $response->ErrorResponse('Server Error', 500);
     }
 
-    private function hideFields($vehicle)
+    private function dataTransformation($data)
     {
-        $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
-        $vehicle->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+        $gpsData = '$';
+        $pattern = ['Timestamp', 'GPS', 'Latitude', 'Longitude', 'Altitude', 'Speed', 'Course', 'Satellite_Count', 'ADC1', 'ADC2', 'IO', 'Mileage', 'RPM', 'Device_ID'];
 
-        if ($vehicle->updated_by)
-            $vehicle->updated_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+        foreach ($pattern as $patternVal) {
+            switch ($patternVal) {
+                case 'Timestamp':
+                    $dateFormatted = date_create($data[$patternVal]);
+                    $gpsData .= date_format($dateFormatted, "ymdHis");
+                    break;
+                case 'IO':
+                    $gpsData .= ',' . 'io_status';
+                    break;
+                default:
+                    $gpsData .= ',' . $data[$patternVal];
+                    break;
+            }
+        }
 
-        else
-            $vehicle->updated_at = null;
-
-        return $vehicle;
+        return $gpsData . '\r';
     }
 
-    // private function formatGpsData($gps_data) {
-    //     $arrData = (explode(",", $gps_data));
-
-    //     $data = new Gps();
-    //     $data['message_id'] = substr($arrData[0], 0, 1);
-    //     $data['timestamp'] = substr($arrData[0], 1, strlen($arrData[0]));
-    //     $data['gps'] = $arrData[1];
-    //     $data['latitude'] = $arrData[2];
-    //     $data['longitude'] = $arrData[3];
-    //     $data['altitude'] = $arrData[4];
-    //     $data['speed'] = $arrData[5];
-    //     $data['course'] = $arrData[6];
-    //     $data['satellite_count'] = $arrData[7];
-    //     $data['adc1'] = $arrData[8];
-    //     $data['adc2'] = $arrData[9];
-    //     $data['io_status'] = $arrData[10];
-    //     $data['mileage'] = $arrData[11];
-    //     $data['rpm'] = $arrData[12];
-    //     $data['device_id'] = $arrData[13];
-
-    //     return $data;
-    // }
 }

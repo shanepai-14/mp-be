@@ -16,27 +16,26 @@ class Gps extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        // 'message_id',
-        'timestamp',
-        'gps',
-        'ignition',
-        'latitude',
-        'longitude',
-        'altitude',
-        'speed',
-        'course',
-        'satellite_count',
-        'adc1',
-        'adc2',
-        // 'io_status',
-        'drum_status',
-        'mileage',
-        'rpm',
-        'device_id'
+        'Timestamp',
+        'GPS',
+        'Ignition',
+        'Latitude',
+        'Longitude',
+        'Altitude',
+        'Speed',
+        'Course',
+        'Satellite_Count',
+        'ADC1',
+        'ADC2',
+        'Mileage',
+        'Drum_Status',  // nullable
+        'RPM',          // nullable
+        'Device_ID',     // Vehicle Plate Number
+        'Position'
     ];
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class, 'device_id', 'device_id_plate_no');
+        return $this->belongsTo(Vehicle::class, 'Device_ID', 'device_id_plate_no');
     }
 }

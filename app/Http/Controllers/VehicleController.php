@@ -162,14 +162,14 @@ class VehicleController extends Controller
 
     private function hideFields($vehicle)
     {
-        $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
-        $vehicle->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+        if ($vehicle->vendor)
+            $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
+
+        if ($vehicle->register_by)
+            $vehicle->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         if ($vehicle->updated_by)
             $vehicle->updated_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
-
-        else
-            $vehicle->updated_at = null;
 
         return $vehicle;
     }
