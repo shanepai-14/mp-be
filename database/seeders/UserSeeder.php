@@ -15,14 +15,26 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $sampleAdminUser = [
-            "username_email"=> "wlocate@gmail.com",
-            "password"=> Hash::make("adminadmin"),
-            "full_name"=> "Admin Admin",
-            "vendor_id"=> 1,
-            "contact_no"=> "+639123123",
-            "user_role"=> 1
+            [
+                "username_email" => "wlocate@gmail.com",
+                "password" => Hash::make("adminadmin"),
+                "full_name" => "Admin Admin",
+                "vendor_id" => 1,
+                "contact_no" => "+639123123",
+                "user_role" => 1
+            ],
+            [
+                "username_email" => "athena@gmail.com",
+                "password" => Hash::make("@th3n@"),
+                "full_name" => "Admin Athena",
+                "vendor_id" => 1,
+                "contact_no" => "+639123123",
+                "user_role" => 1
+            ]
         ];
 
-        User::create($sampleAdminUser);
+        foreach ($sampleAdminUser as $value) {
+            User::create($value);
+        }
     }
 }
