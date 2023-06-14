@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Response\ApiResponse;
 use App\Models\Gps;
 use App\Models\Vehicle;
+use App\Models\Vendor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class GpsController extends Controller
 {
@@ -30,49 +32,72 @@ class GpsController extends Controller
 
     public function sendGPS(Request $request)
     {
+        $this->validateInput($request);
+
+        $vendor_id = Vendor::where('vendor_key', $request->CompanyKey)->value('id');
         $response = new ApiResponse();
 
-        $isExist = Vehicle::where('device_id_plate_no', $request->Device_ID)->exists();
+        if ($vendor_id) {
+            $isExist = Vehicle::where('device_id_plate_no', $request->Device_ID)->get();
+       
+            // If vehicle does not exist create vehicle with status unregistered and ignore gps data
+            if ($isExist->value('id') == null) {
+                $newVehicle = Vehicle::create([
+                    'vehicle_status' => 3,
+                    'device_id_plate_no' => $request->Device_ID,
+                    'vendor_id' => $vendor_id,
+                    'mileage' => $request->Mileage
+                ]);
 
-        if (!$isExist) {
-            $newVehicle = Vehicle::create([
-                'vehicle_status' => 3,
-                'device_id_plate_no' => $request->Device_ID,
-                'mileage' => $request->Mileage
-            ]);
+                if ($newVehicle)
+                    return $response->SuccessResponse('Unrecognized vehicle is saved.', $newVehicle);
 
-            if ($newVehicle)
-                return $response->SuccessResponse('Unrecognized vehicle is saved.', $newVehicle);
+                return $response->ErrorResponse('Server Error', 500);
+            } 
+            
+            // Save GPS/Position data if vehicle exist and status is not unregistered
+            else if ($isExist->value('vehicle_status') != 3) 
+            {
+                // Add default value if these are missing in the payload
+                $request->mergeIfMissing(['Drum_Status' => 0]);
+                $request->mergeIfMissing(['RPM' => 0]);
 
-            return $response->ErrorResponse('Server Error', 500);
+                $transformedData = $isExist->value('vehicle_status') == 1 ? $this->dataTransformation($request->collect()) : null;
+
+                $newGps = Gps::create([
+                    'Vendor_Key' => $request->CompanyKey,
+                    'Timestamp' => $request->Timestamp,
+                    'GPS' => $request->GPS,
+                    'Ignition' => $request->Ignition,
+                    'Latitude' => $request->Latitude,
+                    'Longitude' => $request->Longitude,
+                    'Altitude' => $request->Altitude,
+                    'Speed' => $request->Speed,
+                    'Course' => $request->Course,
+                    'Satellite_Count' => $request->Satellite_Count,
+                    'ADC1' => $request->ADC1,
+                    'ADC2' => $request->ADC2,
+                    // 'Drum_Status' => $request->Drum_Status,
+                    'Drum_Status' => 0,                             // Always ZERO  as of now
+                    'Mileage' => $request->Mileage,
+                    'RPM' => $request->RPM ?? 0,
+                    'Device_ID' => $request->Device_ID,
+                    'Position' => $transformedData
+                ]);
+
+                if ($newGps) {
+                    return $response->SuccessResponse('Position is successfully saved.', $request->collect());
+                }
+
+                return $response->ErrorResponse('Server Error', 500);
+            }
+
+            // If vehicle already exist and with status of unregistered
+            else
+                return $response->ErrorResponse('Unrecognized vehicle already exist!', 409);
         }
 
-        $transformedData = $this->dataTransformation($request->collect());
-
-        $newGps = Gps::create([
-            'Timestamp' => $request->Timestamp,
-            'GPS' => $request->GPS,
-            'Ignition' => $request->Ignition,
-            'Latitude' => $request->Latitude,
-            'Longitude' => $request->Longitude,
-            'Altitude' => $request->Altitude,
-            'Speed' => $request->Speed,
-            'Course' => $request->Course,
-            'Satellite_Count' => $request->Satellite_Count,
-            'ADC1' => $request->ADC1,
-            'ADC2' => $request->ADC2,
-            'Drum_Status' => $request->Drum_Status,
-            'Mileage' => $request->Mileage,
-            'RPM' => $request->RPM,
-            'Device_ID' => $request->Device_ID,
-            'Position' => $transformedData
-        ]);
-
-        if ($newGps) {
-            return $response->SuccessResponse('Position is successfully saved.', $request->collect());
-        }
-
-        return $response->ErrorResponse('Server Error', 500);
+        return $response->ErrorResponse('Company key/Vendor key does not exist!', 404);
     }
 
     private function dataTransformation($data)
@@ -87,7 +112,7 @@ class GpsController extends Controller
                     $gpsData .= date_format($dateFormatted, "ymdHis");
                     break;
                 case 'IO':
-                    $gpsData .= ',' . 'io_status';
+                    $gpsData .= ',' . $this->ioStatusCalculation($data['Ignition']);
                     break;
                 default:
                     $gpsData .= ',' . $data[$patternVal];
@@ -98,4 +123,39 @@ class GpsController extends Controller
         return $gpsData . '\r';
     }
 
+    private function ioStatusCalculation($ignition)
+    {
+        // X - 0
+        // OUT1 - always Low (0)
+        // OUT0 - always Low (0)
+        // IN4 - always high (1)
+        // IN3 - drum direction is always (0)
+        // IN2 - always low (0)
+        // IN1 - always Low (0)
+        // IN0 - from vendor supplied value
+
+        return $ignition == 0 ? 10 : 11;
+    }
+
+    private function validateInput($request)
+    {
+        return Validator::make($request->all(), [
+            'CompanyKey' => ['required', 'string'],
+            'Timestamp' => ['required', 'date'],
+            'GPS' => ['required', 'boolean'],
+            'Ignition' => ['required', 'boolean'],
+            'Latitude' => ['required', 'numeric'],
+            'Longitude' => ['required', 'numeric'],
+            'Altitude' => ['required', 'integer'],
+            'Speed' => ['required', 'integer', 'between:0,999'],
+            'Course' => ['required', 'integer', 'between:0,359'],
+            'Satellite_Count' => ['required', 'integer'],
+            'ADC1' => ['required', 'numeric'],
+            'ADC2' => ['required', 'numeric'],
+            'Mileage' => ['required', 'integer'],
+            'Drum_Status' => ['boolean'],
+            'RPM' => ['integer'],
+            'Device_ID' => ['required', 'string'],
+        ])->validate();
+    }
 }

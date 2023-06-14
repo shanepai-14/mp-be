@@ -16,6 +16,7 @@ class Gps extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'Vendor_Key',
         'Timestamp',
         'GPS',
         'Ignition',

@@ -7,22 +7,24 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
-class UserSeeder extends Seeder
+class Athena_Account extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * @return void
      */
-    public function run(): void
+    public function run()
     {
-        $sampleAdminUser = [
-            "username_email" => "wlocate@gmail.com",
-            "password" => Hash::make("adminadmin"),
-            "full_name" => "Admin Admin",
+        $athenaAccount = [
+            "username_email" => "athena@gmail.com",
+            "password" => Hash::make("@th3n@"),
+            "full_name" => "Admin Athena",
             "vendor_id" => 1,
             "contact_no" => "+639123123",
             "user_role" => 1
         ];
 
-        User::create($sampleAdminUser);
+        User::create($athenaAccount);
     }
 }
