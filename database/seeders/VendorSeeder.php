@@ -14,7 +14,6 @@ class VendorSeeder extends Seeder
     public function run(): void
     {
         $vendor = [
-            "id" => 1,
             "vendor_name"=> "Athena",
             "vendor_address"=> "Singapore",
             "vendor_code"=> "ATH",
