@@ -39,7 +39,7 @@ class GpsController extends Controller
 
         if ($vendor_id) {
             $isExist = Vehicle::where('device_id_plate_no', $request->Device_ID)->get();
-       
+
             // If vehicle does not exist create vehicle with status unregistered and ignore gps data
             if ($isExist->value('id') == null) {
                 $newVehicle = Vehicle::create([
@@ -53,11 +53,10 @@ class GpsController extends Controller
                     return $response->SuccessResponse('Unrecognized vehicle is saved.', $newVehicle);
 
                 return $response->ErrorResponse('Server Error', 500);
-            } 
-            
+            }
+
             // Save GPS/Position data if vehicle exist and status is not unregistered
-            else if ($isExist->value('vehicle_status') != 3) 
-            {
+            else if ($isExist->value('vehicle_status') != 3) {
                 // Add default value if these are missing in the payload
                 $request->mergeIfMissing(['Drum_Status' => 0]);
                 $request->mergeIfMissing(['RPM' => 0]);
@@ -98,6 +97,32 @@ class GpsController extends Controller
         }
 
         return $response->ErrorResponse('Company key/Vendor key does not exist!', 404);
+    }
+
+    public function checkServer()
+    {
+        $response = new ApiResponse();
+
+        // MySQL Database Server IP
+        if ($MySQLsocket = $this->serverStatus('127.0.0.1:3306')) {
+            // return $response->SuccessResponse('Server is online!', []);
+            fclose($MySQLsocket);
+
+            if ($mongoDBsocket = $this->serverStatus('127.0.0.1:27017')) {
+                return $response->SuccessResponse('Server is online!', []);
+                fclose($mongoDBsocket);
+            }
+
+            return $response->ErrorResponse('Server is offline!', 500);
+        }
+        
+        else
+            return $response->ErrorResponse('Server is offline!', 500);
+    }
+
+    protected function serverStatus($url)
+    {
+        return @fsockopen($url, 80, $errno, $errstr, 30);
     }
 
     private function dataTransformation($data)

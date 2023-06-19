@@ -24,6 +24,7 @@ use App\Http\Controllers\GpsController;
 
 Route::post('/login', [UserController::class, 'login']);
 Route::post('/position', [GpsController::class, 'sendGPS']);
+Route::post('/check-server', [GpsController::class, 'checkServer']);
 
 Route::group([
     'middleware' => 'auth:api',
