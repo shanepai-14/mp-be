@@ -63,8 +63,8 @@ class UnregisteredVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     {
         return [
             $vehicle->vendor->vendor_name,
-            $vehicle->driver_name,
             $vehicle->device_id_plate_no,
+            $vehicle->driver_name,
             $vehicle->mileage,
             Date::dateTimeToExcel($vehicle->created_at),
         ];

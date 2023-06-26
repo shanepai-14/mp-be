@@ -74,8 +74,8 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     {
         return [
             $vehicle->vendor->vendor_name,
-            $vehicle->driver_name,
             $vehicle->device_id_plate_no,
+            $vehicle->driver_name,
             $vehicle->mileage,
             $vehicle->register_by->full_name,
             Date::dateTimeToExcel($vehicle->created_at),
