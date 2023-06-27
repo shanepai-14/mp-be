@@ -80,8 +80,8 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
             $vehicle->register_by->full_name,
             Date::dateTimeToExcel($vehicle->created_at),
             $this->_getVehicleStatusTxt($vehicle->vehicle_status),
-            $vehicle->updated_by ? $vehicle->updated_by->full_name : '',
-            $vehicle->updated_by ? Date::dateTimeToExcel($vehicle->updated_at) : null,
+            $vehicle->updated_by ? $vehicle->updated_by->full_name : $vehicle->register_by->full_name,
+            Date::dateTimeToExcel($vehicle->updated_at),
         ];
     }
 
