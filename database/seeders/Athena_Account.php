@@ -18,7 +18,7 @@ class Athena_Account extends Seeder
     {
         $athenaAccount = [
             "username_email" => "athena@gmail.com",
-            "password" => Hash::make("@th3n@"),
+            "password" => Hash::make("Admin123"),
             "full_name" => "Admin Athena",
             "vendor_id" => 1,
             "contact_no" => "+639123123",

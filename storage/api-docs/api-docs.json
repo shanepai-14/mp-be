@@ -1,0 +1,596 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Management Portal API",
+        "description": "Available API for Management Portal",
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api",
+            "description": "Demo API Server"
+        }
+    ],
+    "paths": {
+        "/position": {
+            "post": {
+                "tags": [
+                    "Position"
+                ],
+                "summary": "Send GPS Position",
+                "operationId": "SendGPS",
+                "requestBody": {
+                    "description": "GPS Position Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Gps"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Unrecognized vehicle already exist!"
+                    },
+                    "404": {
+                        "description": "Company key/Vendor key does not exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                }
+            }
+        },
+        "/check-server": {
+            "post": {
+                "tags": [
+                    "Position"
+                ],
+                "summary": "Check Server Status",
+                "operationId": "CheckServer",
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
+        "/user/list": {
+            "post": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get list of registered users",
+                "operationId": "UserList",
+                "requestBody": {
+                    "description": "Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vendor_id": {
+                                        "type": "number"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vendor_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "successful operation"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/user/userById/{id}": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get user by user id",
+                "operationId": "getUserById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user id supplied"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/user/update/{id}": {
+            "put": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Updated user",
+                "description": "Update user information.",
+                "operationId": "updateUser",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id that to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated user object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "username_email": {
+                                        "type": "string"
+                                    },
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    },
+                                    "contact_no": {
+                                        "type": "string"
+                                    },
+                                    "user_role": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User is successfully updated!"
+                    },
+                    "400": {
+                        "description": "Invalid user id supplied"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "409": {
+                        "description": "User Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/user/updatePassword/{id}": {
+            "put": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Updated user password",
+                "description": "Update user password.",
+                "operationId": "updatePassword",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Old and new password",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "oldPassword": {
+                                        "type": "string"
+                                    },
+                                    "newPassword": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Password is successfully updated!"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "449": {
+                        "description": "New password is the same with the previous password used."
+                    },
+                    "409": {
+                        "description": "Incorrect old password"
+                    },
+                    "500": {
+                        "description": "Failed to update password!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/user/logout": {
+            "post": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Logs out current logged in user session",
+                "description": "Logs out current logged in user session",
+                "operationId": "logoutUser",
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Logs user into system",
+                "operationId": "loginUser",
+                "requestBody": {
+                    "description": "User Credentials",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "username_email": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "username_email": "wloc@example.com",
+                                    "password": ""
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid username/password supplied"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/user/register": {
+            "post": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create user account",
+                "operationId": "CreateUser",
+                "requestBody": {
+                    "description": "User Credentials",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "username_email": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    },
+                                    "contact_no": {
+                                        "type": "string"
+                                    },
+                                    "user_role": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "username_email": "wloc@example.com",
+                                    "password": "Example123",
+                                    "full_name": "Sample User",
+                                    "vendor_id": "0",
+                                    "contact_no": "+123",
+                                    "user_role": "0"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "User or Email address already exist!"
+                    },
+                    "404": {
+                        "description": "Vendor id does not exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Gps": {
+                "title": "Position",
+                "description": "Position",
+                "properties": {
+                    "CompanyKey": {
+                        "title": "Vendor Key",
+                        "type": "string",
+                        "format": "string"
+                    },
+                    "Timestamp": {
+                        "title": "TimeStamp",
+                        "type": "string",
+                        "format": "datetime"
+                    },
+                    "GPS": {
+                        "title": "GPS Status",
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "Ignition": {
+                        "title": "Ignition Status",
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "Latitude": {
+                        "title": "Latitude",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "Longitude": {
+                        "title": "Longitude",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "Altitude": {
+                        "title": "Altitude",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "Speed": {
+                        "title": "Speed",
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "Course": {
+                        "title": "Course",
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "Satellite_Count": {
+                        "title": "Satellite_Count",
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ADC1": {
+                        "title": "ADC1",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "ADC2": {
+                        "title": "ADC2",
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "Mileage": {
+                        "title": "Mileage",
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "Drum_Status": {
+                        "title": "Drum_Status",
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "RPM": {
+                        "title": "RPM",
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "Device_ID": {
+                        "title": "Device_ID",
+                        "type": "string",
+                        "format": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "title": "User",
+                "description": "User",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "username_email": {
+                        "title": "Email",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "password": {
+                        "title": "Password",
+                        "type": "string",
+                        "format": "int64",
+                        "maximum": 255
+                    },
+                    "full_name": {
+                        "title": "Full name",
+                        "type": "string"
+                    },
+                    "vendor_id": {
+                        "title": "Vendor ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "contact_no": {
+                        "title": "Phone",
+                        "type": "string",
+                        "format": "msisdn"
+                    },
+                    "user_role": {
+                        "title": "User Role ID",
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "name": "bearerAuth",
+                "in": "header",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            },
+            "passport": {
+                "type": "oauth2",
+                "description": "Laravel passport oauth2 security.",
+                "in": "header",
+                "scheme": "https",
+                "flows": {
+                    "password": {
+                        "authorizationUrl": "http://localhost/oauth/authorize",
+                        "tokenUrl": "http://localhost/oauth/token",
+                        "refreshUrl": "http://localhost/token/refresh",
+                        "scopes": []
+                    }
+                }
+            }
+        }
+    }
+}

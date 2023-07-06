@@ -8,6 +8,7 @@ use App\Models\Vehicle;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use OpenApi\Annotations as OA;
 
 class GpsController extends Controller
 {
@@ -30,6 +31,43 @@ class GpsController extends Controller
     //  14. DEVICE ID (string) -> IMEI number or unique ID (Plate Number);
     //  15. END (Uchar8) -> \r
 
+    /**
+     * @OA\Post(
+     *     path="/position",
+     *     tags={"Position"},
+     *     summary="Send GPS Position",
+     *     operationId="SendGPS",
+     * @OA\RequestBody(
+     *         description="GPS Position Information",
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(ref="#/components/schemas/Gps")
+     *         )
+     *     ),
+     * @OA\Response(
+     *         response=200,
+     *         description="successful operation",
+     *         @OA\JsonContent(ref="#/components/schemas/User")
+     *     ),
+     *      @OA\Response(
+     *          response=409,
+     *          description="Unrecognized vehicle already exist!",
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Company key/Vendor key does not exist!"
+     *      ),
+     *     @OA\Response(
+     *          response=500,
+     *          description="Internal Server Error",
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     * )
+     */
     public function sendGPS(Request $request)
     {
         $this->validateInput($request);
@@ -99,6 +137,18 @@ class GpsController extends Controller
         return $response->ErrorResponse('Company key/Vendor key does not exist!', 404);
     }
 
+     /**
+     * @OA\Post(
+     *     path="/check-server",
+     *     tags={"Position"},
+     *     summary="Check Server Status",
+     *     operationId="CheckServer",
+      *     @OA\Response(
+     *         response="default",
+     *         description="successful operation"
+     *     )
+     * )
+     */
     public function checkServer()
     {
         $response = new ApiResponse();

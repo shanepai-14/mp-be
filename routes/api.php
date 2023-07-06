@@ -3,9 +3,9 @@
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VendorController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GpsController;
+use App\Http\Response\ApiResponse;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,7 +22,7 @@ use App\Http\Controllers\GpsController;
 //     return $request->user();
 // });
 
-Route::post('/login', [UserController::class, 'login']);
+Route::post('/login', [UserController::class, 'login'])->name('login');
 Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
 
@@ -31,7 +31,7 @@ Route::group([
     'prefix' => 'user'
 ], function(){
     Route::post('/register', [UserController::class, 'register']);
-    Route::get('/list', [UserController::class, 'list']);
+    Route::post('/list', [UserController::class, 'list']);
     Route::get('/userById/{id}', [UserController::class, 'userById']);
     Route::put('/update/{id}', [UserController::class, 'update']);
     Route::put('/updatePassword/{id}', [UserController::class, 'updatePassword']);
@@ -62,4 +62,10 @@ Route::group([
     Route::put('/update/{id}', [VehicleController::class, 'update']);
     Route::put('/massUpdate', [VehicleController::class, 'massUpdate']);
     Route::delete('/delete/{id}', [VehicleController::class, 'delete']);
+});
+
+//This will catch GET request to /api/register but  PUT,DELETE, OPTIONS etc. fails
+Route::fallback(function () {
+    $response = new ApiResponse();
+    return $response->ErrorResponse('Unauthenticated', 401);
 });

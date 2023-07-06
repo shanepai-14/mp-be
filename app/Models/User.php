@@ -10,9 +10,87 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
 
+/**
+ * Class User.
+ *
+ * @OA\Schema(
+ *     title="User",
+ *     description="User",
+ * )
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * @OA\Property(
+     *     format="int64",
+     *     title="ID",
+     * )
+     *
+     * @var integer
+     */
+    private $id;
+
+    /**
+     * @OA\Property(
+     *     format="email",
+     *     title="Email",
+     * )
+     *
+     * @var string
+     */
+    private $username_email;
+
+     /**
+     * @OA\Property(
+     *     format="int64",
+     *     title="Password",
+     *     maximum=255
+     * )
+     *
+     * @var string
+     */
+    private $password;
+
+    /**
+     * @OA\Property(
+     *     title="Full name",
+     * )
+     *
+     * @var string
+     */
+    private $full_name;
+
+    /**
+     * @OA\Property(
+     *     format="int64",
+     *     title="Vendor ID",
+     * )
+     *
+     * @var integer
+     */
+    private $vendor_id;
+
+     /**
+     * @OA\Property(
+     *     format="msisdn",
+     *     title="Phone",
+     * )
+     *
+     * @var string
+     */
+    private $contact_no;
+
+    /**
+     * @OA\Property(
+     *     format="int64",
+     *     title="User Role ID",
+     * )
+     *
+     * @var integer
+     */
+    private $user_role;
 
     /**
      * The attributes that are mass assignable.
