@@ -54,7 +54,7 @@ Route::group([
     'prefix' => 'vehicle'
 ], function(){
     Route::post('/create', [VehicleController::class, 'create']);
-    Route::get('/list', [VehicleController::class, 'list']);
+    Route::post('/list', [VehicleController::class, 'list']);
     Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
     Route::get('/export', [VehicleController::class, 'vehicleExport']);
     Route::get('/provisioning/export', [VehicleController::class, 'provisioningExport']);
