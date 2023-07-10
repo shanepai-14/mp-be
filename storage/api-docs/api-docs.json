@@ -12,7 +12,7 @@
     "servers": [
         {
             "url": "http://localhost:8000/api",
-            "description": "Demo API Server"
+            "description": "Management Portal API Server"
         }
     ],
     "paths": {
@@ -89,7 +89,7 @@
                             "schema": {
                                 "properties": {
                                     "vendor_id": {
-                                        "type": "number"
+                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
@@ -172,7 +172,7 @@
                     {
                         "name": "id",
                         "in": "path",
-                        "description": "id that to be updated",
+                        "description": "id to be updated",
                         "required": true,
                         "schema": {
                             "type": "integer"
@@ -304,6 +304,577 @@
                 "responses": {
                     "default": {
                         "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/create": {
+            "post": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Create vehicle",
+                "operationId": "CreateVehicle",
+                "requestBody": {
+                    "description": "Vehicle Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
+                                    "device_id_plate_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vehicle_status": 2,
+                                    "device_id_plate_no": "ATH0001",
+                                    "vendor_id": 1,
+                                    "mileage": "1234"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vehicle is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vehicle"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Vehicle already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/list": {
+            "post": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Get list of registered vehicles",
+                "operationId": "VehicleList",
+                "requestBody": {
+                    "description": "Vehicle Id - NOTE: If vehicle_id object is omitted then all users will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vendor_id": 0,
+                                    "vehicle_status": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/vehicleById/{id}": {
+            "get": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Get vehicle by vehicle id",
+                "operationId": "GetVehicleById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vehicle"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Vehicle not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/update/{id}": {
+            "put": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Updated Vehicle",
+                "description": "Update vehicle information.",
+                "operationId": "UpdateVehicle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated vehicle object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
+                                    "device_id_plate_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Vehicle not found"
+                    },
+                    "409": {
+                        "description": "Vehicle Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/massUpdate": {
+            "put": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Updated Vehicles",
+                "description": "Mass update vehicle information.",
+                "operationId": "MassUpdateVehicle",
+                "requestBody": {
+                    "description": "Updated vehicles array of object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
+                                    "device_id_plate_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Vehicle not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Delete vehicle by vehicle id",
+                "operationId": "DeleteVehicle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vehicle is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vehicle"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Vehicle does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vendor/create": {
+            "post": {
+                "tags": [
+                    "Vendor"
+                ],
+                "summary": "Create vendor",
+                "operationId": "CreateVendor",
+                "requestBody": {
+                    "description": "Vendor Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vendor_name": {
+                                        "type": "string"
+                                    },
+                                    "vendor_address": {
+                                        "type": "string"
+                                    },
+                                    "vendor_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_code": {
+                                        "type": "integer"
+                                    },
+                                    "vendor_email": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vendor_name": "Vendor",
+                                    "vendor_address": "Singapore",
+                                    "vendor_contact_no": "+123123",
+                                    "vendor_code": "VE",
+                                    "vendor_email": "vendor@sample.com"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vendor is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vendor"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Vendor already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vendor/list": {
+            "get": {
+                "tags": [
+                    "Vendor"
+                ],
+                "summary": "Get list of vendors",
+                "operationId": "GetVendorList",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vendor"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vendor/vendorById/{id}": {
+            "get": {
+                "tags": [
+                    "Vendor"
+                ],
+                "summary": "Get vendor by vendor id",
+                "operationId": "GetVendorById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vendor"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Vendor not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vendor/update/{id}": {
+            "put": {
+                "tags": [
+                    "Vendor"
+                ],
+                "summary": "Updated vendor",
+                "description": "Update vendor information.",
+                "operationId": "UpdateVendor",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated vendor object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "vendor_name": {
+                                        "type": "string"
+                                    },
+                                    "vendor_address": {
+                                        "type": "string"
+                                    },
+                                    "vendor_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_code": {
+                                        "type": "integer"
+                                    },
+                                    "vendor_email": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vendor is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Vendor not found"
+                    },
+                    "400": {
+                        "description": "Vendor Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vendor/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Vendor"
+                ],
+                "summary": "Delete vendor by vendor id",
+                "operationId": "DeleteVendor",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vendor is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vendor"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Vendor does not exist!"
                     }
                 },
                 "security": [
@@ -564,6 +1135,75 @@
                         "title": "User Role ID",
                         "type": "integer",
                         "format": "int64"
+                    }
+                },
+                "type": "object"
+            },
+            "Vehicle": {
+                "title": "Vehicle",
+                "description": "Vehicle",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "driver_name": {
+                        "title": "Driver Name",
+                        "type": "string"
+                    },
+                    "vehicle_status": {
+                        "title": "Vehicle Status Id",
+                        "type": "string"
+                    },
+                    "device_id_plate_no": {
+                        "title": "Device Id/Plate No.",
+                        "type": "string"
+                    },
+                    "vendor_id": {
+                        "title": "Vendor Id",
+                        "type": "string"
+                    },
+                    "mileage": {
+                        "title": "Mileage",
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Vendor": {
+                "title": "Vendor",
+                "description": "Vendor",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "vendor_name": {
+                        "title": "Vendor Name",
+                        "type": "string"
+                    },
+                    "vendor_address": {
+                        "title": "Vendor Address",
+                        "type": "string"
+                    },
+                    "vendor_contact_no": {
+                        "title": "Vendor Contact no.",
+                        "type": "string"
+                    },
+                    "vendor_email": {
+                        "title": "Vendor Email",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "vendor_code": {
+                        "title": "Vendor Contact no.",
+                        "type": "string"
+                    },
+                    "vendor_key": {
+                        "title": "Vendor Key",
+                        "type": "string"
                     }
                 },
                 "type": "object"

@@ -9,10 +9,73 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Jenssegers\Mongodb\Eloquent\HybridRelations;
 
+/**
+ * Class Vehicle.
+ *
+ * @OA\Schema(
+ *     title="Vehicle",
+ *     description="Vehicle",
+ * )
+ */
 class Vehicle extends Model
 {
     use HybridRelations;
     use HasFactory, SoftDeletes;
+
+    /**
+     * @OA\Property(
+     *     format="int64",
+     *     title="ID",
+     * )
+     *
+     * @var integer
+     */
+    private $id;
+
+    /**
+     * @OA\Property(
+     *     title="Driver Name",
+     * )
+     *
+     * @var string
+     */
+    private $driver_name;
+
+    /**
+     * @OA\Property(
+     *     title="Vehicle Status Id",
+     * )
+     *
+     * @var string
+     */
+    private $vehicle_status;
+
+    /**
+     * @OA\Property(
+     *     title="Device Id/Plate No.",
+     * )
+     *
+     * @var string
+     */
+    private $device_id_plate_no;
+
+    /**
+     * @OA\Property(
+     *     title="Vendor Id",
+     * )
+     *
+     * @var string
+     */
+    private $vendor_id;
+
+    /**
+     * @OA\Property(
+     *     title="Mileage",
+     * )
+     *
+     * @var string
+     */
+    private $mileage;
 
     protected $connection = 'mysql';
 

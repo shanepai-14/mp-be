@@ -34,7 +34,7 @@ class UserController extends Controller
      *             @OA\Schema(
      *                 @OA\Property(
      *                     property="vendor_id",
-     *                     type="number"
+     *                     type="integer"
      *                 ),
      *                 example={"vendor_id": 0}
      *             )
@@ -114,7 +114,7 @@ class UserController extends Controller
      *         in="path",
      *         name="id",
      *         required=true,
-     *         description="id that to be updated",
+     *         description="id to be updated",
      *         @OA\Schema(
      *             type="integer"
      *         )

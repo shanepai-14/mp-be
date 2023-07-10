@@ -9,9 +9,82 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Class Vendor.
+ *
+ * @OA\Schema(
+ *     title="Vendor",
+ *     description="Vendor",
+ * )
+ */
 class Vendor extends Model
 {
     use HasFactory, SoftDeletes;
+
+    /**
+     * @OA\Property(
+     *     format="int64",
+     *     title="ID",
+     * )
+     *
+     * @var integer
+     */
+    private $id;
+
+    /**
+     * @OA\Property(
+     *     title="Vendor Name",
+     * )
+     *
+     * @var string
+     */
+    private $vendor_name;
+
+    /**
+     * @OA\Property(
+     *     title="Vendor Address",
+     * )
+     *
+     * @var string
+     */
+    private $vendor_address;
+
+    /**
+     * @OA\Property(
+     *     title="Vendor Contact no.",
+     * )
+     *
+     * @var string
+     */
+    private $vendor_contact_no;
+
+    /**
+     * @OA\Property(
+     *     format="email",
+     *     title="Vendor Email",
+     * )
+     *
+     * @var string
+     */
+    private $vendor_email;
+
+    /**
+     * @OA\Property(
+     *     title="Vendor Contact no.",
+     * )
+     *
+     * @var string
+     */
+    private $vendor_code;
+
+    /**
+     * @OA\Property(
+     *     title="Vendor Key",
+     * )
+     *
+     * @var string
+     */
+    private $vendor_key;
 
     protected $fillable = [
         'vendor_name',
