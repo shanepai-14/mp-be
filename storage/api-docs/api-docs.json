@@ -11,7 +11,7 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8000/api",
+            "url": "https://managementportalapi.chooseathena.com/api",
             "description": "Management Portal API Server"
         }
     ],

@@ -304,7 +304,8 @@ return [
          */
         'constants' => [
             // 'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'http://my-default-host.com'),
-            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST'),
+            // 'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST'),
+            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://managementportalapi.chooseathena.com/api'),
         ],
     ],
 ];
