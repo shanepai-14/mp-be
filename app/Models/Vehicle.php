@@ -1,0 +1,118 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Jenssegers\Mongodb\Eloquent\HybridRelations;
+
+/**
+ * Class Vehicle.
+ *
+ * @OA\Schema(
+ *     title="Vehicle",
+ *     description="Vehicle",
+ * )
+ */
+class Vehicle extends Model
+{
+    use HybridRelations;
+    use HasFactory, SoftDeletes;
+
+    /**
+     * @OA\Property(
+     *     format="int64",
+     *     title="ID",
+     * )
+     *
+     * @var integer
+     */
+    private $id;
+
+    /**
+     * @OA\Property(
+     *     title="Driver Name",
+     * )
+     *
+     * @var string
+     */
+    private $driver_name;
+
+    /**
+     * @OA\Property(
+     *     title="Vehicle Status Id",
+     * )
+     *
+     * @var string
+     */
+    private $vehicle_status;
+
+    /**
+     * @OA\Property(
+     *     title="Device Id/Plate No.",
+     * )
+     *
+     * @var string
+     */
+    private $device_id_plate_no;
+
+    /**
+     * @OA\Property(
+     *     title="Vendor Id",
+     * )
+     *
+     * @var string
+     */
+    private $vendor_id;
+
+    /**
+     * @OA\Property(
+     *     title="Mileage",
+     * )
+     *
+     * @var string
+     */
+    private $mileage;
+
+    protected $connection = 'mysql';
+
+    protected $fillable = [
+        'driver_name',
+        'vehicle_status',
+        // 'contact_no',
+        'device_id_plate_no',
+        'vendor_id',
+        'mileage',
+        'register_by_user_id',
+        'updated_by_user_id'
+    ];
+
+    protected $hidden = [
+        // 'created_at',
+        // 'updated_at',
+        'deleted_at'
+    ];
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
+    public function register_by(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'register_by_user_id', 'id');
+    }
+
+    public function updated_by(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by_user_id', 'id');
+    }
+
+    public function Gps(): HasMany
+    {
+        return $this->hasMany(Gps::class);
+    }
+}
