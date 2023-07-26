@@ -163,11 +163,11 @@ class GpsController extends Controller
                 fclose($mongoDBsocket);
             }
 
-            return $response->ErrorResponse('Server is offline!', 500);
+            return $response->ErrorResponse('MongoDB Server is offline!', 500);
         }
         
         else
-            return $response->ErrorResponse('Server is offline!', 500);
+            return $response->ErrorResponse('MySQL Server is offline!', 500);
     }
 
     protected function serverStatus($url)
