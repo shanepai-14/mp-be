@@ -9,8 +9,7 @@ use App\Http\Response\ApiResponse;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\Console\Input\Input;
+use Illuminate\Support\Facades\Storage;
 
 class VehicleController extends Controller
 {
@@ -226,7 +225,7 @@ class VehicleController extends Controller
      *                     property="id",
      *                     type="integer"
      *                 ),
-    *                 @OA\Property(
+     *                 @OA\Property(
      *                     property="driver_name",
      *                     type="string"
      *                 ),
@@ -271,18 +270,26 @@ class VehicleController extends Controller
             $vehicle = Vehicle::find($id);
 
             if ($vehicle) {
-                $vehicle->update([
-                    'driver_name' => $request->driver_name,
-                    'vehicle_status' => $request->vehicle_status,
-                    // 'contact_no' => $request->contact_no,
-                    'device_id_plate_no' => $request->device_id_plate_no,
-                    'vendor_id' => $request->vendor_id,
-                    'mileage' => $request->mileage,
-                    'updated_by_user_id' => Auth::user()->id
-                ]);
+                // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
+                // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
+                if ($request->vehicle_status === 1) {
+                    $integration = new IntegrationController($request->device_id_plate_no, $request->mileage, $request->driver_name);
+                    
+                    // If device and vehicle are successfully uploaded to integration server
+                    // update vehicle status to approved in mysql server
+                    $uploadResult = $integration->uploading();
+                  
+                    if($uploadResult == 200 || $uploadResult == 409)
+                        $this->updateInfo($vehicle, $request);
+
+                    else
+                        return $response->ErrorResponse('Failed, something went wrong in integration server', 500);
+                }
+                
+                else
+                    $this->updateInfo($vehicle, $request);
 
                 $vehicleData = $this->vehicleById($vehicle->id);
-
                 return $response->SuccessResponse('Vehicle is successfully updated!', $vehicleData);
             }
 
@@ -290,6 +297,17 @@ class VehicleController extends Controller
         }
 
         return $response->ErrorResponse('Vehicle Id does not matched!', 409);
+    }
+
+    private function updateInfo($vehicle, $request) {
+        $vehicle->update([
+            'driver_name' => $request->driver_name,
+            'vehicle_status' => $request->vehicle_status,
+            'device_id_plate_no' => $request->device_id_plate_no,
+            'vendor_id' => $request->vendor_id,
+            'mileage' => $request->mileage,
+            'updated_by_user_id' => Auth::user()->id
+        ]);
     }
 
     /**
@@ -411,14 +429,14 @@ class VehicleController extends Controller
     public function vehicleExport(Request $request)
     {
         $vendor_id = $request->query('vendor_id');
-        $vehicle_status =$request->query('vehicle_status');
+        $vehicle_status = $request->query('vehicle_status');
         return (new VehiclesExport($vendor_id, $vehicle_status))->download('vehicles.xlsx');
     }
 
     public function provisioningExport(Request $request)
     {
         $vendor_id = $request->query('vendor_id');
-        $vehicle_status =$request->query('vehicle_status');
+        $vehicle_status = $request->query('vehicle_status');
         return (new ProvisioningVehiclesExport($vendor_id, $vehicle_status))->download('provisioning_vehicles.xlsx');
     }
 
