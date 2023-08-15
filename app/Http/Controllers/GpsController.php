@@ -200,7 +200,8 @@ class GpsController extends Controller
             }
         }
 
-        return $gpsData . '\r';
+        // return $gpsData . '\r';
+        return $gpsData;
     }
 
     private function ioStatusCalculation($ignition)
