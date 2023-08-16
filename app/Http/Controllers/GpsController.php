@@ -101,6 +101,7 @@ class GpsController extends Controller
 
                 $transformedData = $isExist->value('vehicle_status') == 1 ? $this->dataTransformation($request->collect()) : null;
 
+                // Save GPS Data to MongoDB
                 $newGps = Gps::create([
                     'Vendor_Key' => $request->CompanyKey,
                     'Timestamp' => $request->Timestamp,
@@ -121,6 +122,10 @@ class GpsController extends Controller
                     'Device_ID' => $request->Device_ID,
                     'Position' => $transformedData
                 ]);
+              
+                // Forward transformed GPS data to Wlocate
+                $socketCtrl = new GPSSocketController();
+                $socketCtrl->submitFormattedGPS($transformedData);
 
                 if ($newGps) {
                     return $response->SuccessResponse('Position is successfully saved.', $request->collect());
@@ -163,11 +168,11 @@ class GpsController extends Controller
                 fclose($mongoDBsocket);
             }
 
-            return $response->ErrorResponse('Server is offline!', 500);
+            return $response->ErrorResponse('MongoDB Server is offline!', 500);
         }
         
         else
-            return $response->ErrorResponse('Server is offline!', 500);
+            return $response->ErrorResponse('MySQL Server is offline!', 500);
     }
 
     protected function serverStatus($url)
@@ -195,7 +200,8 @@ class GpsController extends Controller
             }
         }
 
-        return $gpsData . '\r';
+        // return $gpsData . '\r';
+        return $gpsData;
     }
 
     private function ioStatusCalculation($ignition)
