@@ -7,15 +7,16 @@ use PhpOffice\PhpSpreadsheet\Calculation\TextData\Replace;
 
 class GPSSocketController extends Controller
 {
+    // Submit formatted GPS data to WL server via TCP/IP
     public function submitFormattedGPS($gpsData)
     {
         $host = "20.195.56.146";
         $port = 2199;
-        $message = $gpsData."\r";
-       
+        $message = $gpsData . "\r";
+        
         // No Timeout 
         set_time_limit(0);
-      
+
         // create socket
         $socket = socket_create(AF_INET, SOCK_STREAM, 0) or die("Could not create socket\n");
 
@@ -24,7 +25,7 @@ class GPSSocketController extends Controller
 
         // send string to server
         socket_write($socket, $message, strlen($message)) or die("Could not send data to server\n");
-        
+
         // get server response
         // $result = socket_read($socket, 1024) or die("Could not read server response\n");
 
@@ -33,3 +34,5 @@ class GPSSocketController extends Controller
         socket_close($socket);
     }
 }
+
+
