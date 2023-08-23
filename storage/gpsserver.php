@@ -1,7 +1,7 @@
 <?php
 
-$host = "127.0.0.1";    // server IP
-$port = 6373;           // server Port
+$host = "20.198.221.181";    // server IP
+$port = 2199;           // server Port
 
 echo "Server Running!\n\n";
 
