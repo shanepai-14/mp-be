@@ -35,9 +35,9 @@ while ($isAlive) {
     }
 
     // Project Path of the Management API
-    $path = '/Users/LOG1C/Documents/LOG1C Files/System Development/Project Files/REACT Project/Athena/w-locate GPS BE/management-api';	
+    $path = '/var/www/html/management-portal-backend';
    
-    exec('cd /management-api && php artisan command:receivegps ' .$input);
+    exec('cd ' .$path. ' && php artisan command:receivegps ' .$input);
 }
 
 
