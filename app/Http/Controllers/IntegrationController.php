@@ -26,7 +26,7 @@ class IntegrationController extends Controller
         // Check Storage/App if IntegrationToken already exist
         if (Storage::disk('local')->exists('IntegrationToken.txt')) {
             $verification = $this->verifyToken();
-            // echo 'verifying token';
+           
             if ($verification)
             { 
                 if($this->checkDevice()) {
@@ -67,14 +67,14 @@ class IntegrationController extends Controller
             else {
                 $newLogin = $this->login();
                 if($newLogin)
-                    return $this->checkToken();
+                    return $this->uploading();
             }
         } 
         
         else {
             $newLogin = $this->login();
             if($newLogin)
-                return $this->checkToken();
+                return $this->uploading();
         }
     }
 
