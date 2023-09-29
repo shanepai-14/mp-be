@@ -22,4 +22,14 @@ class ApiResponse
             'message' => $message,
         ], $errorCode);
     }
+
+    public function ArrayResponse($message, $success, $failed): JsonResponse
+    {
+        return new JsonResponse([
+            'status' => true,
+            'message' => $message,
+            'success' => $success,
+            'failed' => $failed
+        ], 200);
+    }
 }
