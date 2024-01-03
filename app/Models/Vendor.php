@@ -24,7 +24,7 @@ class Vendor extends Model
     /**
      * @OA\Property(
      *     format="int64",
-     *     title="ID",
+     *     description="ID",
      * )
      *
      * @var integer
@@ -33,7 +33,7 @@ class Vendor extends Model
 
     /**
      * @OA\Property(
-     *     title="Vendor Name",
+     *     description="Vendor Name",
      * )
      *
      * @var string
@@ -42,7 +42,7 @@ class Vendor extends Model
 
     /**
      * @OA\Property(
-     *     title="Vendor Address",
+     *     description="Vendor Address",
      * )
      *
      * @var string
@@ -51,7 +51,7 @@ class Vendor extends Model
 
     /**
      * @OA\Property(
-     *     title="Vendor Contact no.",
+     *     description="Vendor Contact no.",
      * )
      *
      * @var string
@@ -61,7 +61,7 @@ class Vendor extends Model
     /**
      * @OA\Property(
      *     format="email",
-     *     title="Vendor Email",
+     *     description="Vendor Email",
      * )
      *
      * @var string
@@ -70,7 +70,7 @@ class Vendor extends Model
 
     /**
      * @OA\Property(
-     *     title="Vendor Contact no.",
+     *     description="Vendor Contact no.",
      * )
      *
      * @var string
@@ -79,7 +79,7 @@ class Vendor extends Model
 
     /**
      * @OA\Property(
-     *     title="Vendor Key",
+     *     description="Vendor Key",
      * )
      *
      * @var string
