@@ -13,6 +13,8 @@ use Jenssegers\Mongodb\Eloquent\SoftDeletes;
  * @OA\Schema(
  *     title="Position",
  *     description="Position",
+ *     required={"CompanyKey", "Timestamp", "GPS", "Ignition", "Latitude", "Longitude", "Altitude", "Speed",
+ *              "Course", "Satellite_Count", "ADC1", "ADC2", "Mileage", "Device_ID"}
  * )
  */
 class Gps extends Model
@@ -24,11 +26,13 @@ class Gps extends Model
 
     /**
      * @OA\Property(
+     *     property="CompanyKey",
      *     format="string",
-     *     title="Vendor Key",
+     *     description="Vendor Key"
      * )
      *
      * @var string
+     * 
      */
     private $CompanyKey;
 
@@ -36,7 +40,7 @@ class Gps extends Model
      * @OA\Property(
      *     format="datetime",
      *     type="string",
-     *     title="TimeStamp",
+     *     description="TimeStamp in UTC FORMAT",
      * )
      *
      * @var \DateTime
@@ -46,7 +50,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="GPS Status",
+     *     description="GPS Status",
      * )
      *
      * @var integer
@@ -56,7 +60,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Ignition Status",
+     *     description="Ignition Status",
      * )
      *
      * @var integer
@@ -66,7 +70,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="Latitude",
+     *     description="Latitude",
      * )
      *
      * @var float
@@ -76,7 +80,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="Longitude",
+     *     description="Longitude",
      * )
      *
      * @var float
@@ -86,7 +90,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="Altitude",
+     *     description="Altitude",
      * )
      *
      * @var float
@@ -96,7 +100,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Speed",
+     *     description="Speed",
      * )
      *
      * @var integer
@@ -106,7 +110,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Course",
+     *     description="Course",
      * )
      *
      * @var integer
@@ -116,7 +120,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Satellite_Count",
+     *     description="Satellite_Count",
      * )
      *
      * @var integer
@@ -126,7 +130,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="ADC1",
+     *     description="ADC1",
      * )
      *
      * @var float
@@ -136,7 +140,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="ADC2",
+     *     description="ADC2",
      * )
      *
      * @var float
@@ -146,7 +150,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Mileage",
+     *     description="Mileage",
      * )
      *
      * @var integer
@@ -156,7 +160,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Drum_Status",
+     *     description="Drum_Status (Optional)",
      * )
      *
      * @var integer
@@ -166,7 +170,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="RPM",
+     *     description="RPM (Optional)",
      * )
      *
      * @var integer
@@ -176,7 +180,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="string",
-     *     title="Device_ID",
+     *     description="Device_ID",
      * )
      *
      * @var string

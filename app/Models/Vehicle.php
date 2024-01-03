@@ -25,7 +25,7 @@ class Vehicle extends Model
     /**
      * @OA\Property(
      *     format="int64",
-     *     title="ID",
+     *     description="ID",
      * )
      *
      * @var integer
@@ -34,7 +34,7 @@ class Vehicle extends Model
 
     /**
      * @OA\Property(
-     *     title="Driver Name",
+     *     description="Driver Name",
      * )
      *
      * @var string
@@ -43,7 +43,7 @@ class Vehicle extends Model
 
     /**
      * @OA\Property(
-     *     title="Vehicle Status Id",
+     *     description="Vehicle Status Id",
      * )
      *
      * @var string
@@ -52,7 +52,7 @@ class Vehicle extends Model
 
     /**
      * @OA\Property(
-     *     title="Device Id/Plate No.",
+     *     description="Device Id/Plate No.",
      * )
      *
      * @var string
@@ -61,7 +61,7 @@ class Vehicle extends Model
 
     /**
      * @OA\Property(
-     *     title="Vendor Id",
+     *     description="Vendor Id",
      * )
      *
      * @var string
@@ -70,7 +70,7 @@ class Vehicle extends Model
 
     /**
      * @OA\Property(
-     *     title="Mileage",
+     *     description="Mileage",
      * )
      *
      * @var string
