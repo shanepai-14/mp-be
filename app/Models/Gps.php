@@ -28,7 +28,7 @@ class Gps extends Model
      * @OA\Property(
      *     property="CompanyKey",
      *     format="string",
-     *     description="Vendor Key"
+     *     description="Vendor Key or Company Key"
      * )
      *
      * @var string
@@ -50,7 +50,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="GPS Status",
+     *     description="1 - GPS tracker is online, 0 - GPS tracker is offline",
      * )
      *
      * @var integer
@@ -60,7 +60,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Ignition Status",
+     *     description="1 - ON, 0 - OFF",
      * )
      *
      * @var integer
@@ -70,7 +70,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="Latitude",
+     *     description="Range: -90.0° to 90.0°, Decimal degree: up to 6th decimal point",
      * )
      *
      * @var float
@@ -80,7 +80,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="Longitude",
+     *     description="Range: -180.0° to 180.0°, Decimal degree: up to 6th decimal point",
      * )
      *
      * @var float
@@ -90,7 +90,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="Altitude",
+     *     description="Integer in meter",
      * )
      *
      * @var float
@@ -100,7 +100,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Speed",
+     *     description="Integer in km/h. Range 0 to 999",
      * )
      *
      * @var integer
@@ -110,7 +110,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Course",
+     *     description="Integer in degree. Range 0 to 359",
      * )
      *
      * @var integer
@@ -120,7 +120,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Satellite_Count",
+     *     description="Number of satellites",
      * )
      *
      * @var integer
@@ -130,7 +130,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="ADC1",
+     *     description="Device battery",
      * )
      *
      * @var float
@@ -140,7 +140,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="ADC2",
+     *     description="Car battery",
      * )
      *
      * @var float
@@ -150,7 +150,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Mileage",
+     *     description="Device mileage in KM",
      * )
      *
      * @var integer
@@ -160,7 +160,8 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Drum_Status (Optional)",
+     *     description="1 - Unloading, 0 - Mixing",
+     *     nullable=true
      * )
      *
      * @var integer
@@ -170,7 +171,8 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="RPM (Optional)",
+     *     description="Mixer drum RPM counter",
+     *     nullable=true
      * )
      *
      * @var integer
@@ -180,7 +182,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="string",
-     *     description="Device_ID",
+     *     description="IMEI number or unique ID assigned",
      * )
      *
      * @var string
