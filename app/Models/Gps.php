@@ -14,7 +14,7 @@ use Jenssegers\Mongodb\Eloquent\SoftDeletes;
  *     title="Position",
  *     description="Position",
  *     required={"CompanyKey", "Timestamp", "GPS", "Ignition", "Latitude", "Longitude", "Altitude", "Speed",
- *              "Course", "Satellite_Count", "ADC1", "ADC2", "Mileage", "Device_ID"}
+ *              "Course", "Satellite_Count", "ADC1", "ADC2", "Mileage", "Vehicle_ID"}
  * )
  */
 class Gps extends Model
@@ -130,7 +130,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="Device battery",
+     *     description="Device battery in volts. Minimum value: 0",
      * )
      *
      * @var float
@@ -140,7 +140,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="Car battery",
+     *     description="Vehicle battery in volts. Minimum value: 0",
      * )
      *
      * @var float
@@ -182,12 +182,12 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="string",
-     *     description="IMEI number or unique ID assigned",
+     *     description="Unique identifier for the tracker device, e.g. vehicle plate",
      * )
      *
      * @var string
      */
-    private $Device_ID;
+    private $Vehicle_ID;
 
     protected $fillable = [
         'Vendor_Key',
@@ -205,12 +205,12 @@ class Gps extends Model
         'Mileage',
         'Drum_Status',  // nullable
         'RPM',          // nullable
-        'Device_ID',     // Vehicle Plate Number
+        'Vehicle_ID',     // Vehicle Plate Number
         'Position'
     ];
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class, 'Device_ID', 'device_id_plate_no');
+        return $this->belongsTo(Vehicle::class, 'Vehicle_ID', 'device_id_plate_no');
     }
 }

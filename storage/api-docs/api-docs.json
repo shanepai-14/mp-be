@@ -11,55 +11,11 @@
     },
     "servers": [
         {
-            "url": "https://managementportalapi.chooseathena.com/api",
+            "url": "http://localhost:8000/api",
             "description": "Management Portal API Server"
         }
     ],
     "paths": {
-        "/position": {
-            "post": {
-                "tags": [
-                    "Position"
-                ],
-                "summary": "Send GPS Position",
-                "operationId": "SendGPS",
-                "requestBody": {
-                    "description": "GPS Position Information",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/Gps"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "successful operation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/User"
-                                }
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Unrecognized vehicle already exist!"
-                    },
-                    "404": {
-                        "description": "Company key/Vendor key does not exist!"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    }
-                }
-            }
-        },
         "/check-server": {
             "post": {
                 "tags": [
@@ -1013,84 +969,102 @@
             "Gps": {
                 "title": "Position",
                 "description": "Position",
+                "required": [
+                    "CompanyKey",
+                    "Timestamp",
+                    "GPS",
+                    "Ignition",
+                    "Latitude",
+                    "Longitude",
+                    "Altitude",
+                    "Speed",
+                    "Course",
+                    "Satellite_Count",
+                    "ADC1",
+                    "ADC2",
+                    "Mileage",
+                    "Vehicle_ID"
+                ],
                 "properties": {
                     "CompanyKey": {
-                        "title": "Vendor Key",
+                        "description": "Vendor Key or Company Key",
                         "type": "string",
                         "format": "string"
                     },
                     "Timestamp": {
-                        "title": "TimeStamp",
+                        "description": "TimeStamp in UTC FORMAT",
                         "type": "string",
                         "format": "datetime"
                     },
                     "GPS": {
-                        "title": "GPS Status",
+                        "description": "1 - GPS tracker is online, 0 - GPS tracker is offline",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Ignition": {
-                        "title": "Ignition Status",
+                        "description": "1 - ON, 0 - OFF",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Latitude": {
-                        "title": "Latitude",
+                        "description": "Range: -90.0° to 90.0°, Decimal degree: up to 6th decimal point",
                         "type": "number",
                         "format": "float"
                     },
                     "Longitude": {
-                        "title": "Longitude",
+                        "description": "Range: -180.0° to 180.0°, Decimal degree: up to 6th decimal point",
                         "type": "number",
                         "format": "float"
                     },
                     "Altitude": {
-                        "title": "Altitude",
+                        "description": "Integer in meter",
                         "type": "number",
                         "format": "float"
                     },
                     "Speed": {
-                        "title": "Speed",
+                        "description": "Integer in km/h. Range 0 to 999",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Course": {
-                        "title": "Course",
+                        "description": "Integer in degree. Range 0 to 359",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Satellite_Count": {
-                        "title": "Satellite_Count",
+                        "description": "Number of satellites",
                         "type": "integer",
                         "format": "int32"
                     },
                     "ADC1": {
-                        "title": "ADC1",
+                        "description": "Device battery in volts. Minimum value: 0",
                         "type": "number",
                         "format": "float"
                     },
                     "ADC2": {
-                        "title": "ADC2",
+                        "description": "Vehicle battery in volts. Minimum value: 0",
                         "type": "number",
                         "format": "float"
                     },
                     "Mileage": {
-                        "title": "Mileage",
+                        "description": "Device mileage in KM",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Drum_Status": {
-                        "title": "Drum_Status",
+                        "description": "1 - Unloading, 0 - Mixing",
                         "type": "integer",
-                        "format": "int32"
+                        "format": "int32",
+                        "nullable": true
                     },
                     "RPM": {
-                        "title": "RPM",
+                        "description": "Mixer drum RPM counter",
                         "type": "integer",
-                        "format": "int32"
+                        "format": "int32",
+                        "nullable": true
                     },
-                    "Device_ID": {
-                        "title": "Device_ID",
+                    "Vehicle_ID": {
+                        "description": "Unique identifier for the tracker device, e.g. vehicle plate",
                         "type": "string",
                         "format": "string"
                     }
@@ -1100,39 +1074,46 @@
             "User": {
                 "title": "User",
                 "description": "User",
+                "required": [
+                    "username_email",
+                    "password",
+                    "full_name",
+                    "vendor_id",
+                    "user_role"
+                ],
                 "properties": {
                     "id": {
-                        "title": "ID",
+                        "description": "ID",
                         "type": "integer",
                         "format": "int64"
                     },
                     "username_email": {
-                        "title": "Email",
+                        "description": "Email",
                         "type": "string",
                         "format": "email"
                     },
                     "password": {
-                        "title": "Password",
+                        "description": "Password",
                         "type": "string",
                         "format": "int64",
                         "maximum": 255
                     },
                     "full_name": {
-                        "title": "Full name",
+                        "description": "Full name",
                         "type": "string"
                     },
                     "vendor_id": {
-                        "title": "Vendor ID",
+                        "description": "Vendor ID",
                         "type": "integer",
                         "format": "int64"
                     },
                     "contact_no": {
-                        "title": "Phone",
+                        "description": "Phone",
                         "type": "string",
                         "format": "msisdn"
                     },
                     "user_role": {
-                        "title": "User Role ID",
+                        "description": "User Role ID",
                         "type": "integer",
                         "format": "int64"
                     }
@@ -1144,28 +1125,28 @@
                 "description": "Vehicle",
                 "properties": {
                     "id": {
-                        "title": "ID",
+                        "description": "ID",
                         "type": "integer",
                         "format": "int64"
                     },
                     "driver_name": {
-                        "title": "Driver Name",
+                        "description": "Driver Name",
                         "type": "string"
                     },
                     "vehicle_status": {
-                        "title": "Vehicle Status Id",
+                        "description": "Vehicle Status Id",
                         "type": "string"
                     },
                     "device_id_plate_no": {
-                        "title": "Device Id/Plate No.",
+                        "description": "Device Id/Plate No.",
                         "type": "string"
                     },
                     "vendor_id": {
-                        "title": "Vendor Id",
+                        "description": "Vendor Id",
                         "type": "string"
                     },
                     "mileage": {
-                        "title": "Mileage",
+                        "description": "Mileage",
                         "type": "string"
                     }
                 },
@@ -1176,33 +1157,33 @@
                 "description": "Vendor",
                 "properties": {
                     "id": {
-                        "title": "ID",
+                        "description": "ID",
                         "type": "integer",
                         "format": "int64"
                     },
                     "vendor_name": {
-                        "title": "Vendor Name",
+                        "description": "Vendor Name",
                         "type": "string"
                     },
                     "vendor_address": {
-                        "title": "Vendor Address",
+                        "description": "Vendor Address",
                         "type": "string"
                     },
                     "vendor_contact_no": {
-                        "title": "Vendor Contact no.",
+                        "description": "Vendor Contact no.",
                         "type": "string"
                     },
                     "vendor_email": {
-                        "title": "Vendor Email",
+                        "description": "Vendor Email",
                         "type": "string",
                         "format": "email"
                     },
                     "vendor_code": {
-                        "title": "Vendor Contact no.",
+                        "description": "Vendor Contact no.",
                         "type": "string"
                     },
                     "vendor_key": {
-                        "title": "Vendor Key",
+                        "description": "Vendor Key",
                         "type": "string"
                     }
                 },
