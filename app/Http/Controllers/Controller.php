@@ -19,7 +19,6 @@ use Illuminate\Routing\Controller as BaseController;
      *
      * @OA\Server(
      *      url=L5_SWAGGER_CONST_HOST,
-     *      description="Management Portal API Server"
      * )
      * 
      * @OA\SecurityScheme(
