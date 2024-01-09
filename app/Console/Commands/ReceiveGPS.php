@@ -58,7 +58,7 @@ class ReceiveGPS extends Command
         $gpsData['Mileage'] = $arrRawData[12];
         $gpsData['Drum_Status'] = $arrRawData[13];
         $gpsData['RPM'] = $arrRawData[14];
-        $gpsData['Device_ID'] = $arrRawData[15];
+        $gpsData['Vehicle_ID'] = $arrRawData[15];
         
         // $sendData = new GpsController();
         // $sendData->sendGPS($gpsData);
@@ -69,13 +69,13 @@ class ReceiveGPS extends Command
         $vendor_id = Vendor::where('vendor_key', $data['CompanyKey'])->value('id');
 
         if ($vendor_id) {
-            $isExist = Vehicle::where('device_id_plate_no', $data['Device_ID'])->get();
+            $isExist = Vehicle::where('device_id_plate_no', $data['Vehicle_ID'])->get();
 
             // If vehicle does not exist create vehicle with status unregistered and ignore gps data
             if ($isExist->value('id') == null) {
                 $newVehicle = Vehicle::create([
                     'vehicle_status' => 3,
-                    'device_id_plate_no' => $data['Device_ID'],
+                    'device_id_plate_no' => $data['Vehicle_ID'],
                     'vendor_id' => $vendor_id,
                     'mileage' => $data['Mileage']
                 ]);
@@ -110,7 +110,7 @@ class ReceiveGPS extends Command
                     'Drum_Status' => $data['Drum_Status'],                             // Always ZERO  as of now
                     'Mileage' => $data['Mileage'],
                     'RPM' => $data['RPM'],
-                    'Device_ID' => $data['Device_ID'],
+                    'Vehicle_ID' => $data['Vehicle_ID'],
                     'Position' => $transformedData
                 ]);
               
@@ -136,7 +136,7 @@ class ReceiveGPS extends Command
     private function dataTransformation($data)
     {
         $gpsData = '$';
-        $pattern = ['Timestamp', 'GPS', 'Latitude', 'Longitude', 'Altitude', 'Speed', 'Course', 'Satellite_Count', 'ADC1', 'ADC2', 'IO', 'Mileage', 'RPM', 'Device_ID'];
+        $pattern = ['Timestamp', 'GPS', 'Latitude', 'Longitude', 'Altitude', 'Speed', 'Course', 'Satellite_Count', 'ADC1', 'ADC2', 'IO', 'Mileage', 'RPM', 'Vehicle_ID'];
 
         foreach ($pattern as $patternVal) {
             switch ($patternVal) {
