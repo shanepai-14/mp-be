@@ -86,13 +86,34 @@ class Vendor extends Model
      */
     private $vendor_key;
 
+    
+    /**
+     * @OA\Property(
+     *     description="IP address for WL WebSocket",
+     * )
+     *
+     * @var string
+     */
+    private $wl_ip;
+
+    /**
+     * @OA\Property(
+     *     description="Port for WL WebSocket",
+     * )
+     *
+     * @var integer
+     */
+    private $wl_port;
+
     protected $fillable = [
         'vendor_name',
         'vendor_address',
         'vendor_contact_no',
         'vendor_email',
         'vendor_code',
-        'vendor_key'
+        'vendor_key',
+        'wl_ip',
+        'wl_port'
     ];
 
     protected $hidden = [

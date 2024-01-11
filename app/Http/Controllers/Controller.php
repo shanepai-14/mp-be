@@ -9,8 +9,8 @@ use Illuminate\Routing\Controller as BaseController;
 /**
      * @OA\Info(
      *      version="1.0.0",
-     *      title="Management Portal API",
-     *      description="Available API for Management Portal",
+     *      title="GPSLink Gateway",
+     *      description="Available API for GPSLink Gateway",
      *      @OA\License(
      *          name="Apache 2.0",
      *          url="http://www.apache.org/licenses/LICENSE-2.0.html"

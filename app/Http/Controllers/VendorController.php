@@ -44,8 +44,17 @@ class VendorController extends Controller
      *                     property="vendor_email",
      *                     type="string"
      *                 ),
+     *                 @OA\Property(
+     *                     property="wl_ip",
+     *                     type="string"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="wl_port",
+     *                     type="integer"
+     *                 ),
      *                 example={"vendor_name": "Vendor", "vendor_address": "Singapore", 
-     *                          "vendor_contact_no": "+123123", "vendor_code": "VE", "vendor_email": "vendor@sample.com"}
+     *                          "vendor_contact_no": "+123123", "vendor_code": "VE", "vendor_email": "vendor@sample.com",
+     *                          "wl_ip": "111.111.111.111", "wl_port": 1111}
      *             )
      *         )
      *     ),
@@ -88,7 +97,9 @@ class VendorController extends Controller
                 'vendor_contact_no' => $request->vendor_contact_no,
                 'vendor_code' => $request->vendor_code,
                 'vendor_email' => $request->vendor_email,
-                'vendor_key' => Str::uuid()->toString()
+                'vendor_key' => Str::uuid()->toString(),
+                'wl_ip' => $request->wl_ip,
+                'wl_port' => $request->wl_port
             ]);
 
             if ($newVendor) {

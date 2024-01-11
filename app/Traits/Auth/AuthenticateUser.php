@@ -16,7 +16,7 @@ trait AuthenticateUser
     /**
      * @OA\Post(
      *     path="/login",
-     *     tags={"User"},
+     *     tags={"Auth"},
      *     summary="Logs user into system",
      *     operationId="loginUser",
      *     @OA\RequestBody(
