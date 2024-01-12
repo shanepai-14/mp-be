@@ -23,6 +23,7 @@ use App\Http\Response\ApiResponse;
 // });
 
 Route::post('/login', [UserController::class, 'login'])->name('login');
+Route::post('/logout', [UserController::class, 'logout']);
 Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
 
@@ -35,7 +36,6 @@ Route::group([
     Route::get('/userById/{id}', [UserController::class, 'userById']);
     Route::put('/update/{id}', [UserController::class, 'update']);
     Route::put('/updatePassword/{id}', [UserController::class, 'updatePassword']);
-    Route::post('/logout', [UserController::class, 'logout']);
 });
 
 Route::group([

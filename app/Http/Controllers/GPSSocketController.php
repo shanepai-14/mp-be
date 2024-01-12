@@ -8,12 +8,12 @@ use PhpOffice\PhpSpreadsheet\Calculation\TextData\Replace;
 class GPSSocketController extends Controller
 {
     // Submit formatted GPS data to WL server via TCP/IP
-    public function submitFormattedGPS($gpsData)
+    public function submitFormattedGPS($gpsData, $wl_ip, $wl_port)
     {
-        $host = "20.195.56.146";
-        $port = 2199;
+        $host = $wl_ip ? $wl_ip : "20.195.56.146";
+        $port = $wl_port ? $wl_port : 2199;
         $message = $gpsData . "\r";
-        
+      
         // No Timeout 
         set_time_limit(0);
 

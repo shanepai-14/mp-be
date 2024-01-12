@@ -279,8 +279,8 @@ class UserController extends Controller
 
     /**
      * @OA\Post(
-     *     tags={"User"},
-     *     path="/user/logout",
+     *     tags={"Auth"},
+     *     path="/logout",
      *     summary="Logs out current logged in user session",
      *     description="Logs out current logged in user session",
      *     operationId="logoutUser",
