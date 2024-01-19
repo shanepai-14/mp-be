@@ -26,11 +26,15 @@ Route::post('/login', [UserController::class, 'login'])->name('login');
 Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
 
+//Vendor
+Route::post('vendor/create', [VendorController::class, 'create']);
+//User
+Route::post('user/register', [UserController::class, 'register']);
+
 Route::group([
     'middleware' => 'auth:api',
     'prefix' => 'user'
 ], function(){
-    Route::post('/register', [UserController::class, 'register']);
     Route::post('/list', [UserController::class, 'list']);
     Route::get('/userById/{id}', [UserController::class, 'userById']);
     Route::put('/update/{id}', [UserController::class, 'update']);
@@ -42,7 +46,6 @@ Route::group([
     'middleware' => 'auth:api',
     'prefix' => 'vendor'
 ], function(){
-    Route::post('/create', [VendorController::class, 'create']);
     Route::get('/list', [VendorController::class, 'list']);
     Route::get('/vendorById/{id}', [VendorController::class, 'vendorById']);
     Route::put('/update/{id}', [VendorController::class, 'update']);
@@ -56,7 +59,7 @@ Route::group([
     Route::post('/create', [VehicleController::class, 'create']);
     Route::post('/list', [VehicleController::class, 'list']);
     Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
-    Route::get('/export', [VehicleController::class, 'vehicleExport']);
+    Route::post('/export', [VehicleController::class, 'vehicleExport']);
     Route::get('/provisioning/export', [VehicleController::class, 'provisioningExport']);
     Route::get('/unregistered/export', [VehicleController::class, 'unregisteredExport']);
     Route::put('/update/{id}', [VehicleController::class, 'update']);

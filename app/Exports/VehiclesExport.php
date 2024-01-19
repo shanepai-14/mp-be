@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\Vehicle;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -30,18 +31,19 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
     public function headings(): array
     {
         return [
+            'Vendor',
             'Device ID/Plate No',
             'Driver Name',
             'Mileage',
             'Status',
-            'Status Update On',
+            'Status Updated On',
         ];
     }
 
     public function columnFormats(): array
     {
         return [
-            'E' => 'yyyy-MMM-dd HH:mm'
+            'F' => 'yyyy-MMM-dd HH:mm'
         ];
     }
 
@@ -68,11 +70,12 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
     public function map($vehicle): array
     {
         return [
+            $vehicle->vendor->vendor_name,
             $vehicle->device_id_plate_no,
             $vehicle->driver_name,
             $vehicle->mileage,
             $this->_getVehicleStatusTxt($vehicle->vehicle_status),
-            $vehicle->updated_by ? Date::dateTimeToExcel($vehicle->updated_at) : null,
+            Date::dateTimeToExcel($vehicle->updated_at),
         ];
     }
 
