@@ -125,7 +125,7 @@ trait Register
                     'vendor_id' => $request->vendor_id,
                     'contact_no' => $request->contact_no,
                     'user_role' => $request->user_role,
-                    'first_login' => $request->first_login ?? false
+                    'first_login' => $request->first_login ?? true
                 ]);
 
                 if ($user) {
