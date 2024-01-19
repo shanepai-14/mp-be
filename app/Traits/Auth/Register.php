@@ -56,13 +56,13 @@ trait Register
      *                     property="user_role",
      *                     type="integer"
      *                 ),
-     *                 example={"username_email": "wloc@example.com", "password": "Example123", 
-     *                          "full_name": "Sample User", "vendor_id": "0", 
+     *                 example={"username_email": "wloc@example.com", "password": "Example123",
+     *                          "full_name": "Sample User", "vendor_id": "0",
      *                          "contact_no": "+123", "user_role": "0"}
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
      *         description="OK",
@@ -125,6 +125,7 @@ trait Register
                     'vendor_id' => $request->vendor_id,
                     'contact_no' => $request->contact_no,
                     'user_role' => $request->user_role,
+                    'first_login' => $request->first_login ?? true
                 ]);
 
                 if ($user) {

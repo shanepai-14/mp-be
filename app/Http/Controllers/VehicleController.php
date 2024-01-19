@@ -46,12 +46,12 @@ class VehicleController extends Controller
      *                     property="mileage",
      *                     type="integer"
      *                 ),
-     *                 example={"vehicle_status": 2, "device_id_plate_no": "ATH0001", 
+     *                 example={"vehicle_status": 2, "device_id_plate_no": "ATH0001",
      *                          "vendor_id": 1, "mileage": "1234"}
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
      *         description="Vehicle is successfully registered",
@@ -365,7 +365,7 @@ class VehicleController extends Controller
         $response = new ApiResponse();
         $datas = $request->collect();
         $failed = array();
-        
+
         foreach ($datas as $updateData) {
             $exist = Vehicle::find($updateData['id']);
 
@@ -441,8 +441,8 @@ class VehicleController extends Controller
 
     public function vehicleExport(Request $request)
     {
-        $vendor_id = $request->query('vendor_id');
-        $vehicle_status = $request->query('vehicle_status');
+        $vendor_id = $request->vendor_id;
+        $vehicle_status = $request->vehicle_status;
         return (new VehiclesExport($vendor_id, $vehicle_status))->download('vehicles.xlsx');
     }
 
