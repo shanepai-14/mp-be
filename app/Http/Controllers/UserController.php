@@ -27,16 +27,16 @@ class UserController extends Controller
      *     operationId="UserList",
      *     security={{"bearerAuth": {}}},
      * @OA\RequestBody(
-     *         description="Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
+     *         description="Transporter Id - NOTE: If transporter_id object is omitted then all users will be return.",
      *         required=false,
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
      *                 @OA\Property(
-     *                     property="vendor_id",
+     *                     property="transporter_id",
      *                     type="integer"
      *                 ),
-     *                 example={"vendor_id": 0}
+     *                 example={"transporter_id": 0}
      *             )
      *         )
      *     ),
@@ -56,10 +56,10 @@ class UserController extends Controller
      */
     public function list(Request $request)
     {
-        if ($request->vendor_id)
-            return User::with(['vendor'])->where('vendor_id', $request->vendor_id)->get();
+        if ($request->transporter_id)
+            return User::with(['transporter'])->where('transporter_id', $request->transporter_id)->get();
 
-        return User::with(['vendor'])->get();
+        return User::with(['transporter'])->get();
     }
 
     /**
@@ -94,7 +94,7 @@ class UserController extends Controller
      */
     public function userById($id)
     {
-        $user = User::with(['vendor'])->find($id);
+        $user = User::with(['transporter'])->find($id);
 
         if ($user) return $user;
 
@@ -138,7 +138,7 @@ class UserController extends Controller
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="vendor_id",
+     *                     property="transporter_id",
      *                     type="integer"
      *                 ),
      *                  @OA\Property(

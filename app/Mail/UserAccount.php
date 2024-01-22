@@ -27,7 +27,7 @@ class UserAccount extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('mjorocio14@gmail.com', 'WLocate Management'),
+            from: new Address('wlocate.mgt@gmail.com', 'WLocate Management'),
             subject: 'User Account',
         );
     }
@@ -37,8 +37,6 @@ class UserAccount extends Mailable
      */
     public function content(): Content
     {
-        echo $this->generatedPwd;
-
         return new Content(
             view: 'UserAccount'
         );

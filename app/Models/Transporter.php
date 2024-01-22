@@ -4,20 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Class Vendor.
+ * Class Transporter.
  *
  * @OA\Schema(
- *     title="Vendor",
- *     description="Vendor",
+ *     title="Transporter",
+ *     description="Transporter",
  * )
  */
-class Vendor extends Model
+class Transporter extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -33,87 +31,66 @@ class Vendor extends Model
 
     /**
      * @OA\Property(
-     *     description="Vendor Name",
+     *     description="Transporter Name",
      * )
      *
      * @var string
      */
-    private $vendor_name;
+    private $transporter_name;
 
     /**
      * @OA\Property(
-     *     description="Vendor Address",
+     *     description="Transporter Address",
      * )
      *
      * @var string
      */
-    private $vendor_address;
+    private $transporter_address;
 
     /**
      * @OA\Property(
-     *     description="Vendor Contact no.",
+     *     description="Transporter Contact no.",
      * )
      *
      * @var string
      */
-    private $vendor_contact_no;
+    private $transporter_contact_no;
 
     /**
      * @OA\Property(
      *     format="email",
-     *     description="Vendor Email",
+     *     description="Transporter Email",
      * )
      *
      * @var string
      */
-    private $vendor_email;
+    private $transporter_email;
 
     /**
      * @OA\Property(
-     *     description="Vendor Contact no.",
+     *     description="Transporter code",
      * )
      *
      * @var string
      */
-    private $vendor_code;
+    private $transporter_code;
 
     /**
      * @OA\Property(
-     *     description="Vendor Key",
+     *     description="Transporter Key",
      * )
      *
      * @var string
      */
-    private $vendor_key;
-
-    
-    /**
-     * @OA\Property(
-     *     description="IP address for WL WebSocket",
-     * )
-     *
-     * @var string
-     */
-    private $wl_ip;
-
-    /**
-     * @OA\Property(
-     *     description="Port for WL WebSocket",
-     * )
-     *
-     * @var integer
-     */
-    private $wl_port;
+    private $transporter_key;
 
     protected $fillable = [
-        'vendor_name',
-        'vendor_address',
-        'vendor_contact_no',
-        'vendor_email',
-        'vendor_code',
-        'vendor_key',
-        'wl_ip',
-        'wl_port'
+        'transporter_name',
+        'transporter_address',
+        'transporter_contact_no',
+        'transporter_email',
+        'transporter_code',
+        'transporter_key'
     ];
 
     protected $hidden = [
@@ -130,5 +107,10 @@ class Vendor extends Model
     public function vehicle(): HasMany
     {
         return $this->hasMany(Vehicle::class);
+    }
+
+    public function customer(): HasMany
+    {
+        return $this->hasMany(Customer::class);
     }
 }

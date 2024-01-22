@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Http\Controllers\GPSSocketController;
 use App\Models\Gps;
 use App\Models\Vehicle;
-use App\Models\Vendor;
+use App\Models\Transporter;
 use Illuminate\Console\Command;
 
 class ReceiveGPS extends Command
@@ -22,7 +22,7 @@ class ReceiveGPS extends Command
      *
      * @var string
      */
-    protected $description = 'Receive GPS raw data from vendor devices';
+    protected $description = 'Receive GPS raw data from transporter devices';
 
     /**
      * Execute the console command.
@@ -66,9 +66,10 @@ class ReceiveGPS extends Command
     }
 
     private function sendGPS($data) {
-        $vendor_id = Vendor::where('vendor_key', $data['CompanyKey'])->value('id');
+        // $transporter_id = Vendor::where('transporter_key', $data['CompanyKey'])->value('id');
+        $transporter = Transporter::where('vendor_key', $data['CompanyKey']);
 
-        if ($vendor_id) {
+        if ($transporter->value('id')) {
             $isExist = Vehicle::where('device_id_plate_no', $data['Vehicle_ID'])->get();
 
             // If vehicle does not exist create vehicle with status unregistered and ignore gps data
@@ -76,7 +77,7 @@ class ReceiveGPS extends Command
                 $newVehicle = Vehicle::create([
                     'vehicle_status' => 3,
                     'device_id_plate_no' => $data['Vehicle_ID'],
-                    'vendor_id' => $vendor_id,
+                    'transporter_id' => $transporter->value('id'),
                     'mileage' => $data['Mileage']
                 ]);
 
@@ -116,7 +117,7 @@ class ReceiveGPS extends Command
               
                 // Forward transformed GPS data to Wlocate
                 $socketCtrl = new GPSSocketController();
-                $socketCtrl->submitFormattedGPS($transformedData);
+                $socketCtrl->submitFormattedGPS($transformedData, $transporter->value('wl_ip'), $transporter->value('wl_port'));
                 
                 if ($newGps)
                     print_r('Position is successfully saved.');
@@ -130,7 +131,7 @@ class ReceiveGPS extends Command
                 print_r('Unrecognized vehicle already exist!');
         }
 
-        else print_r('Company key/Vendor key does not exist!');
+        else print_r('Company key/Transporter key does not exist!');
     }
 
     private function dataTransformation($data)
@@ -165,7 +166,7 @@ class ReceiveGPS extends Command
         // IN3 - drum direction is always (0)
         // IN2 - always low (0)
         // IN1 - always Low (0)
-        // IN0 - from vendor supplied value
+        // IN0 - from vendor/transporter supplied value
 
         return $ignition == 0 ? 10 : 11;
     }

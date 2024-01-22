@@ -28,7 +28,7 @@ class Gps extends Model
      * @OA\Property(
      *     property="CompanyKey",
      *     format="string",
-     *     description="Vendor Key or Company Key"
+     *     description="Transporter Key or Company Key"
      * )
      *
      * @var string
