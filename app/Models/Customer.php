@@ -132,7 +132,7 @@ class Customer extends Model
 
     public function customerIpPort(): HasMany
     {
-        return $this->hasMany(CustomerIpPort::class);
+        return $this->hasMany(CustomerIpPorts::class);
     }
 
     public function register_by(): BelongsTo

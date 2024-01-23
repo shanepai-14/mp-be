@@ -106,6 +106,6 @@ class CurrentCustomer extends Model
 
     public function ipport(): BelongsTo
     {
-        return $this->belongsTo(CustomerIpPort::class, 'ipport_id', 'id');
+        return $this->belongsTo(CustomerIpPorts::class, 'ipport_id', 'id');
     }
 }

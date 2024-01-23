@@ -15,6 +15,522 @@
         }
     ],
     "paths": {
+        "/customer/create": {
+            "post": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Create customer",
+                "operationId": "CreateCustomer",
+                "requestBody": {
+                    "description": "Customer Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "customer_name": {
+                                        "type": "string"
+                                    },
+                                    "customer_address": {
+                                        "type": "string"
+                                    },
+                                    "customer_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "customer_email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "customer_code": {
+                                        "type": "string"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "customer_name": "Customer1",
+                                    "customer_address": "Singapore",
+                                    "customer_contact_no": "+123123",
+                                    "customer_email": "sample@sample.com",
+                                    "customer_code": "0001",
+                                    "transporter_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Customer is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Customer already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/customerById/{id}": {
+            "get": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get customer by id",
+                "operationId": "GetCustomerById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/list": {
+            "post": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get list of customers",
+                "operationId": "CustomerList",
+                "requestBody": {
+                    "description": "Transporter Id - NOTE: If transporter_id object is omitted then all customers will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "transporter_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "transporter_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/update/{id}": {
+            "put": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Updated Customer",
+                "description": "Update Customer information.",
+                "operationId": "UpdateCustomer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated customer object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_name": {
+                                        "type": "string"
+                                    },
+                                    "customer_address": {
+                                        "type": "string"
+                                    },
+                                    "customer_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "customer_email": {
+                                        "type": "string"
+                                    },
+                                    "customer_code": {
+                                        "type": "string"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "id": 0,
+                                    "customer_name": "Customer1",
+                                    "customer_address": "Singapore",
+                                    "customer_contact_no": "+123123",
+                                    "customer_email": "sample@sample.com",
+                                    "customer_code": "0001",
+                                    "transporter_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Customer is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    },
+                    "409": {
+                        "description": "Customer Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Delete Customer by id",
+                "operationId": "DeleteCustomer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Customer is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/create": {
+            "post": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Create Customer IP and Port",
+                "operationId": "CreateCustomerIpPort",
+                "requestBody": {
+                    "description": "Customer IP and Port Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ip": {
+                                        "type": "string"
+                                    },
+                                    "port": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "customer_id": 1,
+                                    "ip": "123.123.123.123",
+                                    "port": 123
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Customer IP and Port is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerIpPorts"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Customer IP and Port already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/ipPortById/{id}": {
+            "get": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get Customer IP and Port by id",
+                "operationId": "GetCustomerIpPortById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerIpPorts"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer IP and Port not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/list": {
+            "get": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get list of Customer`s IP and Ports",
+                "operationId": "CustomerIpPortList",
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/update/{id}": {
+            "put": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Updated Customer IP and Ports",
+                "description": "Update Customer IP and Port information.",
+                "operationId": "UpdateCustomerIPPORT",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated Customer IP and Port object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ip": {
+                                        "type": "string"
+                                    },
+                                    "port": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "id": 0,
+                                    "customer_id": 1,
+                                    "ip": "123.123.123.123",
+                                    "port": 123
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Customer IP and Port is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Customer IP and Port not found"
+                    },
+                    "409": {
+                        "description": "Customer Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Delete Customer IP and Port by id",
+                "operationId": "DeleteCustomerIpPort",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Customer IP and Port is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerIpPorts"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer IP and Port does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/position": {
             "post": {
                 "tags": [
@@ -1163,7 +1679,7 @@
                 },
                 "type": "object"
             },
-            "CustomerIpPort": {
+            "CustomerIpPorts": {
                 "title": "Customer IPs and Ports",
                 "description": "Customer`s assigned IPs and Ports",
                 "required": [

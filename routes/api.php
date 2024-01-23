@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerIpPortController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VendorController;
@@ -28,11 +30,6 @@ Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:api'
 Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
 Route::post('/transporter/create-with-account', [TransporterController::class, 'publicCreate']);
-
-//Vendor
-Route::post('vendor/create', [VendorController::class, 'create']);
-//User
-Route::post('user/register', [UserController::class, 'register']);
 
 Route::group([
     'middleware' => 'auth:api',
@@ -69,6 +66,25 @@ Route::group([
     Route::put('/massUpdate', [VehicleController::class, 'massUpdate']);
     Route::delete('/delete/{id}', [VehicleController::class, 'delete']);
 });
+
+Route::group([
+    'middleware' => 'auth:api',
+    'prefix' => 'customer'  // Transporter === Vendor
+], function(){
+    Route::post('/create', [CustomerController::class, 'create']);
+    Route::get('/customerById/{id}', [CustomerController::class, 'customerById']);
+    Route::post('/list', [CustomerController::class, 'list']);
+    Route::put('/update/{id}', [CustomerController::class, 'update']);
+    Route::delete('/delete/{id}', [CustomerController::class, 'delete']);
+
+    // For Customer-IP-Port 
+    Route::post('/ip-port/create', [CustomerIpPortController::class, 'create']);
+    Route::get('/ip-port/ipPortById/{id}', [CustomerIpPortController::class, 'ipPortById']);
+    Route::get('/ip-port/list', [CustomerIpPortController::class, 'list']);
+    Route::put('/ip-port/update/{id}', [CustomerIpPortController::class, 'update']);
+    Route::delete('/ip-port/delete/{id}', [CustomerIpPortController::class, 'delete']);
+});
+
 
 //This will catch GET request to /api/register but  PUT,DELETE, OPTIONS etc. fails
 Route::fallback(function () {
