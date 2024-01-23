@@ -43,7 +43,7 @@ class VehicleController extends Controller
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
      *         description="Vehicle is successfully registered",

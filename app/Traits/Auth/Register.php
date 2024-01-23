@@ -59,7 +59,7 @@ trait Register
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
      *         description="OK",
@@ -118,6 +118,7 @@ trait Register
                     'transporter_id' => $request->transporter_id,
                     'contact_no' => $request->contact_no,
                     'user_role' => $request->user_role,
+                    'first_login' => $request->first_login ?? true
                 ]);
 
                 if ($user) {
