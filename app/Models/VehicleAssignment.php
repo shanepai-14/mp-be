@@ -9,12 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Class VehicleAssignment.
+ * Class VehicleAssignments.
  *
  * @OA\Schema(
- *     title="VehicleAssignment",
- *     description="VehicleAssignment",
- *     required={"vehicle_id", "driver", "mileage"}
+ *     title="VehicleAssignments",
+ *     description="VehicleAssignments",
+ *     required={"vehicle_id", "driver_name", "mileage"}
  * )
  */
 class VehicleAssignment extends Model

@@ -99,7 +99,7 @@ class CustomerController extends Controller
             if ($newCustomer) {
                 $newCustomerRec = $this->customerById($newCustomer->id);
 
-                $responseData = ['customer' => $this->hideFields($newCustomerRec)];
+                $responseData = ['customer' => $newCustomerRec];
                 return $response->SuccessResponse('Customer is successfully registered', $responseData);
             }
 
@@ -274,7 +274,15 @@ class CustomerController extends Controller
             $customer = Customer::find($id);
             
             if ($customer) {
-                $customer->update($request->all());
+                $customer->update([
+                    'customer_name' => $request['customer_name'],
+                    'customer_address' => $request['customer_address'],
+                    'customer_contact_no' => $request['customer_contact_no'],
+                    'customer_email' => $request['customer_email'],
+                    'customer_code' => $request['customer_code'],
+                    'transporter_id' => $request['transporter_id'],
+                    'updated_by_user_id' => Auth::user()->id
+                ]);
                 $customerData = $this->customerById($customer->id);
 
                 return $response->SuccessResponse('Customer is successfully updated!', $customerData);

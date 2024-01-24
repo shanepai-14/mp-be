@@ -15,6 +15,261 @@
         }
     ],
     "paths": {
+        "/current/create": {
+            "post": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Create Current Customer Info",
+                "operationId": "CreateCurrentCustomer",
+                "requestBody": {
+                    "description": "Customer Customer Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vehicle_assignment_id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ipport_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vehicle_assignment_id": 1,
+                                    "customer_id": 1,
+                                    "ipport_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Current customer is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentCustomer"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Current customer already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/current/currentCustById/{id}": {
+            "get": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Get current customer by id",
+                "operationId": "GetCurrentCustomerById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentCustomer"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Current Customer not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/current/list": {
+            "post": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Get list of Currents",
+                "operationId": "CurrentList",
+                "requestBody": {
+                    "description": "Customer Id - NOTE: If customer_id object is omitted then all current customers will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "customer_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/current/update/{id}": {
+            "put": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Updated Current",
+                "description": "Update Current information.",
+                "operationId": "UpdateCurrent",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated Current Customer object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_assignment_id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ipport_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "id": 1,
+                                    "vehicle_assignment_id": 1,
+                                    "customer_id": 1,
+                                    "ipport_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Current customer is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Current customer not found"
+                    },
+                    "409": {
+                        "description": "Current customer Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/current/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Delete Current by id",
+                "operationId": "DeleteCurrent",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current customer is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentCustomer"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Current customer does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/customer/create": {
             "post": {
                 "tags": [
@@ -1161,6 +1416,261 @@
                 ]
             }
         },
+        "/assignment/create": {
+            "post": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Create Vehicle Assignment Info",
+                "operationId": "CreateVehicleAssignment",
+                "requestBody": {
+                    "description": "Vehicle Assignment Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vehicle_id": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vehicle_id": 1,
+                                    "driver_name": "Juan Dela Cruz",
+                                    "mileage": 1825
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vehicle assignment is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAssignment"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Vehicle assignment already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/assignmentById/{id}": {
+            "get": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Get vehicle assignment by id",
+                "operationId": "GetVehicleAssignmentById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAssignment"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/list": {
+            "post": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Get list of Assignments",
+                "operationId": "AssignmentList",
+                "requestBody": {
+                    "description": "Vehicle Id - NOTE: If vehicle_id object is omitted then all vehicle assignments will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vehicle_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vehicle_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/update/{id}": {
+            "put": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Updated Assignment",
+                "description": "Update Assignment information.",
+                "operationId": "UpdateAssignment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated Vehicle Assignment object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_id": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "id": 1,
+                                    "vehicle_id": 1,
+                                    "driver_name": "Juan Dela Cruz",
+                                    "mileage": 1825
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle Assignment is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Vehicle Assignment not found"
+                    },
+                    "409": {
+                        "description": "Vehicle Assignment Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Delete Assignment by id",
+                "operationId": "DeleteAssignment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vehicle assignment is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAssignment"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Vehicle assignment does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/vehicle/create": {
             "post": {
                 "tags": [
@@ -1935,11 +2445,11 @@
                 "type": "object"
             },
             "VehicleAssignment": {
-                "title": "VehicleAssignment",
-                "description": "VehicleAssignment",
+                "title": "VehicleAssignments",
+                "description": "VehicleAssignments",
                 "required": [
                     "vehicle_id",
-                    "driver",
+                    "driver_name",
                     "mileage"
                 ],
                 "properties": {
