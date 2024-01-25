@@ -82,7 +82,7 @@ Route::group([
     // For Customer-IP-Port 
     Route::post('/ip-port/create', [CustomerIpPortController::class, 'create']);
     Route::get('/ip-port/ipPortById/{id}', [CustomerIpPortController::class, 'ipPortById']);
-    Route::get('/ip-port/list', [CustomerIpPortController::class, 'list']);
+    Route::post('/ip-port/list', [CustomerIpPortController::class, 'list']);
     Route::put('/ip-port/update/{id}', [CustomerIpPortController::class, 'update']);
     Route::delete('/ip-port/delete/{id}', [CustomerIpPortController::class, 'delete']);
 });

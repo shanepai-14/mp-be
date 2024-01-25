@@ -130,12 +130,26 @@ class CustomerIpPortController extends Controller
     }
 
      /**
-     * @OA\Get(
+     * @OA\Post(
      *     tags={"Customer"},
      *     path="/customer/ip-port/list",
      *     summary="Get list of Customer`s IP and Ports",
      *     operationId="CustomerIpPortList",
      *     security={{"bearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         description="Customer Id - NOTE: If customer_id object is omitted then all customers ip and port will be return.",
+     *         required=false,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 @OA\Property(
+     *                     property="customer_id",
+     *                     type="integer"
+     *                 ),
+     *                 example={"customer_id": 0}
+     *             )
+     *         )
+     *     ),
      * @OA\Response(
      *         response=200,
      *         description="ok"
@@ -150,9 +164,12 @@ class CustomerIpPortController extends Controller
      *      )
      * )
      */
-    public function list()
+    public function list(Request $request)
     {
         $ipPorts = CustomerIpPorts::select();
+
+        if ($request->customer_id)
+            $ipPorts->where('customer_id', $request->customer_id);
 
         $data = $ipPorts->with(['customer'])->get();
         foreach ($data as $rec) {
