@@ -26,28 +26,20 @@ class VehicleController extends Controller
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
-     *                 @OA\Property(
-     *                     property="driver_name",
+     *                  @OA\Property(
+     *                     property="device_id_plate_no",
      *                     type="string"
+     *                 ),
+     *                  @OA\Property(
+     *                     property="transporter_id",
+     *                     type="integer"
      *                 ),
      *                 @OA\Property(
      *                     property="vehicle_status",
      *                     type="integer"
      *                 ),
-     *                 @OA\Property(
-     *                     property="device_id_plate_no",
-     *                     type="string"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="vendor_id",
-     *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="mileage",
-     *                     type="integer"
-     *                 ),
-     *                 example={"vehicle_status": 2, "device_id_plate_no": "ATH0001",
-     *                          "vendor_id": 1, "mileage": "1234"}
+     *                 example={"device_id_plate_no": "ATH0001", 
+     *                          "transporter_id": 1,"vehicle_status": 2 }
      *             )
      *         )
      *     ),
@@ -85,19 +77,19 @@ class VehicleController extends Controller
 
         else {
             $newVehicle = Vehicle::create([
-                'driver_name' => $request->driver_name,
-                'vehicle_status' => $request->vehicle_status,
-                // 'contact_no' => $request->contact_no,
                 'device_id_plate_no' => $request->device_id_plate_no,
-                'vendor_id' => $request->vendor_id,
-                'mileage' => $request->mileage,
+                'transporter_id' => $request->transporter_id,
+                'vehicle_status' => $request->vehicle_status,
                 'register_by_user_id' => Auth::user()->id
+                // 'driver_name' => $request->driver_name,
+                // 'contact_no' => $request->contact_no,
+                // 'mileage' => $request->mileage,
             ]);
 
             if ($newVehicle) {
                 $newVehicleRec = $this->vehicleById($newVehicle->id);
 
-                $responseData = ['vehicle' => $this->hideFields($newVehicleRec)];
+                $responseData = ['vehicle' => $newVehicleRec];
                 return $response->SuccessResponse('Vehicle is successfully registered', $responseData);
             }
 
@@ -119,14 +111,14 @@ class VehicleController extends Controller
      *             mediaType="application/json",
      *             @OA\Schema(
      *                 @OA\Property(
-     *                     property="vendor_id",
+     *                     property="transporter_id",
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
      *                     property="vehicle_status",
      *                     type="integer"
      *                 ),
-     *                 example={"vendor_id": 0, "vehicle_status": 0}
+     *                 example={"transporter_id": 0, "vehicle_status": 0}
      *             )
      *         )
      *     ),
@@ -147,12 +139,12 @@ class VehicleController extends Controller
     public function list(Request $request)
     {
         $vehicleReq = Vehicle::select();
-        if ($request->vendor_id)
-            $vehicleReq->where('vendor_id', $request->vendor_id);
+        if ($request->transporter_id)
+            $vehicleReq->where('transporter_id', $request->transporter_id);
         if ($request->vehicle_status)
             $vehicleReq->where('vehicle_status', $request->vehicle_status);
 
-        $data = $vehicleReq->with(['vendor', 'register_by', 'updated_by'])->get();
+        $data = $vehicleReq->with(['transporter', 'register_by', 'updated_by'])->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }
@@ -188,7 +180,7 @@ class VehicleController extends Controller
      */
     public function vehicleById($id)
     {
-        $vehicle = Vehicle::with(['vendor', 'register_by', 'updated_by'])->find($id);
+        $vehicle = Vehicle::with(['transporter', 'register_by', 'updated_by'])->find($id);
 
         if ($vehicle) {
             return $this->hideFields($vehicle);
@@ -225,26 +217,18 @@ class VehicleController extends Controller
      *                     property="id",
      *                     type="integer"
      *                 ),
-     *                 @OA\Property(
-     *                     property="driver_name",
-     *                     type="string"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
+     *                  @OA\Property(
      *                     property="device_id_plate_no",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="vendor_id",
+     *                     property="transporter_id",
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
-     *                     property="mileage",
+     *                     property="vehicle_status",
      *                     type="integer"
-     *                 ),
+     *                 )
      *             )
      *         )
      *     ),
@@ -265,10 +249,10 @@ class VehicleController extends Controller
     public function update($id, Request $request)
     {
         $response = new ApiResponse();
-
+       
         if ($id == $request->id) {
             $vehicle = Vehicle::find($id);
-
+           
             if ($vehicle) {
                 // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
                 // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
@@ -285,7 +269,7 @@ class VehicleController extends Controller
                     else
                         return $response->ErrorResponse('Failed, something went wrong in integration server', 500);
                 } else
-                    $this->updateInfo($vehicle, $request);
+                    $this->updateInfo($vehicle, $request->collect());
 
                 $vehicleData = $this->vehicleById($vehicle->id);
                 return $response->SuccessResponse('Vehicle is successfully updated!', $vehicleData);
@@ -298,14 +282,14 @@ class VehicleController extends Controller
     }
 
     private function updateInfo($vehicle, $request)
-    {
+    { 
         $vehicle->update([
-            'driver_name' => $request['driver_name'],
-            'vehicle_status' => $request['vehicle_status'],
             'device_id_plate_no' => $request['device_id_plate_no'],
-            'vendor_id' => $request['vendor_id'],
-            'mileage' => $request['mileage'],
+            'transporter_id' => $request['transporter_id'],
+            'vehicle_status' => $request['vehicle_status'],
             'updated_by_user_id' => Auth::user()->id
+            // 'driver_name' => $request['driver_name,
+            // 'mileage' => $request['mileage'],
         ]);
     }
 
@@ -323,30 +307,22 @@ class VehicleController extends Controller
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
-     *                 @OA\Property(
+     *                  @OA\Property(
      *                     property="id",
      *                     type="integer"
      *                 ),
-     *                 @OA\Property(
-     *                     property="driver_name",
-     *                     type="string"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
+     *                  @OA\Property(
      *                     property="device_id_plate_no",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="vendor_id",
+     *                     property="transporter_id",
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
-     *                     property="mileage",
+     *                     property="vehicle_status",
      *                     type="integer"
-     *                 ),
+     *                 )
      *             )
      *         )
      *     ),
@@ -365,10 +341,10 @@ class VehicleController extends Controller
         $response = new ApiResponse();
         $datas = $request->collect();
         $failed = array();
-
+       
         foreach ($datas as $updateData) {
             $exist = Vehicle::find($updateData['id']);
-
+           
             if ($exist)
             {
                 // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
@@ -393,7 +369,7 @@ class VehicleController extends Controller
             else
                 array_push($failed, $updateData);
         }
-
+       
         if(count($failed) == count($datas))
             return $response->ErrorResponse('Failed, No vehicle was updated', 500);
 
@@ -441,34 +417,34 @@ class VehicleController extends Controller
 
     public function vehicleExport(Request $request)
     {
-        $vendor_id = $request->vendor_id;
-        $vehicle_status = $request->vehicle_status;
-        return (new VehiclesExport($vendor_id, $vehicle_status))->download('vehicles.xlsx');
+        $transporter_id = $request->query('transporter_id');
+        $vehicle_status = $request->query('vehicle_status');
+        return (new VehiclesExport($transporter_id, $vehicle_status))->download('vehicles.xlsx');
     }
 
     public function provisioningExport(Request $request)
     {
-        $vendor_id = $request->query('vendor_id');
+        $transporter_id = $request->query('transporter_id');
         $vehicle_status = $request->query('vehicle_status');
-        return (new ProvisioningVehiclesExport($vendor_id, $vehicle_status))->download('provisioning_vehicles.xlsx');
+        return (new ProvisioningVehiclesExport($transporter_id, $vehicle_status))->download('provisioning_vehicles.xlsx');
     }
 
     public function unregisteredExport(Request $request)
     {
-        $vendor_id = $request->query('vendor_id');
-        return (new UnregisteredVehiclesExport($vendor_id))->download('unregistered_vehicles.xlsx');
+        $transporter_id = $request->query('transporter_id');
+        return (new UnregisteredVehiclesExport($transporter_id))->download('unregistered_vehicles.xlsx');
     }
 
     private function hideFields($vehicle)
     {
-        if ($vehicle->vendor)
-            $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
+        if ($vehicle->transporter)
+            $vehicle->transporter->makeHidden(['transporter_address', 'transporter_contact_no', 'transporter_key', 'transporter_email']);
 
         if ($vehicle->register_by)
-            $vehicle->register_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+            $vehicle->register_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         if ($vehicle->updated_by)
-            $vehicle->updated_by->makeHidden(['username_email', 'vendor_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+            $vehicle->updated_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         return $vehicle;
     }

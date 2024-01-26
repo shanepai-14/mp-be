@@ -1,8 +1,8 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Management Portal API",
-        "description": "Available API for Management Portal",
+        "title": "GPSLink Gateway",
+        "description": "Available API for GPSLink Gateway",
         "license": {
             "name": "Apache 2.0",
             "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -11,11 +11,800 @@
     },
     "servers": [
         {
-            "url": "https://managementportalapi.chooseathena.com/api",
-            "description": "Management Portal API Server"
+            "url": "/api"
         }
     ],
     "paths": {
+        "/current/create": {
+            "post": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Create Current Customer Info",
+                "operationId": "CreateCurrentCustomer",
+                "requestBody": {
+                    "description": "Customer Customer Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vehicle_assignment_id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ipport_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vehicle_assignment_id": 1,
+                                    "customer_id": 1,
+                                    "ipport_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Current customer is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentCustomer"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Current customer already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/current/currentCustById/{id}": {
+            "get": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Get current customer by id",
+                "operationId": "GetCurrentCustomerById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentCustomer"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Current Customer not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/current/list": {
+            "post": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Get list of Currents",
+                "operationId": "CurrentList",
+                "requestBody": {
+                    "description": "Customer Id - NOTE: If customer_id object is omitted then all current customers will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "customer_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/current/update/{id}": {
+            "put": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Updated Current",
+                "description": "Update Current information.",
+                "operationId": "UpdateCurrent",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated Current Customer object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_assignment_id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ipport_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "id": 1,
+                                    "vehicle_assignment_id": 1,
+                                    "customer_id": 1,
+                                    "ipport_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Current customer is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Current customer not found"
+                    },
+                    "409": {
+                        "description": "Current customer Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/current/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Current"
+                ],
+                "summary": "Delete Current by id",
+                "operationId": "DeleteCurrent",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current customer is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CurrentCustomer"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Current customer does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/create": {
+            "post": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Create customer",
+                "operationId": "CreateCustomer",
+                "requestBody": {
+                    "description": "Customer Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "customer_name": {
+                                        "type": "string"
+                                    },
+                                    "customer_address": {
+                                        "type": "string"
+                                    },
+                                    "customer_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "customer_email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "customer_code": {
+                                        "type": "string"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "customer_name": "Customer1",
+                                    "customer_address": "Singapore",
+                                    "customer_contact_no": "+123123",
+                                    "customer_email": "sample@sample.com",
+                                    "customer_code": "0001",
+                                    "transporter_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Customer is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Customer already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/customerById/{id}": {
+            "get": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get customer by id",
+                "operationId": "GetCustomerById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/list": {
+            "post": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get list of customers",
+                "operationId": "CustomerList",
+                "requestBody": {
+                    "description": "Transporter Id - NOTE: If transporter_id object is omitted then all customers will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "transporter_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "transporter_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/update/{id}": {
+            "put": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Updated Customer",
+                "description": "Update Customer information.",
+                "operationId": "UpdateCustomer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated customer object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_name": {
+                                        "type": "string"
+                                    },
+                                    "customer_address": {
+                                        "type": "string"
+                                    },
+                                    "customer_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "customer_email": {
+                                        "type": "string"
+                                    },
+                                    "customer_code": {
+                                        "type": "string"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "id": 0,
+                                    "customer_name": "Customer1",
+                                    "customer_address": "Singapore",
+                                    "customer_contact_no": "+123123",
+                                    "customer_email": "sample@sample.com",
+                                    "customer_code": "0001",
+                                    "transporter_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Customer is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    },
+                    "409": {
+                        "description": "Customer Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Delete Customer by id",
+                "operationId": "DeleteCustomer",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Customer is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Customer"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/create": {
+            "post": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Create Customer IP and Port",
+                "operationId": "CreateCustomerIpPort",
+                "requestBody": {
+                    "description": "Customer IP and Port Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ip": {
+                                        "type": "string"
+                                    },
+                                    "port": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "customer_id": 1,
+                                    "ip": "123.123.123.123",
+                                    "port": 123
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Customer IP and Port is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerIpPorts"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Customer IP and Port already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/ipPortById/{id}": {
+            "get": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get Customer IP and Port by id",
+                "operationId": "GetCustomerIpPortById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerIpPorts"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer IP and Port not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/list": {
+            "post": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Get list of Customer`s IP and Ports",
+                "operationId": "CustomerIpPortList",
+                "requestBody": {
+                    "description": "Customer Id - NOTE: If customer_id object is omitted then all customers ip and port will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "customer_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/update/{id}": {
+            "put": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Updated Customer IP and Ports",
+                "description": "Update Customer IP and Port information.",
+                "operationId": "UpdateCustomerIPPORT",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated Customer IP and Port object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ip": {
+                                        "type": "string"
+                                    },
+                                    "port": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "id": 0,
+                                    "customer_id": 1,
+                                    "ip": "123.123.123.123",
+                                    "port": 123
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Customer IP and Port is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Customer IP and Port not found"
+                    },
+                    "409": {
+                        "description": "Customer Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/customer/ip-port/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Customer"
+                ],
+                "summary": "Delete Customer IP and Port by id",
+                "operationId": "DeleteCustomerIpPort",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Customer IP and Port is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerIpPorts"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer IP and Port does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/position": {
             "post": {
                 "tags": [
@@ -49,7 +838,7 @@
                         "description": "Unrecognized vehicle already exist!"
                     },
                     "404": {
-                        "description": "Company key/Vendor key does not exist!"
+                        "description": "Company key/Transporter key does not exist!"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -74,6 +863,339 @@
                 }
             }
         },
+        "/transporter/create-with-account": {
+            "post": {
+                "tags": [
+                    "Transporter"
+                ],
+                "summary": "Create Transporter and User Account",
+                "operationId": "CreateTransporterPublic",
+                "requestBody": {
+                    "description": "Transporter Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "transporter_name": {
+                                        "type": "string"
+                                    },
+                                    "transporter_address": {
+                                        "type": "string"
+                                    },
+                                    "transporter_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "transporter_email": {
+                                        "type": "string"
+                                    },
+                                    "username_email": {
+                                        "description": "Email for transporter's account username",
+                                        "type": "string"
+                                    },
+                                    "full_name": {
+                                        "description": "Full name of transporter's user account",
+                                        "type": "string"
+                                    },
+                                    "contact_no": {
+                                        "type": "string"
+                                    },
+                                    "user_role": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "transporter_name": "transporter",
+                                    "transporter_address": "Singapore",
+                                    "transporter_contact_no": "+123123",
+                                    "transporter_email": "transporter@sample.com",
+                                    "username_email": "username@username.com",
+                                    "full_name": "Juan Dela Cruz",
+                                    "contact_no": "+222222",
+                                    "user_role": "0"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Transporter is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Transporter"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Transporter already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/transporter/create": {
+            "post": {
+                "tags": [
+                    "Transporter"
+                ],
+                "summary": "Create Transporter",
+                "operationId": "CreateTransporter",
+                "requestBody": {
+                    "description": "Transporter Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "transporter_name": {
+                                        "type": "string"
+                                    },
+                                    "transporter_address": {
+                                        "type": "string"
+                                    },
+                                    "transporter_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "transporter_code": {
+                                        "type": "integer"
+                                    },
+                                    "transporter_email": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "transporter_name": "transporter",
+                                    "transporter_address": "Singapore",
+                                    "transporter_contact_no": "+123123",
+                                    "transporter_code": "VE",
+                                    "transporter_email": "transporter@sample.com"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Transporter is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Transporter"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Transporter already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/transporter/list": {
+            "get": {
+                "tags": [
+                    "Transporter"
+                ],
+                "summary": "Get list of transporters",
+                "operationId": "GetTransporterList",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Transporter"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/transporter/transporterById/{id}": {
+            "get": {
+                "tags": [
+                    "Transporter"
+                ],
+                "summary": "Get transporter by transporter id",
+                "operationId": "GetTransporterById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Transporter"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Transporter not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/transporter/update/{id}": {
+            "put": {
+                "tags": [
+                    "Transporter"
+                ],
+                "summary": "Updated Transporter",
+                "description": "Update Transporter information.",
+                "operationId": "UpdateTransporter",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated Transporter object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "transporter_name": {
+                                        "type": "string"
+                                    },
+                                    "transporter_address": {
+                                        "type": "string"
+                                    },
+                                    "transporter_contact_no": {
+                                        "type": "string"
+                                    },
+                                    "transporter_code": {
+                                        "type": "integer"
+                                    },
+                                    "transporter_email": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Transporter is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Transporter not found"
+                    },
+                    "400": {
+                        "description": "Transporter Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/transporter/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Transporter"
+                ],
+                "summary": "Delete transporter by transporter id",
+                "operationId": "DeleteTransporter",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Transporter is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Transporter"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Transporter does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/user/list": {
             "post": {
                 "tags": [
@@ -82,19 +1204,19 @@
                 "summary": "Get list of registered users",
                 "operationId": "UserList",
                 "requestBody": {
-                    "description": "Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
+                    "description": "Transporter Id - NOTE: If transporter_id object is omitted then all users will be return.",
                     "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "vendor_id": {
+                                    "transporter_id": {
                                         "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "vendor_id": 0
+                                    "transporter_id": 0
                                 }
                             }
                         }
@@ -195,7 +1317,7 @@
                                     "full_name": {
                                         "type": "string"
                                     },
-                                    "vendor_id": {
+                                    "transporter_id": {
                                         "type": "integer"
                                     },
                                     "contact_no": {
@@ -293,10 +1415,10 @@
                 ]
             }
         },
-        "/user/logout": {
+        "/logout": {
             "post": {
                 "tags": [
-                    "User"
+                    "Auth"
                 ],
                 "summary": "Logs out current logged in user session",
                 "description": "Logs out current logged in user session",
@@ -304,6 +1426,261 @@
                 "responses": {
                     "default": {
                         "description": "successful operation"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/create": {
+            "post": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Create Vehicle Assignment Info",
+                "operationId": "CreateVehicleAssignment",
+                "requestBody": {
+                    "description": "Vehicle Assignment Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vehicle_id": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vehicle_id": 1,
+                                    "driver_name": "Juan Dela Cruz",
+                                    "mileage": 1825
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vehicle assignment is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAssignment"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Vehicle assignment already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/assignmentById/{id}": {
+            "get": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Get vehicle assignment by id",
+                "operationId": "GetVehicleAssignmentById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAssignment"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/list": {
+            "post": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Get list of Assignments",
+                "operationId": "AssignmentList",
+                "requestBody": {
+                    "description": "Vehicle Id - NOTE: If vehicle_id object is omitted then all vehicle assignments will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vehicle_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vehicle_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/update/{id}": {
+            "put": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Updated Assignment",
+                "description": "Update Assignment information.",
+                "operationId": "UpdateAssignment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated Vehicle Assignment object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_id": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "id": 1,
+                                    "vehicle_id": 1,
+                                    "driver_name": "Juan Dela Cruz",
+                                    "mileage": 1825
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle Assignment is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Vehicle Assignment not found"
+                    },
+                    "409": {
+                        "description": "Vehicle Assignment Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Delete Assignment by id",
+                "operationId": "DeleteAssignment",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vehicle assignment is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleAssignment"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Vehicle assignment does not exist!"
                     }
                 },
                 "security": [
@@ -327,28 +1704,21 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "driver_name": {
-                                        "type": "string"
-                                    },
-                                    "vehicle_status": {
-                                        "type": "integer"
-                                    },
                                     "device_id_plate_no": {
                                         "type": "string"
                                     },
-                                    "vendor_id": {
+                                    "transporter_id": {
                                         "type": "integer"
                                     },
-                                    "mileage": {
+                                    "vehicle_status": {
                                         "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "vehicle_status": 2,
                                     "device_id_plate_no": "ATH0001",
-                                    "vendor_id": 1,
-                                    "mileage": "1234"
+                                    "transporter_id": 1,
+                                    "vehicle_status": 2
                                 }
                             }
                         }
@@ -399,7 +1769,7 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "vendor_id": {
+                                    "transporter_id": {
                                         "type": "integer"
                                     },
                                     "vehicle_status": {
@@ -408,7 +1778,7 @@
                                 },
                                 "type": "object",
                                 "example": {
-                                    "vendor_id": 0,
+                                    "transporter_id": 0,
                                     "vehicle_status": 0
                                 }
                             }
@@ -501,19 +1871,13 @@
                                     "id": {
                                         "type": "integer"
                                     },
-                                    "driver_name": {
-                                        "type": "string"
-                                    },
-                                    "vehicle_status": {
-                                        "type": "integer"
-                                    },
                                     "device_id_plate_no": {
                                         "type": "string"
                                     },
-                                    "vendor_id": {
+                                    "transporter_id": {
                                         "type": "integer"
                                     },
-                                    "mileage": {
+                                    "vehicle_status": {
                                         "type": "integer"
                                     }
                                 },
@@ -558,19 +1922,13 @@
                                     "id": {
                                         "type": "integer"
                                     },
-                                    "driver_name": {
-                                        "type": "string"
-                                    },
-                                    "vehicle_status": {
-                                        "type": "integer"
-                                    },
                                     "device_id_plate_no": {
                                         "type": "string"
                                     },
-                                    "vendor_id": {
+                                    "transporter_id": {
                                         "type": "integer"
                                     },
-                                    "mileage": {
+                                    "vehicle_status": {
                                         "type": "integer"
                                     }
                                 },
@@ -633,261 +1991,10 @@
                 ]
             }
         },
-        "/vendor/create": {
-            "post": {
-                "tags": [
-                    "Vendor"
-                ],
-                "summary": "Create vendor",
-                "operationId": "CreateVendor",
-                "requestBody": {
-                    "description": "Vendor Information",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "vendor_name": {
-                                        "type": "string"
-                                    },
-                                    "vendor_address": {
-                                        "type": "string"
-                                    },
-                                    "vendor_contact_no": {
-                                        "type": "string"
-                                    },
-                                    "vendor_code": {
-                                        "type": "integer"
-                                    },
-                                    "vendor_email": {
-                                        "type": "string"
-                                    }
-                                },
-                                "type": "object",
-                                "example": {
-                                    "vendor_name": "Vendor",
-                                    "vendor_address": "Singapore",
-                                    "vendor_contact_no": "+123123",
-                                    "vendor_code": "VE",
-                                    "vendor_email": "vendor@sample.com"
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Vendor is successfully registered",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Vendor"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    },
-                    "409": {
-                        "description": "Vendor already exist!"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vendor/list": {
-            "get": {
-                "tags": [
-                    "Vendor"
-                ],
-                "summary": "Get list of vendors",
-                "operationId": "GetVendorList",
-                "responses": {
-                    "200": {
-                        "description": "ok",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Vendor"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vendor/vendorById/{id}": {
-            "get": {
-                "tags": [
-                    "Vendor"
-                ],
-                "summary": "Get vendor by vendor id",
-                "operationId": "GetVendorById",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "ok",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Vendor"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Vendor not found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vendor/update/{id}": {
-            "put": {
-                "tags": [
-                    "Vendor"
-                ],
-                "summary": "Updated vendor",
-                "description": "Update vendor information.",
-                "operationId": "UpdateVendor",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "id to be updated",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "description": "Updated vendor object",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "id": {
-                                        "type": "integer"
-                                    },
-                                    "vendor_name": {
-                                        "type": "string"
-                                    },
-                                    "vendor_address": {
-                                        "type": "string"
-                                    },
-                                    "vendor_contact_no": {
-                                        "type": "string"
-                                    },
-                                    "vendor_code": {
-                                        "type": "integer"
-                                    },
-                                    "vendor_email": {
-                                        "type": "string"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Vendor is successfully updated!"
-                    },
-                    "404": {
-                        "description": "Vendor not found"
-                    },
-                    "400": {
-                        "description": "Vendor Id does not matched!"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vendor/delete/{id}": {
-            "delete": {
-                "tags": [
-                    "Vendor"
-                ],
-                "summary": "Delete vendor by vendor id",
-                "operationId": "DeleteVendor",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Vendor is successfully deleted!",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Vendor"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Vendor does not exist!"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/login": {
             "post": {
                 "tags": [
-                    "User"
+                    "Auth"
                 ],
                 "summary": "Logs user into system",
                 "operationId": "loginUser",
@@ -944,13 +2051,10 @@
                                     "username_email": {
                                         "type": "string"
                                     },
-                                    "password": {
-                                        "type": "string"
-                                    },
                                     "full_name": {
                                         "type": "string"
                                     },
-                                    "vendor_id": {
+                                    "transporter_id": {
                                         "type": "integer"
                                     },
                                     "contact_no": {
@@ -963,9 +2067,8 @@
                                 "type": "object",
                                 "example": {
                                     "username_email": "wloc@example.com",
-                                    "password": "Example123",
                                     "full_name": "Sample User",
-                                    "vendor_id": "0",
+                                    "transporter_id": "0",
                                     "contact_no": "+123",
                                     "user_role": "0"
                                 }
@@ -994,7 +2097,7 @@
                         "description": "User or Email address already exist!"
                     },
                     "404": {
-                        "description": "Vendor id does not exist!"
+                        "description": "Transporter id does not exist!"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -1010,89 +2113,270 @@
     },
     "components": {
         "schemas": {
+            "CurrentCustomer": {
+                "title": "CurrentCustomer",
+                "description": "CurrentCustomer",
+                "required": [
+                    "vehicle_assignment_id",
+                    "customer_id",
+                    "ipport_id"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "vehicle_assignment_id": {
+                        "description": "Vehicle Assignment ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "customer_id": {
+                        "description": "Customer ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "ipport_id": {
+                        "description": "IP and Port ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "register_by_user_id": {
+                        "description": "Register By UserId",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "updated_by_user_id": {
+                        "description": "Updated By UserId",
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "type": "object"
+            },
+            "Customer": {
+                "title": "Customer",
+                "description": "Customer",
+                "required": [
+                    "transporter_id",
+                    "customer_name",
+                    "customer_code"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "customer_name": {
+                        "description": "Customer name",
+                        "type": "string"
+                    },
+                    "customer_address": {
+                        "description": "Customer Address",
+                        "type": "string"
+                    },
+                    "customer_contact_no": {
+                        "description": "Customer Contact no.",
+                        "type": "string"
+                    },
+                    "customer_email": {
+                        "description": "Customer Email",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "customer_code": {
+                        "description": "Customer code",
+                        "type": "string"
+                    },
+                    "transporter_id": {
+                        "description": "Transporter ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "register_by_user_id": {
+                        "description": "Register By UserId",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "updated_by_user_id": {
+                        "description": "Updated By UserId",
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "type": "object"
+            },
+            "CustomerIpPorts": {
+                "title": "Customer IPs and Ports",
+                "description": "Customer`s assigned IPs and Ports",
+                "required": [
+                    "customer_id",
+                    "ip",
+                    "port"
+                ],
+                "properties": {
+                    "id": {
+                        "description": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "customer_id": {
+                        "description": "Customer ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "ip": {
+                        "description": "IP address",
+                        "type": "string"
+                    },
+                    "port": {
+                        "description": "Port",
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "type": "object"
+            },
             "Gps": {
                 "title": "Position",
                 "description": "Position",
+                "required": [
+                    "CompanyKey",
+                    "Timestamp",
+                    "GPS",
+                    "Ignition",
+                    "Latitude",
+                    "Longitude",
+                    "Altitude",
+                    "Speed",
+                    "Course",
+                    "Satellite_Count",
+                    "ADC1",
+                    "ADC2",
+                    "Mileage",
+                    "Vehicle_ID"
+                ],
                 "properties": {
                     "CompanyKey": {
-                        "title": "Vendor Key",
+                        "description": "Transporter Key or Company Key",
                         "type": "string",
                         "format": "string"
                     },
                     "Timestamp": {
-                        "title": "TimeStamp",
+                        "description": "TimeStamp in UTC FORMAT",
                         "type": "string",
                         "format": "datetime"
                     },
                     "GPS": {
-                        "title": "GPS Status",
+                        "description": "1 - GPS tracker is online, 0 - GPS tracker is offline",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Ignition": {
-                        "title": "Ignition Status",
+                        "description": "1 - ON, 0 - OFF",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Latitude": {
-                        "title": "Latitude",
+                        "description": "Range: -90.0° to 90.0°, Decimal degree: up to 6th decimal point",
                         "type": "number",
                         "format": "float"
                     },
                     "Longitude": {
-                        "title": "Longitude",
+                        "description": "Range: -180.0° to 180.0°, Decimal degree: up to 6th decimal point",
                         "type": "number",
                         "format": "float"
                     },
                     "Altitude": {
-                        "title": "Altitude",
+                        "description": "Integer in meter",
                         "type": "number",
                         "format": "float"
                     },
                     "Speed": {
-                        "title": "Speed",
+                        "description": "Integer in km/h. Range 0 to 999",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Course": {
-                        "title": "Course",
+                        "description": "Integer in degree. Range 0 to 359",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Satellite_Count": {
-                        "title": "Satellite_Count",
+                        "description": "Number of satellites",
                         "type": "integer",
                         "format": "int32"
                     },
                     "ADC1": {
-                        "title": "ADC1",
+                        "description": "Device battery in volts. Minimum value: 0",
                         "type": "number",
                         "format": "float"
                     },
                     "ADC2": {
-                        "title": "ADC2",
+                        "description": "Vehicle battery in volts. Minimum value: 0",
                         "type": "number",
                         "format": "float"
                     },
                     "Mileage": {
-                        "title": "Mileage",
+                        "description": "Device mileage in KM",
                         "type": "integer",
                         "format": "int32"
                     },
                     "Drum_Status": {
-                        "title": "Drum_Status",
+                        "description": "1 - Unloading, 0 - Mixing",
                         "type": "integer",
-                        "format": "int32"
+                        "format": "int32",
+                        "nullable": true
                     },
                     "RPM": {
-                        "title": "RPM",
+                        "description": "Mixer drum RPM counter",
                         "type": "integer",
-                        "format": "int32"
+                        "format": "int32",
+                        "nullable": true
                     },
-                    "Device_ID": {
-                        "title": "Device_ID",
+                    "Vehicle_ID": {
+                        "description": "Unique identifier for the tracker device, e.g. vehicle plate",
                         "type": "string",
                         "format": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Transporter": {
+                "title": "Transporter",
+                "description": "Transporter",
+                "properties": {
+                    "id": {
+                        "description": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "transporter_name": {
+                        "description": "Transporter Name",
+                        "type": "string"
+                    },
+                    "transporter_address": {
+                        "description": "Transporter Address",
+                        "type": "string"
+                    },
+                    "transporter_contact_no": {
+                        "description": "Transporter Contact no.",
+                        "type": "string"
+                    },
+                    "transporter_email": {
+                        "description": "Transporter Email",
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "transporter_code": {
+                        "description": "Transporter code",
+                        "type": "string"
+                    },
+                    "transporter_key": {
+                        "description": "Transporter Key",
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1100,39 +2384,45 @@
             "User": {
                 "title": "User",
                 "description": "User",
+                "required": [
+                    "username_email",
+                    "full_name",
+                    "transporter_id",
+                    "user_role"
+                ],
                 "properties": {
                     "id": {
-                        "title": "ID",
+                        "description": "ID",
                         "type": "integer",
                         "format": "int64"
                     },
                     "username_email": {
-                        "title": "Email",
+                        "description": "Email",
                         "type": "string",
                         "format": "email"
                     },
                     "password": {
-                        "title": "Password",
+                        "description": "Password",
                         "type": "string",
                         "format": "int64",
                         "maximum": 255
                     },
                     "full_name": {
-                        "title": "Full name",
+                        "description": "Full name",
                         "type": "string"
                     },
-                    "vendor_id": {
-                        "title": "Vendor ID",
+                    "transporter_id": {
+                        "description": "Transporter ID",
                         "type": "integer",
                         "format": "int64"
                     },
                     "contact_no": {
-                        "title": "Phone",
+                        "description": "Phone",
                         "type": "string",
                         "format": "msisdn"
                     },
                     "user_role": {
-                        "title": "User Role ID",
+                        "description": "User Role ID",
                         "type": "integer",
                         "format": "int64"
                     }
@@ -1144,66 +2434,72 @@
                 "description": "Vehicle",
                 "properties": {
                     "id": {
-                        "title": "ID",
+                        "description": "ID",
                         "type": "integer",
                         "format": "int64"
                     },
-                    "driver_name": {
-                        "title": "Driver Name",
-                        "type": "string"
-                    },
                     "vehicle_status": {
-                        "title": "Vehicle Status Id",
+                        "description": "Vehicle Status Id",
                         "type": "string"
                     },
                     "device_id_plate_no": {
-                        "title": "Device Id/Plate No.",
+                        "description": "Device Id/Plate No.",
                         "type": "string"
                     },
-                    "vendor_id": {
-                        "title": "Vendor Id",
+                    "transporter_id": {
+                        "description": "Transporter Id",
                         "type": "string"
                     },
-                    "mileage": {
-                        "title": "Mileage",
-                        "type": "string"
+                    "register_by_user_id": {
+                        "description": "Register By UserId",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "updated_by_user_id": {
+                        "description": "Updated By UserId",
+                        "type": "integer",
+                        "format": "int64"
                     }
                 },
                 "type": "object"
             },
-            "Vendor": {
-                "title": "Vendor",
-                "description": "Vendor",
+            "VehicleAssignment": {
+                "title": "VehicleAssignments",
+                "description": "VehicleAssignments",
+                "required": [
+                    "vehicle_id",
+                    "driver_name",
+                    "mileage"
+                ],
                 "properties": {
                     "id": {
-                        "title": "ID",
+                        "description": "ID",
                         "type": "integer",
                         "format": "int64"
                     },
-                    "vendor_name": {
-                        "title": "Vendor Name",
+                    "vehicle_id": {
+                        "description": "Vehicle ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "driver_name": {
+                        "description": "Driver name",
                         "type": "string"
                     },
-                    "vendor_address": {
-                        "title": "Vendor Address",
-                        "type": "string"
+                    "mileage": {
+                        "description": "Mileage",
+                        "type": "integer",
+                        "format": "int64"
                     },
-                    "vendor_contact_no": {
-                        "title": "Vendor Contact no.",
-                        "type": "string"
+                    "register_by_user_id": {
+                        "description": "Register By UserId",
+                        "type": "integer",
+                        "format": "int64"
                     },
-                    "vendor_email": {
-                        "title": "Vendor Email",
-                        "type": "string",
-                        "format": "email"
-                    },
-                    "vendor_code": {
-                        "title": "Vendor Contact no.",
-                        "type": "string"
-                    },
-                    "vendor_key": {
-                        "title": "Vendor Key",
-                        "type": "string"
+                    "updated_by_user_id": {
+                        "description": "Updated By UserId",
+                        "type": "integer",
+                        "format": "int64"
                     }
                 },
                 "type": "object"

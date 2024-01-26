@@ -13,6 +13,8 @@ use Jenssegers\Mongodb\Eloquent\SoftDeletes;
  * @OA\Schema(
  *     title="Position",
  *     description="Position",
+ *     required={"CompanyKey", "Timestamp", "GPS", "Ignition", "Latitude", "Longitude", "Altitude", "Speed",
+ *              "Course", "Satellite_Count", "ADC1", "ADC2", "Mileage", "Vehicle_ID"}
  * )
  */
 class Gps extends Model
@@ -24,11 +26,13 @@ class Gps extends Model
 
     /**
      * @OA\Property(
+     *     property="CompanyKey",
      *     format="string",
-     *     title="Vendor Key",
+     *     description="Transporter Key or Company Key"
      * )
      *
      * @var string
+     * 
      */
     private $CompanyKey;
 
@@ -36,7 +40,7 @@ class Gps extends Model
      * @OA\Property(
      *     format="datetime",
      *     type="string",
-     *     title="TimeStamp",
+     *     description="TimeStamp in UTC FORMAT",
      * )
      *
      * @var \DateTime
@@ -46,7 +50,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="GPS Status",
+     *     description="1 - GPS tracker is online, 0 - GPS tracker is offline",
      * )
      *
      * @var integer
@@ -56,7 +60,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Ignition Status",
+     *     description="1 - ON, 0 - OFF",
      * )
      *
      * @var integer
@@ -66,7 +70,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="Latitude",
+     *     description="Range: -90.0° to 90.0°, Decimal degree: up to 6th decimal point",
      * )
      *
      * @var float
@@ -76,7 +80,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="Longitude",
+     *     description="Range: -180.0° to 180.0°, Decimal degree: up to 6th decimal point",
      * )
      *
      * @var float
@@ -86,7 +90,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="Altitude",
+     *     description="Integer in meter",
      * )
      *
      * @var float
@@ -96,7 +100,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Speed",
+     *     description="Integer in km/h. Range 0 to 999",
      * )
      *
      * @var integer
@@ -106,7 +110,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Course",
+     *     description="Integer in degree. Range 0 to 359",
      * )
      *
      * @var integer
@@ -116,7 +120,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Satellite_Count",
+     *     description="Number of satellites",
      * )
      *
      * @var integer
@@ -126,7 +130,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="ADC1",
+     *     description="Device battery in volts. Minimum value: 0",
      * )
      *
      * @var float
@@ -136,7 +140,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     title="ADC2",
+     *     description="Vehicle battery in volts. Minimum value: 0",
      * )
      *
      * @var float
@@ -146,7 +150,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Mileage",
+     *     description="Device mileage in KM",
      * )
      *
      * @var integer
@@ -156,7 +160,8 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="Drum_Status",
+     *     description="1 - Unloading, 0 - Mixing",
+     *     nullable=true
      * )
      *
      * @var integer
@@ -166,7 +171,8 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     title="RPM",
+     *     description="Mixer drum RPM counter",
+     *     nullable=true
      * )
      *
      * @var integer
@@ -176,12 +182,12 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="string",
-     *     title="Device_ID",
+     *     description="Unique identifier for the tracker device, e.g. vehicle plate",
      * )
      *
      * @var string
      */
-    private $Device_ID;
+    private $Vehicle_ID;
 
     protected $fillable = [
         'Vendor_Key',
@@ -199,12 +205,12 @@ class Gps extends Model
         'Mileage',
         'Drum_Status',  // nullable
         'RPM',          // nullable
-        'Device_ID',     // Vehicle Plate Number
+        'Vehicle_ID',     // Vehicle Plate Number
         'Position'
     ];
 
     public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Vehicle::class, 'Device_ID', 'device_id_plate_no');
+        return $this->belongsTo(Vehicle::class, 'Vehicle_ID', 'device_id_plate_no');
     }
 }

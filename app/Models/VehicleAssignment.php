@@ -7,19 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Jenssegers\Mongodb\Eloquent\HybridRelations;
 
 /**
- * Class Vehicle.
+ * Class VehicleAssignments.
  *
  * @OA\Schema(
- *     title="Vehicle",
- *     description="Vehicle",
+ *     title="VehicleAssignments",
+ *     description="VehicleAssignments",
+ *     required={"vehicle_id", "driver_name", "mileage"}
  * )
  */
-class Vehicle extends Model
+class VehicleAssignment extends Model
 {
-    use HybridRelations;
     use HasFactory, SoftDeletes;
 
     /**
@@ -32,41 +31,34 @@ class Vehicle extends Model
      */
     private $id;
 
-    // /**
-    //  * @OA\Property(
-    //  *     description="Driver Name",
-    //  * )
-    //  *
-    //  * @var string
-    //  */
-    // private $driver_name;
+     /**
+     * @OA\Property(
+     *     format="int64",
+     *     description="Vehicle ID",
+     * )
+     *
+     * @var integer
+     */
+    private $vehicle_id;
 
     /**
      * @OA\Property(
-     *     description="Vehicle Status Id",
+     *     description="Driver name",
      * )
      *
      * @var string
      */
-    private $vehicle_status;
+    private $driver_name;
 
-    /**
+     /**
      * @OA\Property(
-     *     description="Device Id/Plate No.",
+     *     format="int64",
+     *     description="Mileage",
      * )
      *
-     * @var string
+     * @var integer
      */
-    private $device_id_plate_no;
-
-    /**
-     * @OA\Property(
-     *     description="Transporter Id",
-     * )
-     *
-     * @var string
-     */
-    private $transporter_id;
+    private $mileage;
 
     /**
      * @OA\Property(
@@ -88,36 +80,23 @@ class Vehicle extends Model
      */
     private $updated_by_user_id;
 
-    // /**
-    //  * @OA\Property(
-    //  *     description="Mileage",
-    //  * )
-    //  *
-    //  * @var string
-    //  */
-    // private $mileage;
-
-    protected $connection = 'mysql';
-
     protected $fillable = [
-        'device_id_plate_no',
-        'transporter_id',
-        'vehicle_status',
-        // 'driver_name',
-        // 'mileage',
+        'vehicle_id',
+        'driver_name',
+        'mileage',
         'register_by_user_id',
         'updated_by_user_id'
     ];
 
     protected $hidden = [
-        // 'created_at',
-        // 'updated_at',
+        'created_at',
+        'updated_at',
         'deleted_at'
     ];
 
-    public function transporter(): BelongsTo
+    public function vehicle(): BelongsTo
     {
-        return $this->belongsTo(Transporter::class);
+        return $this->belongsTo(Vehicle::class, 'vehicle_id', 'id');
     }
 
     public function register_by(): BelongsTo
@@ -130,13 +109,8 @@ class Vehicle extends Model
         return $this->belongsTo(User::class, 'updated_by_user_id', 'id');
     }
 
-    public function Gps(): HasMany
+    public function currentCustomer(): HasMany
     {
-        return $this->hasMany(Gps::class);
-    }
-
-    public function vehicleAssignment(): HasMany
-    {
-        return $this->hasMany(VehicleAssignment::class);
+        return $this->hasMany(CurrentCustomer::class);
     }
 }

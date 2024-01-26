@@ -20,7 +20,8 @@ return [
                 /*
                  * Route for accessing api documentation interface
                 */
-                'api' => 'api/documentation',
+                // 'api' => 'api/documentation',
+                'api' => 'api/swagger',
             ],
             'paths' => [
                 /*
@@ -305,7 +306,8 @@ return [
         'constants' => [
             // 'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'http://my-default-host.com'),
             // 'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST'),
-            'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://managementportalapi.chooseathena.com/api'),
+            'L5_SWAGGER_CONST_HOST' => '/api',
+            // 'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'https://managementportalapi.chooseathena.com/api'),
         ],
     ],
 ];

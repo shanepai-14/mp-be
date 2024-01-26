@@ -18,7 +18,7 @@ class UserSeeder extends Seeder
             "username_email" => "wlocate@gmail.com",
             "password" => Hash::make("adminadmin"),
             "full_name" => "Admin Admin",
-            "vendor_id" => 1,
+            "transporter_id" => 1,
             "contact_no" => "+639123123",
             "user_role" => 1
         ];

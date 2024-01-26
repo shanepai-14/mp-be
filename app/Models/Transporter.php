@@ -4,27 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Class Vendor.
+ * Class Transporter.
  *
  * @OA\Schema(
- *     title="Vendor",
- *     description="Vendor",
+ *     title="Transporter",
+ *     description="Transporter",
  * )
  */
-class Vendor extends Model
+class Transporter extends Model
 {
     use HasFactory, SoftDeletes;
 
     /**
      * @OA\Property(
      *     format="int64",
-     *     title="ID",
+     *     description="ID",
      * )
      *
      * @var integer
@@ -33,66 +31,66 @@ class Vendor extends Model
 
     /**
      * @OA\Property(
-     *     title="Vendor Name",
+     *     description="Transporter Name",
      * )
      *
      * @var string
      */
-    private $vendor_name;
+    private $transporter_name;
 
     /**
      * @OA\Property(
-     *     title="Vendor Address",
+     *     description="Transporter Address",
      * )
      *
      * @var string
      */
-    private $vendor_address;
+    private $transporter_address;
 
     /**
      * @OA\Property(
-     *     title="Vendor Contact no.",
+     *     description="Transporter Contact no.",
      * )
      *
      * @var string
      */
-    private $vendor_contact_no;
+    private $transporter_contact_no;
 
     /**
      * @OA\Property(
      *     format="email",
-     *     title="Vendor Email",
+     *     description="Transporter Email",
      * )
      *
      * @var string
      */
-    private $vendor_email;
+    private $transporter_email;
 
     /**
      * @OA\Property(
-     *     title="Vendor Contact no.",
+     *     description="Transporter code",
      * )
      *
      * @var string
      */
-    private $vendor_code;
+    private $transporter_code;
 
     /**
      * @OA\Property(
-     *     title="Vendor Key",
+     *     description="Transporter Key",
      * )
      *
      * @var string
      */
-    private $vendor_key;
+    private $transporter_key;
 
     protected $fillable = [
-        'vendor_name',
-        'vendor_address',
-        'vendor_contact_no',
-        'vendor_email',
-        'vendor_code',
-        'vendor_key'
+        'transporter_name',
+        'transporter_address',
+        'transporter_contact_no',
+        'transporter_email',
+        'transporter_code',
+        'transporter_key'
     ];
 
     protected $hidden = [
@@ -109,5 +107,10 @@ class Vendor extends Model
     public function vehicle(): HasMany
     {
         return $this->hasMany(Vehicle::class);
+    }
+
+    public function customer(): HasMany
+    {
+        return $this->hasMany(Customer::class);
     }
 }

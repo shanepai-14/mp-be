@@ -16,6 +16,7 @@ use Laravel\Passport\HasApiTokens;
  * @OA\Schema(
  *     title="User",
  *     description="User",
+ *     required={"username_email", "full_name", "transporter_id", "user_role"}
  * )
  */
 class User extends Authenticatable
@@ -25,7 +26,7 @@ class User extends Authenticatable
     /**
      * @OA\Property(
      *     format="int64",
-     *     title="ID",
+     *     description="ID",
      * )
      *
      * @var integer
@@ -35,7 +36,7 @@ class User extends Authenticatable
     /**
      * @OA\Property(
      *     format="email",
-     *     title="Email",
+     *     description="Email",
      * )
      *
      * @var string
@@ -45,7 +46,7 @@ class User extends Authenticatable
      /**
      * @OA\Property(
      *     format="int64",
-     *     title="Password",
+     *     description="Password",
      *     maximum=255
      * )
      *
@@ -55,7 +56,7 @@ class User extends Authenticatable
 
     /**
      * @OA\Property(
-     *     title="Full name",
+     *     description="Full name",
      * )
      *
      * @var string
@@ -65,17 +66,17 @@ class User extends Authenticatable
     /**
      * @OA\Property(
      *     format="int64",
-     *     title="Vendor ID",
+     *     description="Transporter ID",
      * )
      *
      * @var integer
      */
-    private $vendor_id;
+    private $transporter_id;
 
      /**
      * @OA\Property(
      *     format="msisdn",
-     *     title="Phone",
+     *     description="Phone",
      * )
      *
      * @var string
@@ -85,7 +86,7 @@ class User extends Authenticatable
     /**
      * @OA\Property(
      *     format="int64",
-     *     title="User Role ID",
+     *     description="User Role ID",
      * )
      *
      * @var integer
@@ -99,9 +100,9 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'username_email',
-        'password',
+        // 'password',
         'full_name',
-        'vendor_id',
+        'transporter_id',
         'contact_no',
         'user_role',
         'first_login'
@@ -130,9 +131,9 @@ class User extends Authenticatable
 
     protected $attributes = [ 'user_role' => 'user' ];
 
-    public function vendor(): BelongsTo
+    public function transporter(): BelongsTo
     {
-        return $this->belongsTo(Vendor::class);
+        return $this->belongsTo(Transporter::class);
     }
 
     public function vehicle_register_by(): HasMany

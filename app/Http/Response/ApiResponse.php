@@ -9,7 +9,7 @@ class ApiResponse
     public function SuccessResponse($message, $data): JsonResponse
     {
         return new JsonResponse([
-            'status' => true,
+            'status' => 200,
             'message' => $message,
             'data' => $data
         ], 200);
@@ -18,7 +18,7 @@ class ApiResponse
     public function ErrorResponse($message, $errorCode): JsonResponse
     {
         return new JsonResponse([
-            'status' => true,
+            'status' => $errorCode,
             'message' => $message,
         ], $errorCode);
     }
@@ -26,7 +26,7 @@ class ApiResponse
     public function ArrayResponse($message, $success, $failed): JsonResponse
     {
         return new JsonResponse([
-            'status' => true,
+            'status' => 200,
             'message' => $message,
             'success' => $success,
             'failed' => $failed

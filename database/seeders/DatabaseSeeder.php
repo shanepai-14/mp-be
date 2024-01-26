@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
+use App\Models\Transporter;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -19,8 +21,9 @@ class DatabaseSeeder extends Seeder
         //     'email' => 'test@example.com',
         // ]);
         $this->call([
-            VendorSeeder::class,
-            UserSeeder::class
+            TransporterSeeder::class,
+            UserSeeder::class,
+            Athena_Account::class
         ]);
     }
 }

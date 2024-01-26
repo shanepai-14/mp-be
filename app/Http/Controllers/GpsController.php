@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Response\ApiResponse;
 use App\Models\Gps;
 use App\Models\Vehicle;
-use App\Models\Vendor;
+use App\Models\Transporter;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -13,24 +13,6 @@ use OpenApi\Annotations as OA;
 
 class GpsController extends Controller
 {
-
-    // ** GPS DATA FORMAT **
-    //  0. MESSAGE ID (Uchar8) -> $ - location Report;  # - Event Report(TBC);
-    //  1. TIMESTAMP (string) -> Position Timestamp in UTC (YYMMDDHHmmss);
-    //  2. GPS (integer) -> 1 - Online;  0 - Offline;
-    //  3. LATITUDE (float) -> Range: -90.000000 to 90.000000;
-    //  4. LONGITUDE (float) -> Range: -180.000000 to 180.000000;
-    //  5. AlTITUDE (integer) -> Integer in meter
-    //  7. SPEED (integer) -> Integer in km/h;  Range: 0-999;
-    //  7. COURSE (integer) -> Integer in degree;  Range: 0-359;
-    //  8. SATELLITE COUNT (integer) -> No. of satellites
-    //  9. ADC1 (float) -> Device Battery;
-    //  10. ADC2 (float) -> Car Battery;
-    //  11. IO STATUS (integer) -> HEX* value indicating INput and OUTput pin status;
-    //  12. MILEAGE (integer) -> mileage in km;
-    //  13. RPM (integer) -> Mixer drum RPM counter value;
-    //  14. DEVICE ID (string) -> IMEI number or unique ID (Plate Number);
-    //  15. END (Uchar8) -> \r
 
     /**
      * @OA\Post(
@@ -57,7 +39,7 @@ class GpsController extends Controller
      *      ),
      *      @OA\Response(
      *          response=404,
-     *          description="Company key/Vendor key does not exist!"
+     *          description="Company key/Transporter key does not exist!"
      *      ),
      *     @OA\Response(
      *          response=500,
@@ -81,19 +63,19 @@ class GpsController extends Controller
         }
 
         $request->collect()->each(function ($gpsInput) use ($successList, $failedList) {
-            $vendor_id = Vendor::where('vendor_key', $gpsInput['CompanyKey'])->value('id');
+            $transporter = Transporter::where('transporter_key', $gpsInput['CompanyKey']);
             $response = new ApiResponse();
 
-            if ($vendor_id) {
+            if ($transporter->value('id')) {
                 $isExist = Vehicle::where('device_id_plate_no', $gpsInput['Device_ID'])->get();
 
                 // If vehicle does not exist create vehicle with status unregistered and ignore gps data
-                if ($isExist->value('id') == null) {
+                if ($isExist->value('id') == null) { 
                     $newVehicle = Vehicle::create([
                         'vehicle_status' => 3,
                         'device_id_plate_no' => $gpsInput['Device_ID'],
-                        'vendor_id' => $vendor_id,
-                        'mileage' => $gpsInput['Mileage']
+                        'transporter_id' => $transporter->value('id'),
+                        // 'mileage' => $gpsInput['Mileage']
                     ]);
 
                     if ($newVehicle)
@@ -137,7 +119,7 @@ class GpsController extends Controller
 
                     // Forward transformed GPS data to Wlocate
                     $socketCtrl = new GPSSocketController();
-                    $socketCtrl->submitFormattedGPS($transformedData);
+                    $socketCtrl->submitFormattedGPS($transformedData, $transporter->value('wl_ip'), $transporter->value('wl_port'));
 
                     if ($newGps)
                         $successList->push($gpsInput);
@@ -156,9 +138,9 @@ class GpsController extends Controller
 
         return $response->ArrayResponse('Status of data submitted', $successList, $failedList);
         // foreach ($request->all() as $gpsInput) {
-        //     $vendor_id = Vendor::where('vendor_key', $gpsInput['CompanyKey'])->value('id');
+        //     $transporter->value('id') = Vendor::where('vendor_key', $gpsInput['CompanyKey'])->value('id');
 
-        //     if ($vendor_id) {
+        //     if ($transporter->value('id')) {
         //         $isExist = Vehicle::where('device_id_plate_no', $gpsInput['Device_ID'])->get();
 
         //         // If vehicle does not exist create vehicle with status unregistered and ignore gps data
@@ -166,7 +148,7 @@ class GpsController extends Controller
         //             $newVehicle = Vehicle::create([
         //                 'vehicle_status' => 3,
         //                 'device_id_plate_no' => $gpsInput['Device_ID'],
-        //                 'vendor_id' => $vendor_id,
+        //                 'transporter_id' => $transporter->value('id'),
         //                 'mileage' => $gpsInput['Mileage']
         //             ]);
 
@@ -301,7 +283,7 @@ class GpsController extends Controller
         // IN3 - drum direction is always (0)
         // IN2 - always low (0)
         // IN1 - always Low (0)
-        // IN0 - from vendor supplied value
+        // IN0 - from transporter/vendor supplied value
 
         return $ignition == 0 ? 10 : 11;
     }

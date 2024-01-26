@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Http\Controllers\GPSSocketController;
 use App\Models\Gps;
 use App\Models\Vehicle;
-use App\Models\Vendor;
+use App\Models\Transporter;
 use Illuminate\Console\Command;
 
 class ReceiveGPS extends Command
@@ -22,7 +22,7 @@ class ReceiveGPS extends Command
      *
      * @var string
      */
-    protected $description = 'Receive GPS raw data from vendor devices';
+    protected $description = 'Receive GPS raw data from transporter devices';
 
     /**
      * Execute the console command.
@@ -58,7 +58,7 @@ class ReceiveGPS extends Command
         $gpsData['Mileage'] = $arrRawData[12];
         $gpsData['Drum_Status'] = $arrRawData[13];
         $gpsData['RPM'] = $arrRawData[14];
-        $gpsData['Device_ID'] = $arrRawData[15];
+        $gpsData['Vehicle_ID'] = $arrRawData[15];
         
         // $sendData = new GpsController();
         // $sendData->sendGPS($gpsData);
@@ -66,17 +66,18 @@ class ReceiveGPS extends Command
     }
 
     private function sendGPS($data) {
-        $vendor_id = Vendor::where('vendor_key', $data['CompanyKey'])->value('id');
+        // $transporter_id = Vendor::where('transporter_key', $data['CompanyKey'])->value('id');
+        $transporter = Transporter::where('vendor_key', $data['CompanyKey']);
 
-        if ($vendor_id) {
-            $isExist = Vehicle::where('device_id_plate_no', $data['Device_ID'])->get();
+        if ($transporter->value('id')) {
+            $isExist = Vehicle::where('device_id_plate_no', $data['Vehicle_ID'])->get();
 
             // If vehicle does not exist create vehicle with status unregistered and ignore gps data
             if ($isExist->value('id') == null) {
                 $newVehicle = Vehicle::create([
                     'vehicle_status' => 3,
-                    'device_id_plate_no' => $data['Device_ID'],
-                    'vendor_id' => $vendor_id,
+                    'device_id_plate_no' => $data['Vehicle_ID'],
+                    'transporter_id' => $transporter->value('id'),
                     'mileage' => $data['Mileage']
                 ]);
 
@@ -110,13 +111,13 @@ class ReceiveGPS extends Command
                     'Drum_Status' => $data['Drum_Status'],                             // Always ZERO  as of now
                     'Mileage' => $data['Mileage'],
                     'RPM' => $data['RPM'],
-                    'Device_ID' => $data['Device_ID'],
+                    'Vehicle_ID' => $data['Vehicle_ID'],
                     'Position' => $transformedData
                 ]);
               
                 // Forward transformed GPS data to Wlocate
                 $socketCtrl = new GPSSocketController();
-                $socketCtrl->submitFormattedGPS($transformedData);
+                $socketCtrl->submitFormattedGPS($transformedData, $transporter->value('wl_ip'), $transporter->value('wl_port'));
                 
                 if ($newGps)
                     print_r('Position is successfully saved.');
@@ -130,13 +131,13 @@ class ReceiveGPS extends Command
                 print_r('Unrecognized vehicle already exist!');
         }
 
-        else print_r('Company key/Vendor key does not exist!');
+        else print_r('Company key/Transporter key does not exist!');
     }
 
     private function dataTransformation($data)
     {
         $gpsData = '$';
-        $pattern = ['Timestamp', 'GPS', 'Latitude', 'Longitude', 'Altitude', 'Speed', 'Course', 'Satellite_Count', 'ADC1', 'ADC2', 'IO', 'Mileage', 'RPM', 'Device_ID'];
+        $pattern = ['Timestamp', 'GPS', 'Latitude', 'Longitude', 'Altitude', 'Speed', 'Course', 'Satellite_Count', 'ADC1', 'ADC2', 'IO', 'Mileage', 'RPM', 'Vehicle_ID'];
 
         foreach ($pattern as $patternVal) {
             switch ($patternVal) {
@@ -165,7 +166,7 @@ class ReceiveGPS extends Command
         // IN3 - drum direction is always (0)
         // IN2 - always low (0)
         // IN1 - always Low (0)
-        // IN0 - from vendor supplied value
+        // IN0 - from vendor/transporter supplied value
 
         return $ignition == 0 ? 10 : 11;
     }
