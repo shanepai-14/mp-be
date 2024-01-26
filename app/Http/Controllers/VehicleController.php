@@ -39,7 +39,7 @@ class VehicleController extends Controller
      *                     type="integer"
      *                 ),
      *                 example={"device_id_plate_no": "ATH0001", 
-     *                          "transporter_id": 1,"vehicle_status": 2, }
+     *                          "transporter_id": 1,"vehicle_status": 2 }
      *             )
      *         )
      *     ),

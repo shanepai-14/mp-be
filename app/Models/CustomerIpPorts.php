@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Class CustomerIpPort.
+ * Class CustomerIpPorts.
  *
  * @OA\Schema(
  *     title="Customer IPs and Ports",
@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *     required={"customer_id", "ip", "port"}
  * )
  */
-class CustomerIpPort extends Model
+class CustomerIpPorts extends Model
 {
     use HasFactory, SoftDeletes;
 
