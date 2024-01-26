@@ -7,19 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Jenssegers\Mongodb\Eloquent\HybridRelations;
 
 /**
- * Class Vehicle.
+ * Class Customer.
  *
  * @OA\Schema(
- *     title="Vehicle",
- *     description="Vehicle",
+ *     title="Customer",
+ *     description="Customer",
+ *     required={"transporter_id", "customer_name", "customer_code"}
  * )
  */
-class Vehicle extends Model
+class Customer extends Model
 {
-    use HybridRelations;
     use HasFactory, SoftDeletes;
 
     /**
@@ -32,41 +31,61 @@ class Vehicle extends Model
      */
     private $id;
 
-    // /**
-    //  * @OA\Property(
-    //  *     description="Driver Name",
-    //  * )
-    //  *
-    //  * @var string
-    //  */
-    // private $driver_name;
-
     /**
      * @OA\Property(
-     *     description="Vehicle Status Id",
+     *     description="Customer name",
      * )
      *
      * @var string
      */
-    private $vehicle_status;
+    private $customer_name;
 
-    /**
+     /**
      * @OA\Property(
-     *     description="Device Id/Plate No.",
+     *     description="Customer Address",
      * )
      *
      * @var string
      */
-    private $device_id_plate_no;
+    private $customer_address;
 
     /**
      * @OA\Property(
-     *     description="Transporter Id",
+     *     description="Customer Contact no.",
      * )
      *
      * @var string
      */
-    private $transporter_id;
+    private $customer_contact_no;
+
+    /**
+     * @OA\Property(
+     *     format="email",
+     *     description="Customer Email",
+     * )
+     *
+     * @var string
+     */
+    private $customer_email;
+
+    /**
+     * @OA\Property(
+     *     description="Customer code",
+     * )
+     *
+     * @var string
+     */
+    private $customer_code;
+
+     /**
+     * @OA\Property(
+     *     format="int64",
+     *     description="Transporter ID",
+     * )
+     *
+     * @var integer
+     */
+    private $transporter_id; 
 
     /**
      * @OA\Property(
@@ -88,36 +107,32 @@ class Vehicle extends Model
      */
     private $updated_by_user_id;
 
-    // /**
-    //  * @OA\Property(
-    //  *     description="Mileage",
-    //  * )
-    //  *
-    //  * @var string
-    //  */
-    // private $mileage;
-
-    protected $connection = 'mysql';
-
     protected $fillable = [
-        'device_id_plate_no',
-        'transporter_id',
-        'vehicle_status',
-        // 'driver_name',
-        // 'mileage',
+        'customer_name',
+        'customer_address',
+        'customer_contact_no',
+        'customer_email',
+        'customer_code',
+        'transporter_id',   
         'register_by_user_id',
         'updated_by_user_id'
     ];
 
     protected $hidden = [
-        // 'created_at',
-        // 'updated_at',
+        'created_at',
+        'updated_at',
         'deleted_at'
     ];
 
+    // *NOTE: VENDOR === TRANSPORTER
     public function transporter(): BelongsTo
     {
-        return $this->belongsTo(Transporter::class);
+        return $this->belongsTo(Transporter::class, 'transporter_id', 'id');
+    }
+
+    public function customerIpPort(): HasMany
+    {
+        return $this->hasMany(CustomerIpPort::class);
     }
 
     public function register_by(): BelongsTo
@@ -130,13 +145,8 @@ class Vehicle extends Model
         return $this->belongsTo(User::class, 'updated_by_user_id', 'id');
     }
 
-    public function Gps(): HasMany
+    public function currentCustomer(): HasMany
     {
-        return $this->hasMany(Gps::class);
-    }
-
-    public function vehicleAssignment(): HasMany
-    {
-        return $this->hasMany(VehicleAssignment::class);
+        return $this->hasMany(CurrentCustomer::class);
     }
 }

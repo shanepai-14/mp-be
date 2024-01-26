@@ -17,13 +17,13 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
 {
     use Exportable;
 
-    private $vendor_id;
+    private $transporter_id;
     private $vehicle_status;
 
 
-    public function __construct($vendor_id, $vehicle_status)
+    public function __construct($transporter_id, $vehicle_status)
     {
-        $this->vendor_id = $vendor_id;
+        $this->transporter_id = $transporter_id;
         $this->vehicle_status = $vehicle_status;
     }
 
@@ -59,8 +59,8 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     {
         $query = Vehicle::query();
 
-        if ($this->vendor_id) {
-            $query->where('vendor_id', '=', $this->vendor_id);
+        if ($this->transporter_id) {
+            $query->where('transporter_id', '=', $this->transporter_id);
         }
 
         if ($this->vehicle_status) {

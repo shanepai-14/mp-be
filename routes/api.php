@@ -5,6 +5,7 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GpsController;
+use App\Http\Controllers\TransporterController;
 use App\Http\Response\ApiResponse;
 
 /*
@@ -26,6 +27,7 @@ Route::post('/login', [UserController::class, 'login'])->name('login');
 Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:api');
 Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
+Route::post('/transporter/create-with-account', [TransporterController::class, 'publicCreate']);
 
 //Vendor
 Route::post('vendor/create', [VendorController::class, 'create']);
@@ -44,12 +46,13 @@ Route::group([
 
 Route::group([
     'middleware' => 'auth:api',
-    'prefix' => 'vendor'
+    'prefix' => 'transporter'  // Transporter === Vendor
 ], function(){
-    Route::get('/list', [VendorController::class, 'list']);
-    Route::get('/vendorById/{id}', [VendorController::class, 'vendorById']);
-    Route::put('/update/{id}', [VendorController::class, 'update']);
-    Route::delete('/delete/{id}', [VendorController::class, 'delete']);
+    Route::get('/list', [TransporterController::class, 'list']);
+    Route::get('/transporterById/{id}', [TransporterController::class, 'transporterById']);
+    Route::put('/update/{id}', [TransporterController::class, 'update']);
+    Route::delete('/delete/{id}', [TransporterController::class, 'delete']);
+    Route::post('/create', [TransporterController::class, 'create']);
 });
 
 Route::group([

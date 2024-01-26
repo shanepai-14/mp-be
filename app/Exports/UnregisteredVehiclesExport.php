@@ -17,18 +17,18 @@ class UnregisteredVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
 {
     use Exportable;
 
-    private $vendor_id;
+    private $transporter_id;
 
 
-    public function __construct($vendor_id)
+    public function __construct($transporter_id)
     {
-        $this->vendor_id = $vendor_id;
+        $this->transporter_id = $transporter_id;
     }
 
     public function headings(): array
     {
         return [
-            'Vendor Name',
+            'Transporter Name',
             'Device ID/Plate No',
             'Driver Name',
             'Mileage',
@@ -52,8 +52,8 @@ class UnregisteredVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     {
         $query = Vehicle::query()->where('vehicle_status', '=', 3);
 
-        if ($this->vendor_id) {
-            $query->where('vendor_id', '=', $this->vendor_id);
+        if ($this->transporter_id) {
+            $query->where('transporter_id', '=', $this->transporter_id);
         }
 
         return $query;
@@ -62,7 +62,7 @@ class UnregisteredVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     public function map($vehicle): array
     {
         return [
-            $vehicle->vendor->vendor_name,
+            $vehicle->transporter->transporter_name,
             $vehicle->device_id_plate_no,
             $vehicle->driver_name,
             $vehicle->mileage,
