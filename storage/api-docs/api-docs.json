@@ -655,12 +655,31 @@
             }
         },
         "/customer/ip-port/list": {
-            "get": {
+            "post": {
                 "tags": [
                     "Customer"
                 ],
                 "summary": "Get list of Customer`s IP and Ports",
                 "operationId": "CustomerIpPortList",
+                "requestBody": {
+                    "description": "Customer Id - NOTE: If customer_id object is omitted then all customers ip and port will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "customer_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "customer_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "ok"
