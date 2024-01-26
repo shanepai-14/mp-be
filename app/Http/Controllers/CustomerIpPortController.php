@@ -83,7 +83,7 @@ class CustomerIpPortController extends Controller
             if ($newIpPort) {
                 $newIpPortRec = $this->ipPortById($newIpPort->id);
 
-                $responseData = ['customer-ip-port' => $this->hideFields($newIpPortRec)];
+                $responseData = ['customer-ip-port' => $newIpPortRec];
                 return $response->SuccessResponse('Customer IP and Port are successfully registered', $responseData);
             }
 

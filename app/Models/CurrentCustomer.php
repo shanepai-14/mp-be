@@ -108,4 +108,14 @@ class CurrentCustomer extends Model
     {
         return $this->belongsTo(CustomerIpPorts::class, 'ipport_id', 'id');
     }
+
+    public function register_by(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'register_by_user_id', 'id');
+    }
+
+    public function updated_by(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by_user_id', 'id');
+    }
 }

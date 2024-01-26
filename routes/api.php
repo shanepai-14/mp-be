@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CurrentCustomerController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerIpPortController;
 use App\Http\Controllers\UserController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GpsController;
 use App\Http\Controllers\TransporterController;
+use App\Http\Controllers\VehicleAssignmentsController;
 use App\Http\Response\ApiResponse;
 
 /*
@@ -85,6 +87,27 @@ Route::group([
     Route::delete('/ip-port/delete/{id}', [CustomerIpPortController::class, 'delete']);
 });
 
+Route::group([
+    'middleware' => 'auth:api',
+    'prefix' => 'current'
+], function(){
+    Route::post('/create', [CurrentCustomerController::class, 'create']);
+    Route::post('/list', [CurrentCustomerController::class, 'list']);
+    Route::get('/currentCustById/{id}', [CurrentCustomerController::class, 'currentCustById']);
+    Route::put('/update/{id}', [CurrentCustomerController::class, 'update']);
+    Route::delete('/delete/{id}', [CurrentCustomerController::class, 'delete']);
+});
+
+Route::group([
+    'middleware' => 'auth:api',
+    'prefix' => 'assignment'
+], function(){
+    Route::post('/create', [VehicleAssignmentsController::class, 'create']);
+    Route::post('/list', [VehicleAssignmentsController::class, 'list']);
+    Route::get('/assignmentById/{id}', [VehicleAssignmentsController::class, 'assignmentById']);
+    Route::put('/update/{id}', [VehicleAssignmentsController::class, 'update']);
+    Route::delete('/delete/{id}', [VehicleAssignmentsController::class, 'delete']);
+});
 
 //This will catch GET request to /api/register but  PUT,DELETE, OPTIONS etc. fails
 Route::fallback(function () {

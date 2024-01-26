@@ -89,7 +89,7 @@ class VehicleController extends Controller
             if ($newVehicle) {
                 $newVehicleRec = $this->vehicleById($newVehicle->id);
 
-                $responseData = ['vehicle' => $this->hideFields($newVehicleRec)];
+                $responseData = ['vehicle' => $newVehicleRec];
                 return $response->SuccessResponse('Vehicle is successfully registered', $responseData);
             }
 
