@@ -45,6 +45,11 @@ class TransporterController extends Controller
      *                     type="string"
      *                 ),
      *                 @OA\Property(
+     *                     property="password",
+     *                     description="Password for transporter's account",
+     *                     type="string"
+     *                 ),
+     *                 @OA\Property(
      *                     property="full_name",
      *                     description="Full name of transporter's user account",
      *                     type="string"
@@ -59,7 +64,7 @@ class TransporterController extends Controller
      *                 ),
      *                 example={"transporter_name": "transporter", "transporter_address": "Singapore", 
      *                          "transporter_contact_no": "+123123", "transporter_email": "transporter@sample.com",
-     *                          "username_email": "username@username.com", "full_name": "Juan Dela Cruz", "contact_no": "+222222", "user_role": "0"}
+     *                          "username_email": "username@username.com", "password": "samplepassword", "full_name": "Juan Dela Cruz", "contact_no": "+222222", "user_role": "0"}
      *             )
      *         )
      *     ),

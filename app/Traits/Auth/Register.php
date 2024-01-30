@@ -38,6 +38,11 @@ trait Register
      *                     type="string"
      *                 ),
      *                 @OA\Property(
+     *                     property="password",
+     *                     description="Password for transporter's account",
+     *                     type="string"
+     *                 ),
+     *                 @OA\Property(
      *                     property="full_name",
      *                     type="string"
      *                 ),
@@ -53,7 +58,7 @@ trait Register
      *                     property="user_role",
      *                     type="integer"
      *                 ),
-     *                 example={"username_email": "wloc@example.com",
+     *                 example={"username_email": "wloc@example.com", "password": "samplepassword",
      *                          "full_name": "Sample User", "transporter_id": "0", 
      *                          "contact_no": "+123", "user_role": "0"}
      *             )
@@ -108,12 +113,12 @@ trait Register
 
             else {
                 // Generate random password
-                $generatedPwd = bin2hex(random_bytes(5));
+                // $generatedPwd = bin2hex(random_bytes(5));
 
                 $user = User::create([
                     'username_email' => $request->username_email,
-                    'password' => Hash::make($generatedPwd),     // Temporarily Disable Password generation
-                    // 'password' => Hash::make($request->password),   // Temporary Password for testing only
+                    // 'password' => Hash::make($generatedPwd),     // Temporarily Disable Password generation
+                    'password' => Hash::make($request->password),   // Temporary Password
                     'full_name' => $request->full_name,
                     'transporter_id' => $request->transporter_id,
                     'contact_no' => $request->contact_no,
@@ -123,7 +128,7 @@ trait Register
 
                 if ($user) {
                     // Emailling of Password Generated
-                    Mail::to($request->username_email)->send(new UserAccount($generatedPwd));
+                    // Mail::to($request->username_email)->send(new UserAccount($generatedPwd));
 
                     $userCtrl = new UserController();
                     $userData = $userCtrl->userById($user->id);
