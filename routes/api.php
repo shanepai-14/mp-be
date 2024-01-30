@@ -41,6 +41,7 @@ Route::group([
     Route::get('/userById/{id}', [UserController::class, 'userById']);
     Route::put('/update/{id}', [UserController::class, 'update']);
     Route::put('/updatePassword/{id}', [UserController::class, 'updatePassword']);
+    Route::put('/resetPassword/{id}', [UserController::class, 'resetPassword']);
 });
 
 Route::group([

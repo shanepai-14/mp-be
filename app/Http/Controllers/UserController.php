@@ -278,6 +278,60 @@ class UserController extends Controller
     }
 
     /**
+     * @OA\Put(
+     *     tags={"User"},
+     *     path="/user/resetPassword/{id}",
+     *     summary="Reset user password",
+     *     description="Reset user password.",
+     *     operationId="ResetPassword",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         in="path",
+     *         name="id",
+     *         required=true,
+     *         description="id to be reset",
+     *         @OA\Schema(
+     *             type="integer"
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Password is successfully resetted!"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="User not found"
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Failed to reset password!"
+     *     )
+     * )
+     */
+    public function resetPassword($id)
+    {
+        $response = new ApiResponse();
+
+        $user = User::find($id);
+
+        if ($user) {
+            // Generate random password
+            $generatedPwd = bin2hex(random_bytes(5));
+     
+            $user->password = Hash::make($generatedPwd);
+            if ($user->save()) {
+                $user->first_login = 1;
+                $user->save();
+                return $response->SuccessResponse('Password is successfully resetted!', $generatedPwd);
+            }
+
+            return $response->ErrorResponse('Failed to update password!', 500);
+        }
+
+        return $response->ErrorResponse('User not found!', 404);
+    }
+
+    /**
      * @OA\Post(
      *     tags={"Auth"},
      *     path="/logout",

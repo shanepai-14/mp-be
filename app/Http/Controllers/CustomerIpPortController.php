@@ -146,7 +146,11 @@ class CustomerIpPortController extends Controller
      *                     property="customer_id",
      *                     type="integer"
      *                 ),
-     *                 example={"customer_id": 0}
+     *                 @OA\Property(
+     *                     property="transporter_id",
+     *                     type="integer"
+     *                 ),
+     *                 example={"customer_id": 0, "transporter_id": 0}
      *             )
      *         )
      *     ),
@@ -166,12 +170,16 @@ class CustomerIpPortController extends Controller
      */
     public function list(Request $request)
     {
-        $ipPorts = CustomerIpPorts::select();
+        // $ipPorts = CustomerIpPorts::with(['customer'])->select();
+        $ipPorts = CustomerIpPorts::join('Customers', 'customers.id', 'customer_ip_ports.customer_id')->select();
 
         if ($request->customer_id)
-            $ipPorts->where('customer_id', $request->customer_id);
+            $ipPorts->where('customer_ip_ports.customer_id', $request->customer_id);
 
-        $data = $ipPorts->with(['customer'])->get();
+        if ($request->transporter_id)
+            $ipPorts->where('customers.transporter_id', $request->transporter_id);
+
+        $data = $ipPorts->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }

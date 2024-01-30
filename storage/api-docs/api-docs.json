@@ -135,11 +135,15 @@
                                 "properties": {
                                     "customer_id": {
                                         "type": "integer"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "customer_id": 0
+                                    "customer_id": 0,
+                                    "transporter_id": 0
                                 }
                             }
                         }
@@ -670,11 +674,15 @@
                                 "properties": {
                                     "customer_id": {
                                         "type": "integer"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "customer_id": 0
+                                    "customer_id": 0,
+                                    "transporter_id": 0
                                 }
                             }
                         }
@@ -1415,6 +1423,43 @@
                 ]
             }
         },
+        "/user/resetPassword/{id}": {
+            "put": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Reset user password",
+                "description": "Reset user password.",
+                "operationId": "ResetPassword",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be reset",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Password is successfully resetted!"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "500": {
+                        "description": "Failed to reset password!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/logout": {
             "post": {
                 "tags": [
@@ -1555,11 +1600,15 @@
                                 "properties": {
                                     "vehicle_id": {
                                         "type": "integer"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "vehicle_id": 0
+                                    "vehicle_id": 0,
+                                    "transporter_id": 0
                                 }
                             }
                         }
