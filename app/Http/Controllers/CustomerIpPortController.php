@@ -171,7 +171,8 @@ class CustomerIpPortController extends Controller
     public function list(Request $request)
     {
         // $ipPorts = CustomerIpPorts::with(['customer'])->select();
-        $ipPorts = CustomerIpPorts::join('Customers', 'customers.id', 'customer_ip_ports.customer_id')->select();
+        $ipPorts = CustomerIpPorts::join('Customers', 'customers.id', 'customer_ip_ports.customer_id')
+                    ->select(['customer_ip_ports.*', 'customers.transporter_id']);
 
         if ($request->customer_id)
             $ipPorts->where('customer_ip_ports.customer_id', $request->customer_id);

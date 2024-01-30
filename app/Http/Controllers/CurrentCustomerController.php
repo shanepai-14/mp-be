@@ -171,7 +171,8 @@ class CurrentCustomerController extends Controller
     public function list(Request $request)
     {
         // $req = CurrentCustomer::select();
-        $req = CurrentCustomer::join('Customers', 'customers.id', 'current_customers.customer_id')->select();
+        $req = CurrentCustomer::join('Customers', 'customers.id', 'current_customers.customer_id')
+                ->select('current_customers.*', 'customers.transporter_id');
 
         if ($request->customer_id)
             $req->where('current_customers.customer_id', $request->customer_id);
@@ -179,7 +180,8 @@ class CurrentCustomerController extends Controller
         if ($request->transporter_id)
             $req->where('customers.transporter_id', $request->transporter_id);
 
-        $data = $req->with(['vehicleAssignment', 'customer', 'ipport', 'register_by', 'updated_by'])->get();
+        // $data = $req->with(['vehicleAssignment', 'customer', 'ipport', 'register_by', 'updated_by'])->get();
+        $data = $req->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }

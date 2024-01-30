@@ -171,7 +171,8 @@ class VehicleAssignmentsController extends Controller
     public function list(Request $request)
     {
         // $req = VehicleAssignment::select();
-        $req = VehicleAssignment::join('vehicles', 'vehicles.id', 'vehicle_assignments.vehicle_id')->select();
+        $req = VehicleAssignment::join('vehicles', 'vehicles.id', 'vehicle_assignments.vehicle_id')
+                    ->select('vehicle_assignments.*', 'vehicles.transporter_id');
 
         if ($request->vehicle_id)
             $req->where('vehicle_assignments.vehicle_id', $request->vehicle_id);
@@ -180,7 +181,8 @@ class VehicleAssignmentsController extends Controller
             $req->where('vehicles.transporter_id', $request->transporter_id);
 
 
-        $data = $req->with(['vehicle', 'register_by', 'updated_by'])->get();
+        // $data = $req->with(['vehicle', 'register_by', 'updated_by'])->get();
+        $data = $req->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }
