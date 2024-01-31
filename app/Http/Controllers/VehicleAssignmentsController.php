@@ -146,7 +146,11 @@ class VehicleAssignmentsController extends Controller
      *                     property="vehicle_id",
      *                     type="integer"
      *                 ),
-     *                 example={"vehicle_id": 0}
+     *                 @OA\Property(
+     *                     property="transporter_id",
+     *                     type="integer"
+     *                 ),
+     *                 example={"vehicle_id": 0, "transporter_id": 0}
      *             )
      *         )
      *     ),
@@ -166,12 +170,19 @@ class VehicleAssignmentsController extends Controller
      */
     public function list(Request $request)
     {
-        $req = VehicleAssignment::select();
+        // $req = VehicleAssignment::select();
+        $req = VehicleAssignment::join('vehicles', 'vehicles.id', 'vehicle_assignments.vehicle_id')
+                    ->select('vehicle_assignments.*', 'vehicles.transporter_id');
 
         if ($request->vehicle_id)
-            $req->where('vehicle_id', $request->vehicle_id);
+            $req->where('vehicle_assignments.vehicle_id', $request->vehicle_id);
 
-        $data = $req->with(['vehicle', 'register_by', 'updated_by'])->get();
+        if ($request->transporter_id)
+            $req->where('vehicles.transporter_id', $request->transporter_id);
+
+
+        // $data = $req->with(['vehicle', 'register_by', 'updated_by'])->get();
+        $data = $req->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }
@@ -307,10 +318,10 @@ class VehicleAssignmentsController extends Controller
             $vehicleAssign->vehicle->makeHidden(['created_at', 'updated_at']);
 
         if ($vehicleAssign->register_by)
-            $vehicleAssign->register_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+            $vehicleAssign->register_by->makeHidden(['username_email', 'password', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         if ($vehicleAssign->updated_by)
-            $vehicleAssign->updated_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+            $vehicleAssign->updated_by->makeHidden(['username_email', 'password', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         return $vehicleAssign;
     }
