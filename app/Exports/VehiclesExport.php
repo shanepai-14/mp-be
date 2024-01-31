@@ -55,6 +55,10 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
     public function query()
     {
         $query = Vehicle::query();
+        $query = $query->join('vehicle_assignments', 'vehicles.id', '=', 'vehicle_assignments.vehicle_id')
+        ->join('current_customers', 'vehicle_assignments.id', '=', 'current_customers.vehicle_assignment_id')
+        ->join('customers', 'current_customers.customer_id', '=', 'customers.id')
+        ->select('vehicles.*', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'customers.customer_name');
 
         if ($this->transporter_id) {
             $query->where('transporter_id', '=', $this->transporter_id);
@@ -70,7 +74,7 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
     public function map($vehicle): array
     {
         return [
-            $vehicle->vendor->vendor_name,
+            $vehicle->transporter->transporter_name,
             $vehicle->device_id_plate_no,
             $vehicle->driver_name,
             $vehicle->mileage,
