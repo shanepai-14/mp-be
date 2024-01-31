@@ -32,11 +32,13 @@ Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:api'
 Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
 Route::post('/transporter/create-with-account', [TransporterController::class, 'publicCreate']);
+Route::post('/user/publicRegister', [UserController::class, 'publicRegister']);
 
 Route::group([
     'middleware' => 'auth:api',
     'prefix' => 'user'
 ], function(){
+    Route::post('/create', [UserController::class, 'register']);
     Route::post('/list', [UserController::class, 'list']);
     Route::get('/userById/{id}', [UserController::class, 'userById']);
     Route::put('/update/{id}', [UserController::class, 'update']);

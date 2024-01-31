@@ -893,6 +893,10 @@
                                         "description": "Email for transporter's account username",
                                         "type": "string"
                                     },
+                                    "password": {
+                                        "description": "Password for transporter's account",
+                                        "type": "string"
+                                    },
                                     "full_name": {
                                         "description": "Full name of transporter's user account",
                                         "type": "string"
@@ -911,6 +915,7 @@
                                     "transporter_contact_no": "+123123",
                                     "transporter_email": "transporter@sample.com",
                                     "username_email": "username@username.com",
+                                    "password": "samplepassword",
                                     "full_name": "Juan Dela Cruz",
                                     "contact_no": "+222222",
                                     "user_role": "0"
@@ -2051,6 +2056,10 @@
                                     "username_email": {
                                         "type": "string"
                                     },
+                                    "password": {
+                                        "description": "Password for transporter's account",
+                                        "type": "string"
+                                    },
                                     "full_name": {
                                         "type": "string"
                                     },
@@ -2067,6 +2076,7 @@
                                 "type": "object",
                                 "example": {
                                     "username_email": "wloc@example.com",
+                                    "password": "samplepassword",
                                     "full_name": "Sample User",
                                     "transporter_id": "0",
                                     "contact_no": "+123",

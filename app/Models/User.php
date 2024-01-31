@@ -45,7 +45,6 @@ class User extends Authenticatable
 
      /**
      * @OA\Property(
-     *     format="int64",
      *     description="Password",
      *     maximum=255
      * )
@@ -100,7 +99,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'username_email',
-        // 'password',
+        'password',
         'full_name',
         'transporter_id',
         'contact_no',
@@ -114,7 +113,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
+        // 'password',
         'remember_token',
         'created_at',
         'updated_at'
