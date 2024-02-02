@@ -30,10 +30,11 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     public function headings(): array
     {
         return [
-            'Vendor Name',
+            'Transporter',
             'Device ID/Plate No',
             'Driver Name',
             'Mileage',
+            'Customer',
             'Registered By',
             'Registered On',
             'Status',
@@ -45,8 +46,8 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     public function columnFormats(): array
     {
         return [
-            'F' => 'yyyy-MMM-dd HH:mm',
-            'I' => 'yyyy-MMM-dd HH:mm',
+            'G' => 'yyyy-MMM-dd HH:mm',
+            'J' => 'yyyy-MMM-dd HH:mm',
         ];
     }
 
@@ -58,6 +59,11 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     public function query()
     {
         $query = Vehicle::query();
+        $query = $query->join('vehicle_assignments', 'vehicles.id', '=', 'vehicle_assignments.vehicle_id')
+        ->join('current_customers', 'vehicle_assignments.id', '=', 'current_customers.vehicle_assignment_id')
+        ->join('customers', 'current_customers.customer_id', '=', 'customers.id')
+        ->select('vehicles.*', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'customers.customer_name');
+
 
         if ($this->transporter_id) {
             $query->where('transporter_id', '=', $this->transporter_id);
@@ -67,16 +73,18 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
             $query->where('vehicle_status', '=', $this->vehicle_status);
         }
 
+
         return $query;
     }
 
     public function map($vehicle): array
     {
         return [
-            $vehicle->vendor->vendor_name,
+            $vehicle->transporter->transporter_name,
             $vehicle->device_id_plate_no,
             $vehicle->driver_name,
             $vehicle->mileage,
+            $vehicle->customer_name,
             $vehicle->register_by->full_name,
             Date::dateTimeToExcel($vehicle->created_at),
             $this->_getVehicleStatusTxt($vehicle->vehicle_status),
