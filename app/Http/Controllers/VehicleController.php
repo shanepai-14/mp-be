@@ -10,6 +10,7 @@ use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Test\Constraint\ResponseHasCookie;
 
 class VehicleController extends Controller
 {
@@ -91,6 +92,113 @@ class VehicleController extends Controller
 
             return $response->ErrorResponse('Server Error', 500);
         }
+    }
+
+    /**
+     * @OA\Post(
+     *     tags={"Vehicle"},
+     *     path="/vehicle/create-complete-info",
+     *     summary="Create vehicle with assignment and customer",
+     *     operationId="CreateVehicleAssignmentCustomer",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         description="Vehicle, Assignment and Customer Information",
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                  @OA\Property(
+     *                     property="device_id_plate_no",
+     *                     type="string"
+     *                 ),
+     *                  @OA\Property(
+     *                     property="transporter_id",
+     *                     type="integer"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="vehicle_status",
+     *                     type="integer"
+     *                 ),
+     *                  @OA\Property(
+     *                     property="driver_name",
+     *                     type="string"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="mileage",
+     *                     type="integer"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="customer_id",
+     *                     type="integer"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="ipport_id",
+     *                     type="integer"
+     *                 ),
+     *                 example={"device_id_plate_no": "ATH0001", 
+     *                          "transporter_id": 1, "vehicle_status": 4,
+     *                          "driver_name": "Juan Dela Cruz", "mileage": 1825,
+     *                          "customer_id": 1, "ipport_id": 1 }
+     *             )
+     *         )
+     *     ),
+
+     *     @OA\Response(
+     *         response=200,
+     *         description="Vehicle is successfully registered",
+     *     ),
+     *     @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     *     @OA\Response(
+     *          response=403,
+     *          description="Forbidden",
+     *      ),
+     *     @OA\Response(
+     *          response=409,
+     *          description="Vehicle already exist!",
+     *      ),
+     *     @OA\Response(
+     *          response=500,
+     *          description="Internal Server Error",
+     *      ),
+     * )
+     */
+    public function createCompleteData(Request $request)
+    {
+       $vehicleCreate = $this->create($request);
+       
+       if($vehicleCreate->status() == 200) 
+       {
+            $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
+            $request['vehicle_id'] = $vehicleResponse['data']['vehicle']['id'];
+
+            $assignment = new VehicleAssignmentsController();
+            $assignCreate = $assignment->create($request);
+
+            if($assignCreate->status() == 200) {
+                $assignResponse = (json_decode(json_encode($assignCreate), true)['original']);
+                $request['vehicle_assignment_id'] = $assignResponse['data']['vehicle-assignment']['id'];
+            
+                $currCust = new CurrentCustomerController();
+                $currCustCreate = $currCust->create($request);
+
+                if($currCustCreate->status() == 200)
+                    return response('Vehicle successfully created!', 200);
+
+                else {
+                    $assignment->delete($request['vehicle_assignment_id']);
+                    $this->delete($request['vehicle_id']);
+                }
+
+            }
+
+            else 
+                $this->delete($request['vehicle_id']);
+       }
+
+       return response('Failed to create vehicle', $vehicleCreate->status());
     }
 
     /**

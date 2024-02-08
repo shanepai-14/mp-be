@@ -59,6 +59,7 @@ Route::group([
     'prefix' => 'vehicle'
 ], function(){
     Route::post('/create', [VehicleController::class, 'create']);
+    Route::post('/create-complete-info', [VehicleController::class, 'createCompleteData']);
     Route::post('/list', [VehicleController::class, 'list']);
     Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
     Route::post('/export', [VehicleController::class, 'vehicleExport']);
@@ -106,6 +107,7 @@ Route::group([
     Route::post('/list', [VehicleAssignmentsController::class, 'list']);
     Route::get('/assignmentById/{id}', [VehicleAssignmentsController::class, 'assignmentById']);
     Route::put('/update/{id}', [VehicleAssignmentsController::class, 'update']);
+    Route::put('/update-assign-customer/{id}', [VehicleAssignmentsController::class, 'updateAssignmentCustomer']);
     Route::delete('/delete/{id}', [VehicleAssignmentsController::class, 'delete']);
 });
 

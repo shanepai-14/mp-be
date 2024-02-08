@@ -1659,6 +1659,80 @@
                 ]
             }
         },
+        "/assignment/update-assign-customer/{id}": {
+            "put": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Updated Assignment and Customer",
+                "description": "Update Assignment and Customer information.",
+                "operationId": "UpdateAssignmentCust",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated Vehicle Assignment and Customer object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    },
+                                    "current_customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ipport_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle Assignment and Customer is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Vehicle Assignment not found"
+                    },
+                    "409": {
+                        "description": "Vehicle Assignment Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/assignment/delete/{id}": {
             "delete": {
                 "tags": [
@@ -1738,6 +1812,80 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Vehicle already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/create-complete-info": {
+            "post": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Create vehicle with assignment and customer",
+                "operationId": "CreateVehicleAssignmentCustomer",
+                "requestBody": {
+                    "description": "Vehicle, Assignment and Customer Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "device_id_plate_no": {
+                                        "type": "string"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    },
+                                    "customer_id": {
+                                        "type": "integer"
+                                    },
+                                    "ipport_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "device_id_plate_no": "ATH0001",
+                                    "transporter_id": 1,
+                                    "vehicle_status": 4,
+                                    "driver_name": "Juan Dela Cruz",
+                                    "mileage": 1825,
+                                    "customer_id": 1,
+                                    "ipport_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vehicle is successfully registered"
                     },
                     "401": {
                         "description": "Unauthenticated"
@@ -2398,6 +2546,7 @@
                     "password": {
                         "description": "Password",
                         "type": "string",
+                        "format": "int64",
                         "maximum": 255
                     },
                     "full_name": {
