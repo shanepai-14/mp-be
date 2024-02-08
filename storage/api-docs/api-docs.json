@@ -1452,6 +1452,9 @@
                                     "vehicle_id": {
                                         "type": "integer"
                                     },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
                                     "driver_name": {
                                         "type": "string"
                                     },
@@ -1462,6 +1465,7 @@
                                 "type": "object",
                                 "example": {
                                     "vehicle_id": 1,
+                                    "vehicle_status": 4,
                                     "driver_name": "Juan Dela Cruz",
                                     "mileage": 1825
                                 }
@@ -1547,7 +1551,7 @@
                 "summary": "Get list of Assignments",
                 "operationId": "AssignmentList",
                 "requestBody": {
-                    "description": "Vehicle Id - NOTE: If vehicle_id object is omitted then all vehicle assignments will be return.",
+                    "description": "NOTE: If parameters are omitted then all vehicle assignments will be return.",
                     "required": false,
                     "content": {
                         "application/json": {
@@ -1615,6 +1619,9 @@
                                     "vehicle_id": {
                                         "type": "integer"
                                     },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
                                     "driver_name": {
                                         "type": "string"
                                     },
@@ -1626,6 +1633,7 @@
                                 "example": {
                                     "id": 1,
                                     "vehicle_id": 1,
+                                    "vehicle_status": 4,
                                     "driver_name": "Juan Dela Cruz",
                                     "mileage": 1825
                                 }
@@ -1709,16 +1717,12 @@
                                     },
                                     "transporter_id": {
                                         "type": "integer"
-                                    },
-                                    "vehicle_status": {
-                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
                                     "device_id_plate_no": "ATH0001",
-                                    "transporter_id": 1,
-                                    "vehicle_status": 2
+                                    "transporter_id": 1
                                 }
                             }
                         }
@@ -1771,15 +1775,11 @@
                                 "properties": {
                                     "transporter_id": {
                                         "type": "integer"
-                                    },
-                                    "vehicle_status": {
-                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "transporter_id": 0,
-                                    "vehicle_status": 0
+                                    "transporter_id": 0
                                 }
                             }
                         }
@@ -1876,9 +1876,6 @@
                                     },
                                     "transporter_id": {
                                         "type": "integer"
-                                    },
-                                    "vehicle_status": {
-                                        "type": "integer"
                                     }
                                 },
                                 "type": "object"
@@ -1926,9 +1923,6 @@
                                         "type": "string"
                                     },
                                     "transporter_id": {
-                                        "type": "integer"
-                                    },
-                                    "vehicle_status": {
                                         "type": "integer"
                                     }
                                 },
@@ -2404,7 +2398,6 @@
                     "password": {
                         "description": "Password",
                         "type": "string",
-                        "format": "int64",
                         "maximum": 255
                     },
                     "full_name": {
@@ -2438,10 +2431,6 @@
                         "type": "integer",
                         "format": "int64"
                     },
-                    "vehicle_status": {
-                        "description": "Vehicle Status Id",
-                        "type": "string"
-                    },
                     "device_id_plate_no": {
                         "description": "Device Id/Plate No.",
                         "type": "string"
@@ -2468,6 +2457,7 @@
                 "description": "VehicleAssignments",
                 "required": [
                     "vehicle_id",
+                    "vehicle_status",
                     "driver_name",
                     "mileage"
                 ],
@@ -2481,6 +2471,10 @@
                         "description": "Vehicle ID",
                         "type": "integer",
                         "format": "int64"
+                    },
+                    "vehicle_status": {
+                        "description": "Vehicle Status Id",
+                        "type": "string"
                     },
                     "driver_name": {
                         "description": "Driver name",

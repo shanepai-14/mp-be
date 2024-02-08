@@ -34,12 +34,8 @@ class VehicleController extends Controller
      *                     property="transporter_id",
      *                     type="integer"
      *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
-     *                 ),
      *                 example={"device_id_plate_no": "ATH0001", 
-     *                          "transporter_id": 1,"vehicle_status": 2 }
+     *                          "transporter_id": 1 }
      *             )
      *         )
      *     ),
@@ -79,7 +75,7 @@ class VehicleController extends Controller
             $newVehicle = Vehicle::create([
                 'device_id_plate_no' => $request->device_id_plate_no,
                 'transporter_id' => $request->transporter_id,
-                'vehicle_status' => $request->vehicle_status,
+                // 'vehicle_status' => $request->vehicle_status,
                 'register_by_user_id' => Auth::user()->id
                 // 'driver_name' => $request->driver_name,
                 // 'contact_no' => $request->contact_no,
@@ -114,11 +110,7 @@ class VehicleController extends Controller
      *                     property="transporter_id",
      *                     type="integer"
      *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
-     *                 ),
-     *                 example={"transporter_id": 0, "vehicle_status": 0}
+     *                 example={"transporter_id": 0}
      *             )
      *         )
      *     ),
@@ -141,8 +133,8 @@ class VehicleController extends Controller
         $vehicleReq = Vehicle::select();
         if ($request->transporter_id)
             $vehicleReq->where('transporter_id', $request->transporter_id);
-        if ($request->vehicle_status)
-            $vehicleReq->where('vehicle_status', $request->vehicle_status);
+        // if ($request->vehicle_status)
+        //     $vehicleReq->where('vehicle_status', $request->vehicle_status);
 
         $data = $vehicleReq->with(['transporter', 'register_by', 'updated_by'])->get();
         foreach ($data as $rec) {
@@ -224,10 +216,6 @@ class VehicleController extends Controller
      *                 @OA\Property(
      *                     property="transporter_id",
      *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
      *                 )
      *             )
      *         )
@@ -254,22 +242,22 @@ class VehicleController extends Controller
             $vehicle = Vehicle::find($id);
            
             if ($vehicle) {
-                // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
-                // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
-                if ($request->vehicle_status === 1) {
-                    $integration = new IntegrationController($request->device_id_plate_no, $request->mileage, $request->driver_name);
+                // // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
+                // // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
+                // if ($request->vehicle_status === 1) {
+                //     $integration = new IntegrationController($request->device_id_plate_no, $request->mileage, $request->driver_name);
 
-                    // If device and vehicle are successfully uploaded to integration server
-                    // update vehicle status to approved in mysql server
-                    $uploadResult = $integration->uploading();
+                //     // If device and vehicle are successfully uploaded to integration server
+                //     // update vehicle status to approved in mysql server
+                //     $uploadResult = $integration->uploading();
 
-                    if ($uploadResult == 200 || $uploadResult == 409)
-                        $this->updateInfo($vehicle, $request);
+                //     if ($uploadResult == 200 || $uploadResult == 409)
+                //         $this->updateInfo($vehicle, $request);
 
-                    else
-                        return $response->ErrorResponse('Failed, something went wrong in integration server', 500);
-                } else
-                    $this->updateInfo($vehicle, $request->collect());
+                //     else
+                //         return $response->ErrorResponse('Failed, something went wrong in integration server', 500);
+                // } else
+                $this->updateInfo($vehicle, $request->collect());
 
                 $vehicleData = $this->vehicleById($vehicle->id);
                 return $response->SuccessResponse('Vehicle is successfully updated!', $vehicleData);
@@ -286,7 +274,7 @@ class VehicleController extends Controller
         $vehicle->update([
             'device_id_plate_no' => $request['device_id_plate_no'],
             'transporter_id' => $request['transporter_id'],
-            'vehicle_status' => $request['vehicle_status'],
+            // 'vehicle_status' => $request['vehicle_status'],
             'updated_by_user_id' => Auth::user()->id
             // 'driver_name' => $request['driver_name,
             // 'mileage' => $request['mileage'],
@@ -318,10 +306,6 @@ class VehicleController extends Controller
      *                 @OA\Property(
      *                     property="transporter_id",
      *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
      *                 )
      *             )
      *         )
@@ -347,22 +331,22 @@ class VehicleController extends Controller
            
             if ($exist)
             {
-                // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
-                // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
-                if ($updateData['vehicle_status'] === 1) {
-                    $integration = new IntegrationController($updateData['device_id_plate_no'], $updateData['mileage'], $updateData['driver_name']);
+                // // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
+                // // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
+                // if ($updateData['vehicle_status'] === 1) {
+                //     $integration = new IntegrationController($updateData['device_id_plate_no'], $updateData['mileage'], $updateData['driver_name']);
 
-                    // If device and vehicle are successfully uploaded to integration server
-                    // update vehicle status to approved in mysql server
-                    $uploadResult = $integration->uploading();
+                //     // If device and vehicle are successfully uploaded to integration server
+                //     // update vehicle status to approved in mysql server
+                //     $uploadResult = $integration->uploading();
 
-                    if ($uploadResult == 200 || $uploadResult == 409)
-                        $this->updateInfo($exist, $updateData);
+                //     if ($uploadResult == 200 || $uploadResult == 409)
+                //         $this->updateInfo($exist, $updateData);
 
-                    else
-                        array_push($failed, $updateData);
+                //     else
+                //         array_push($failed, $updateData);
 
-                } else
+                // } else
                     $this->updateInfo($exist, $updateData);
             }
 

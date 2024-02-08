@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Response\ApiResponse;
+use App\Models\Vehicle;
 use App\Models\VehicleAssignment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +27,10 @@ class VehicleAssignmentsController extends Controller
      *                     property="vehicle_id",
      *                     type="integer"
      *                 ),
+     *                 @OA\Property(
+     *                     property="vehicle_status",
+     *                     type="integer"
+     *                 ),
      *                  @OA\Property(
      *                     property="driver_name",
      *                     type="string"
@@ -34,7 +39,7 @@ class VehicleAssignmentsController extends Controller
      *                     property="mileage",
      *                     type="integer"
      *                 ),
-     *                 example={"vehicle_id": 1, 
+     *                 example={"vehicle_id": 1, "vehicle_status": 4,
      *                          "driver_name": "Juan Dela Cruz","mileage": 1825, }
      *             )
      *         )
@@ -66,7 +71,7 @@ class VehicleAssignmentsController extends Controller
     public function create(Request $request)
     {
         $response = new ApiResponse();
-        $isExist = VehicleAssignment::where('vehicle_id', $request->vehicle_id)
+        $isExist = VehicleAssignment::where('vehicle_id', $request->vehicle_id)->where('vehicle_status', $request->vehicle_status)
                         ->where('driver_name', $request->driver_name)->where('mileage', $request->mileage)->exists();
 
         if ($isExist)
@@ -75,6 +80,7 @@ class VehicleAssignmentsController extends Controller
         else {
             $newVA = VehicleAssignment::create([
                 'vehicle_id' => $request->vehicle_id,
+                'vehicle_status' => $request->vehicle_status,
                 'driver_name' => $request->driver_name,
                 'mileage' => $request->mileage,
                 'register_by_user_id' => Auth::user()->id
@@ -137,7 +143,7 @@ class VehicleAssignmentsController extends Controller
      *     operationId="AssignmentList",
      *     security={{"bearerAuth": {}}},
      *     @OA\RequestBody(
-     *         description="Vehicle Id - NOTE: If vehicle_id object is omitted then all vehicle assignments will be return.",
+     *         description="NOTE: If parameters are omitted then all vehicle assignments will be return.",
      *         required=false,
      *         @OA\MediaType(
      *             mediaType="application/json",
@@ -201,13 +207,17 @@ class VehicleAssignmentsController extends Controller
      *         required=true,
      *         @OA\MediaType(
      *             mediaType="application/json",
-    *             @OA\Schema(
+     *             @OA\Schema(
      *                  @OA\Property(
      *                     property="id",
      *                     type="integer"
      *                 ),
      *                  @OA\Property(
      *                     property="vehicle_id",
+     *                     type="integer"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="vehicle_status",
      *                     type="integer"
      *                 ),
      *                  @OA\Property(
@@ -218,7 +228,7 @@ class VehicleAssignmentsController extends Controller
      *                     property="mileage",
      *                     type="integer"
      *                 ),
-     *                 example={"id": 1, "vehicle_id": 1, 
+     *                 example={"id": 1, "vehicle_id": 1, "vehicle_status": 4,
      *                          "driver_name": "Juan Dela Cruz","mileage": 1825, }
      *             )
      *         )
@@ -245,14 +255,29 @@ class VehicleAssignmentsController extends Controller
             $VA = VehicleAssignment::find($id);
             
             if ($VA) {
-                $VA->update([
-                    'vehicle_id' => $request['vehicle_id'],
-                    'driver_name' => $request['driver_name'],
-                    'mileage' => $request['mileage'],
-                    'updated_by_user_id' => Auth::user()->id
-                ]);
-                $VAData = $this->assignmentById($VA->id);
+                // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
+                // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
+                if ($request->vehicle_status === 1) {
 
+                    // Get vehicle info
+                    $vehicleCtrl = new VehicleController();
+                    $vehicle = $vehicleCtrl->vehicleById($request->vehicle_id);
+
+                    $integration = new IntegrationController($vehicle->device_id_plate_no, $vehicle->mileage, $vehicle->driver_name);
+
+                    // If device and vehicle are successfully uploaded to integration server
+                    // update vehicle status to approved in mysql server
+                    $uploadResult = $integration->uploading();
+
+                    if ($uploadResult == 200 || $uploadResult == 409)
+                        $this->updateInfo($VA, $request);
+
+                    else
+                        return $response->ErrorResponse('Failed, something went wrong in integration server', 500);
+                } else
+                    $this->updateInfo($VA, $request->collect());
+
+                $VAData = $this->assignmentById($VA->id);
                 return $response->SuccessResponse('Vehicle Assignment is successfully updated!', $VAData);
             }
 
@@ -260,6 +285,17 @@ class VehicleAssignmentsController extends Controller
         }
 
         return $response->ErrorResponse('Vehicle Assignment Id does not matched!', 409);
+    }
+
+    private function updateInfo($VA, $request)
+    { 
+        $VA->update([
+            'vehicle_id' => $request['vehicle_id'],
+            'vehicle_status' => $request['vehicle_status'],
+            'driver_name' => $request['driver_name'],
+            'mileage' => $request['mileage'],
+            'updated_by_user_id' => Auth::user()->id
+        ]);
     }
 
     /**
