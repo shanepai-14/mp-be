@@ -80,7 +80,7 @@ Route::group([
     Route::put('/update/{id}', [CustomerController::class, 'update']);
     Route::delete('/delete/{id}', [CustomerController::class, 'delete']);
 
-    // For Customer-IP-Port 
+    // For Customer-IP-Port
     Route::post('/ip-port/create', [CustomerIpPortController::class, 'create']);
     Route::get('/ip-port/ipPortById/{id}', [CustomerIpPortController::class, 'ipPortById']);
     Route::post('/ip-port/list', [CustomerIpPortController::class, 'list']);
@@ -109,6 +109,8 @@ Route::group([
     Route::put('/update/{id}', [VehicleAssignmentsController::class, 'update']);
     Route::put('/update-assign-customer/{id}', [VehicleAssignmentsController::class, 'updateAssignmentCustomer']);
     Route::delete('/delete/{id}', [VehicleAssignmentsController::class, 'delete']);
+    Route::put('/approve/{id}', [VehicleAssignmentsController::class, 'approve']);
+    Route::put('/reject/{id}', [VehicleAssignmentsController::class, 'reject']);
 });
 
 //This will catch GET request to /api/register but  PUT,DELETE, OPTIONS etc. fails

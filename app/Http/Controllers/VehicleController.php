@@ -35,7 +35,7 @@ class VehicleController extends Controller
      *                     property="transporter_id",
      *                     type="integer"
      *                 ),
-     *                 example={"device_id_plate_no": "ATH0001", 
+     *                 example={"device_id_plate_no": "ATH0001",
      *                          "transporter_id": 1 }
      *             )
      *         )
@@ -135,7 +135,7 @@ class VehicleController extends Controller
      *                     property="ipport_id",
      *                     type="integer"
      *                 ),
-     *                 example={"device_id_plate_no": "ATH0001", 
+     *                 example={"device_id_plate_no": "ATH0001",
      *                          "transporter_id": 1, "vehicle_status": 4,
      *                          "driver_name": "Juan Dela Cruz", "mileage": 1825,
      *                          "customer_id": 1, "ipport_id": 1 }
@@ -167,11 +167,12 @@ class VehicleController extends Controller
      */
     public function createCompleteData(Request $request)
     {
+       $response = new ApiResponse();
        $vehicleCreate = $this->create($request);
-       
-       if($vehicleCreate->status() == 200) 
+       $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
+
+       if($vehicleCreate->status() == 200)
        {
-            $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
             $request['vehicle_id'] = $vehicleResponse['data']['vehicle']['id'];
 
             $assignment = new VehicleAssignmentsController();
@@ -180,13 +181,18 @@ class VehicleController extends Controller
             if($assignCreate->status() == 200) {
                 $assignResponse = (json_decode(json_encode($assignCreate), true)['original']);
                 $request['vehicle_assignment_id'] = $assignResponse['data']['vehicle-assignment']['id'];
-            
+
                 $currCust = new CurrentCustomerController();
                 $currCustCreate = $currCust->create($request);
+                $currCustResponse = (json_decode(json_encode($currCustCreate), true)['original']);
 
-                if($currCustCreate->status() == 200)
-                    return response('Vehicle successfully created!', 200);
-
+                if($currCustCreate->status() == 200) {
+                    return $response->SuccessResponse('Vehicle successfully created!', [
+                        'vehicle' => $vehicleResponse['data']['vehicle'],
+                        'vehicle_assignment' => $assignResponse['data']['vehicle-assignment'],
+                        'current_customer' => $currCustResponse['data']['current-customer']
+                    ]);
+                }
                 else {
                     $assignment->delete($request['vehicle_assignment_id']);
                     $this->delete($request['vehicle_id']);
@@ -194,11 +200,11 @@ class VehicleController extends Controller
 
             }
 
-            else 
+            else
                 $this->delete($request['vehicle_id']);
        }
 
-       return response('Failed to create vehicle', $vehicleCreate->status());
+       return $response->ErrorResponse($vehicleResponse['message'] ?? 'Failed to create vehicle', $vehicleCreate->status());
     }
 
     /**
@@ -345,10 +351,10 @@ class VehicleController extends Controller
     public function update($id, Request $request)
     {
         $response = new ApiResponse();
-       
+
         if ($id == $request->id) {
             $vehicle = Vehicle::find($id);
-           
+
             if ($vehicle) {
                 // // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
                 // // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
@@ -378,7 +384,7 @@ class VehicleController extends Controller
     }
 
     private function updateInfo($vehicle, $request)
-    { 
+    {
         $vehicle->update([
             'device_id_plate_no' => $request['device_id_plate_no'],
             'transporter_id' => $request['transporter_id'],
@@ -433,10 +439,10 @@ class VehicleController extends Controller
         $response = new ApiResponse();
         $datas = $request->collect();
         $failed = array();
-       
+
         foreach ($datas as $updateData) {
             $exist = Vehicle::find($updateData['id']);
-           
+
             if ($exist)
             {
                 // // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
@@ -461,7 +467,7 @@ class VehicleController extends Controller
             else
                 array_push($failed, $updateData);
         }
-       
+
         if(count($failed) == count($datas))
             return $response->ErrorResponse('Failed, No vehicle was updated', 500);
 

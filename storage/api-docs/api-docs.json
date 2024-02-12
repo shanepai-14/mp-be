@@ -135,11 +135,15 @@
                                 "properties": {
                                     "customer_id": {
                                         "type": "integer"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "customer_id": 0
+                                    "customer_id": 0,
+                                    "transporter_id": 0
                                 }
                             }
                         }
@@ -670,11 +674,15 @@
                                 "properties": {
                                     "customer_id": {
                                         "type": "integer"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "customer_id": 0
+                                    "customer_id": 0,
+                                    "transporter_id": 0
                                 }
                             }
                         }
@@ -893,6 +901,10 @@
                                         "description": "Email for transporter's account username",
                                         "type": "string"
                                     },
+                                    "password": {
+                                        "description": "Password for transporter's account",
+                                        "type": "string"
+                                    },
                                     "full_name": {
                                         "description": "Full name of transporter's user account",
                                         "type": "string"
@@ -911,6 +923,7 @@
                                     "transporter_contact_no": "+123123",
                                     "transporter_email": "transporter@sample.com",
                                     "username_email": "username@username.com",
+                                    "password": "samplepassword",
                                     "full_name": "Juan Dela Cruz",
                                     "contact_no": "+222222",
                                     "user_role": "0"
@@ -1415,6 +1428,43 @@
                 ]
             }
         },
+        "/user/resetPassword/{id}": {
+            "put": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Reset user password",
+                "description": "Reset user password.",
+                "operationId": "ResetPassword",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be reset",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Password is successfully resetted!"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    },
+                    "500": {
+                        "description": "Failed to reset password!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/logout": {
             "post": {
                 "tags": [
@@ -1559,11 +1609,19 @@
                                 "properties": {
                                     "vehicle_id": {
                                         "type": "integer"
+                                    },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
+                                    "transporter_id": {
+                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "vehicle_id": 0
+                                    "vehicle_id": 0,
+                                    "vehicle_status": 0,
+                                    "transporter_id": 0
                                 }
                             }
                         }
@@ -1763,6 +1821,91 @@
                     },
                     "404": {
                         "description": "Vehicle assignment does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/approve/{id}": {
+            "put": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Approve assignment",
+                "description": "Approve vehicle assignment.",
+                "operationId": "ApproveVehicle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "ipport_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "ipport_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vehicle assignment is approved!"
+                    },
+                    "404": {
+                        "description": "Current customer not found or Vehicle assignment not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/assignment/reject/{id}": {
+            "delete": {
+                "tags": [
+                    "Assignment"
+                ],
+                "summary": "Reject vehicle assignment",
+                "description": "Reject vehicle assignment.",
+                "operationId": "RejectVehicle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vehicle assignment is rejected!"
+                    },
+                    "404": {
+                        "description": "Vehicle assignment not found"
                     }
                 },
                 "security": [
@@ -2193,6 +2336,10 @@
                                     "username_email": {
                                         "type": "string"
                                     },
+                                    "password": {
+                                        "description": "Password for transporter's account",
+                                        "type": "string"
+                                    },
                                     "full_name": {
                                         "type": "string"
                                     },
@@ -2209,6 +2356,7 @@
                                 "type": "object",
                                 "example": {
                                     "username_email": "wloc@example.com",
+                                    "password": "samplepassword",
                                     "full_name": "Sample User",
                                     "transporter_id": "0",
                                     "contact_no": "+123",
@@ -2546,7 +2694,6 @@
                     "password": {
                         "description": "Password",
                         "type": "string",
-                        "format": "int64",
                         "maximum": 255
                     },
                     "full_name": {
