@@ -8,6 +8,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleAssignment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class VehicleAssignmentsController extends Controller
 {
@@ -182,8 +183,15 @@ class VehicleAssignmentsController extends Controller
     public function list(Request $request)
     {
         // $req = VehicleAssignment::select();
-        $req = VehicleAssignment::join('vehicles', 'vehicles.id', 'vehicle_assignments.vehicle_id')
-            ->select('vehicle_assignments.*', 'vehicles.transporter_id');
+        // $req = VehicleAssignment::join('vehicles', 'vehicles.id', 'vehicle_assignments.vehicle_id')
+        //     ->select('vehicle_assignments.*', 'vehicles.transporter_id');
+       
+        $req = VehicleAssignment::select('vehicle_assignments.id', 'vehicle_assignments.vehicle_id', 'vehicle_assignments.vehicle_status', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'vehicle_assignments.created_at')
+            ->join(DB::raw('(SELECT vehicle_id, MAX(created_at) AS created_at FROM vehicle_assignments GROUP BY vehicle_id) as t2'), function($join) {
+                $join->on('vehicle_assignments.vehicle_id', '=', 't2.vehicle_id');
+                $join->on('vehicle_assignments.created_at', '=', 't2.created_at');
+            })
+            ->join('vehicles', 'vehicles.id', '=', 'vehicle_assignments.vehicle_id');
 
         if ($request->vehicle_id)
             $req->where('vehicle_assignments.vehicle_id', $request->vehicle_id);
