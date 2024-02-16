@@ -655,10 +655,10 @@ class VehicleAssignmentsController extends Controller
             $vehicleAssign->vehicle->makeHidden(['created_at', 'updated_at']);
 
         if ($vehicleAssign->register_by)
-            $vehicleAssign->register_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+            $vehicleAssign->register_by->makeHidden(['username_email', 'password', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         if ($vehicleAssign->updated_by)
-            $vehicleAssign->updated_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+            $vehicleAssign->updated_by->makeHidden(['username_email', 'password', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         return $vehicleAssign;
     }
