@@ -62,6 +62,7 @@ Route::group([
     'prefix' => 'vehicle'
 ], function(){
     Route::post('/create', [VehicleController::class, 'create']);
+    Route::post('/create-complete-info', [VehicleController::class, 'createCompleteData']);
     Route::post('/list', [VehicleController::class, 'list']);
     Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
     Route::post('/export', [VehicleController::class, 'vehicleExport']);
@@ -82,7 +83,7 @@ Route::group([
     Route::put('/update/{id}', [CustomerController::class, 'update']);
     Route::delete('/delete/{id}', [CustomerController::class, 'delete']);
 
-    // For Customer-IP-Port 
+    // For Customer-IP-Port
     Route::post('/ip-port/create', [CustomerIpPortController::class, 'create']);
     Route::get('/ip-port/ipPortById/{id}', [CustomerIpPortController::class, 'ipPortById']);
     Route::post('/ip-port/list', [CustomerIpPortController::class, 'list']);
@@ -109,7 +110,10 @@ Route::group([
     Route::post('/list', [VehicleAssignmentsController::class, 'list']);
     Route::get('/assignmentById/{id}', [VehicleAssignmentsController::class, 'assignmentById']);
     Route::put('/update/{id}', [VehicleAssignmentsController::class, 'update']);
+    Route::put('/update-assign-customer/{id}', [VehicleAssignmentsController::class, 'updateAssignmentCustomer']);
     Route::delete('/delete/{id}', [VehicleAssignmentsController::class, 'delete']);
+    Route::put('/approve/{id}', [VehicleAssignmentsController::class, 'approve']);
+    Route::put('/reject/{id}', [VehicleAssignmentsController::class, 'reject']);
 });
 
 //This will catch GET request to /api/register but  PUT,DELETE, OPTIONS etc. fails

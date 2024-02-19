@@ -10,6 +10,7 @@ use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Test\Constraint\ResponseHasCookie;
 
 class VehicleController extends Controller
 {
@@ -34,12 +35,8 @@ class VehicleController extends Controller
      *                     property="transporter_id",
      *                     type="integer"
      *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
-     *                 ),
-     *                 example={"device_id_plate_no": "ATH0001", 
-     *                          "transporter_id": 1,"vehicle_status": 2 }
+     *                 example={"device_id_plate_no": "ATH0001",
+     *                          "transporter_id": 1 }
      *             )
      *         )
      *     ),
@@ -79,7 +76,7 @@ class VehicleController extends Controller
             $newVehicle = Vehicle::create([
                 'device_id_plate_no' => $request->device_id_plate_no,
                 'transporter_id' => $request->transporter_id,
-                'vehicle_status' => $request->vehicle_status,
+                // 'vehicle_status' => $request->vehicle_status,
                 'register_by_user_id' => Auth::user()->id
                 // 'driver_name' => $request->driver_name,
                 // 'contact_no' => $request->contact_no,
@@ -100,6 +97,119 @@ class VehicleController extends Controller
     /**
      * @OA\Post(
      *     tags={"Vehicle"},
+     *     path="/vehicle/create-complete-info",
+     *     summary="Create vehicle with assignment and customer",
+     *     operationId="CreateVehicleAssignmentCustomer",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         description="Vehicle, Assignment and Customer Information",
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                  @OA\Property(
+     *                     property="device_id_plate_no",
+     *                     type="string"
+     *                 ),
+     *                  @OA\Property(
+     *                     property="transporter_id",
+     *                     type="integer"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="vehicle_status",
+     *                     type="integer"
+     *                 ),
+     *                  @OA\Property(
+     *                     property="driver_name",
+     *                     type="string"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="mileage",
+     *                     type="integer"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="customer_id",
+     *                     type="integer"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="ipport_id",
+     *                     type="integer"
+     *                 ),
+     *                 example={"device_id_plate_no": "ATH0001",
+     *                          "transporter_id": 1, "vehicle_status": 4,
+     *                          "driver_name": "Juan Dela Cruz", "mileage": 1825,
+     *                          "customer_id": 1, "ipport_id": 1 }
+     *             )
+     *         )
+     *     ),
+
+     *     @OA\Response(
+     *         response=200,
+     *         description="Vehicle is successfully registered",
+     *     ),
+     *     @OA\Response(
+     *          response=401,
+     *          description="Unauthenticated",
+     *      ),
+     *     @OA\Response(
+     *          response=403,
+     *          description="Forbidden",
+     *      ),
+     *     @OA\Response(
+     *          response=409,
+     *          description="Vehicle already exist!",
+     *      ),
+     *     @OA\Response(
+     *          response=500,
+     *          description="Internal Server Error",
+     *      ),
+     * )
+     */
+    public function createCompleteData(Request $request)
+    {
+       $response = new ApiResponse();
+       $vehicleCreate = $this->create($request);
+       $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
+
+       if($vehicleCreate->status() == 200)
+       {
+            $request['vehicle_id'] = $vehicleResponse['data']['vehicle']['id'];
+
+            $assignment = new VehicleAssignmentsController();
+            $assignCreate = $assignment->create($request);
+
+            if($assignCreate->status() == 200) {
+                $assignResponse = (json_decode(json_encode($assignCreate), true)['original']);
+                $request['vehicle_assignment_id'] = $assignResponse['data']['vehicle-assignment']['id'];
+
+                $currCust = new CurrentCustomerController();
+                $currCustCreate = $currCust->create($request);
+                $currCustResponse = (json_decode(json_encode($currCustCreate), true)['original']);
+
+                if($currCustCreate->status() == 200) {
+                    return $response->SuccessResponse('Vehicle successfully created!', [
+                        'vehicle' => $vehicleResponse['data']['vehicle'],
+                        'vehicle_assignment' => $assignResponse['data']['vehicle-assignment'],
+                        'current_customer' => $currCustResponse['data']['current-customer']
+                    ]);
+                }
+                else {
+                    $assignment->delete($request['vehicle_assignment_id']);
+                    $this->delete($request['vehicle_id']);
+                }
+
+            }
+
+            else
+                $this->delete($request['vehicle_id']);
+       }
+
+       return $response->ErrorResponse($vehicleResponse['message'] ?? 'Failed to create vehicle', $vehicleCreate->status());
+    }
+
+    /**
+     * @OA\Post(
+     *     tags={"Vehicle"},
      *     path="/vehicle/list",
      *     summary="Get list of registered vehicles",
      *     operationId="VehicleList",
@@ -114,11 +224,7 @@ class VehicleController extends Controller
      *                     property="transporter_id",
      *                     type="integer"
      *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
-     *                 ),
-     *                 example={"transporter_id": 0, "vehicle_status": 0}
+     *                 example={"transporter_id": 0}
      *             )
      *         )
      *     ),
@@ -141,8 +247,8 @@ class VehicleController extends Controller
         $vehicleReq = Vehicle::select();
         if ($request->transporter_id)
             $vehicleReq->where('transporter_id', $request->transporter_id);
-        if ($request->vehicle_status)
-            $vehicleReq->where('vehicle_status', $request->vehicle_status);
+        // if ($request->vehicle_status)
+        //     $vehicleReq->where('vehicle_status', $request->vehicle_status);
 
         $data = $vehicleReq->with(['transporter', 'register_by', 'updated_by'])->get();
         foreach ($data as $rec) {
@@ -224,10 +330,6 @@ class VehicleController extends Controller
      *                 @OA\Property(
      *                     property="transporter_id",
      *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
      *                 )
      *             )
      *         )
@@ -249,27 +351,27 @@ class VehicleController extends Controller
     public function update($id, Request $request)
     {
         $response = new ApiResponse();
-       
+
         if ($id == $request->id) {
             $vehicle = Vehicle::find($id);
-           
+
             if ($vehicle) {
-                // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
-                // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
-                if ($request->vehicle_status === 1) {
-                    $integration = new IntegrationController($request->device_id_plate_no, $request->mileage, $request->driver_name);
+                // // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
+                // // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
+                // if ($request->vehicle_status === 1) {
+                //     $integration = new IntegrationController($request->device_id_plate_no, $request->mileage, $request->driver_name);
 
-                    // If device and vehicle are successfully uploaded to integration server
-                    // update vehicle status to approved in mysql server
-                    $uploadResult = $integration->uploading();
+                //     // If device and vehicle are successfully uploaded to integration server
+                //     // update vehicle status to approved in mysql server
+                //     $uploadResult = $integration->uploading();
 
-                    if ($uploadResult == 200 || $uploadResult == 409)
-                        $this->updateInfo($vehicle, $request);
+                //     if ($uploadResult == 200 || $uploadResult == 409)
+                //         $this->updateInfo($vehicle, $request);
 
-                    else
-                        return $response->ErrorResponse('Failed, something went wrong in integration server', 500);
-                } else
-                    $this->updateInfo($vehicle, $request->collect());
+                //     else
+                //         return $response->ErrorResponse('Failed, something went wrong in integration server', 500);
+                // } else
+                $this->updateInfo($vehicle, $request->collect());
 
                 $vehicleData = $this->vehicleById($vehicle->id);
                 return $response->SuccessResponse('Vehicle is successfully updated!', $vehicleData);
@@ -282,11 +384,11 @@ class VehicleController extends Controller
     }
 
     private function updateInfo($vehicle, $request)
-    { 
+    {
         $vehicle->update([
             'device_id_plate_no' => $request['device_id_plate_no'],
             'transporter_id' => $request['transporter_id'],
-            'vehicle_status' => $request['vehicle_status'],
+            // 'vehicle_status' => $request['vehicle_status'],
             'updated_by_user_id' => Auth::user()->id
             // 'driver_name' => $request['driver_name,
             // 'mileage' => $request['mileage'],
@@ -318,10 +420,6 @@ class VehicleController extends Controller
      *                 @OA\Property(
      *                     property="transporter_id",
      *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="vehicle_status",
-     *                     type="integer"
      *                 )
      *             )
      *         )
@@ -341,35 +439,35 @@ class VehicleController extends Controller
         $response = new ApiResponse();
         $datas = $request->collect();
         $failed = array();
-       
+
         foreach ($datas as $updateData) {
             $exist = Vehicle::find($updateData['id']);
-           
+
             if ($exist)
             {
-                // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
-                // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
-                if ($updateData['vehicle_status'] === 1) {
-                    $integration = new IntegrationController($updateData['device_id_plate_no'], $updateData['mileage'], $updateData['driver_name']);
+                // // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
+                // // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
+                // if ($updateData['vehicle_status'] === 1) {
+                //     $integration = new IntegrationController($updateData['device_id_plate_no'], $updateData['mileage'], $updateData['driver_name']);
 
-                    // If device and vehicle are successfully uploaded to integration server
-                    // update vehicle status to approved in mysql server
-                    $uploadResult = $integration->uploading();
+                //     // If device and vehicle are successfully uploaded to integration server
+                //     // update vehicle status to approved in mysql server
+                //     $uploadResult = $integration->uploading();
 
-                    if ($uploadResult == 200 || $uploadResult == 409)
-                        $this->updateInfo($exist, $updateData);
+                //     if ($uploadResult == 200 || $uploadResult == 409)
+                //         $this->updateInfo($exist, $updateData);
 
-                    else
-                        array_push($failed, $updateData);
+                //     else
+                //         array_push($failed, $updateData);
 
-                } else
+                // } else
                     $this->updateInfo($exist, $updateData);
             }
 
             else
                 array_push($failed, $updateData);
         }
-       
+
         if(count($failed) == count($datas))
             return $response->ErrorResponse('Failed, No vehicle was updated', 500);
 

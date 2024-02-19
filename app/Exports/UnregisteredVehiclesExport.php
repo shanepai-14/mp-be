@@ -55,7 +55,7 @@ class UnregisteredVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
         $query = $query->join('vehicle_assignments', 'vehicles.id', '=', 'vehicle_assignments.vehicle_id')
         ->join('current_customers', 'vehicle_assignments.id', '=', 'current_customers.vehicle_assignment_id')
         ->join('customers', 'current_customers.customer_id', '=', 'customers.id')
-        ->select('vehicles.*', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'customers.customer_name');
+        ->select('vehicles.*', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'customers.customer_name', 'vehicle_assignments.vehicle_status');
 
         if ($this->transporter_id) {
             $query->where('transporter_id', '=', $this->transporter_id);
