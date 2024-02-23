@@ -30,8 +30,8 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     public function headings(): array
     {
         return [
-            'Transporter',
-            'Device ID/Plate No',
+            'Vendor',
+            'Plate Number',
             'Driver Name',
             'Mileage',
             'Customer',
