@@ -589,6 +589,8 @@ class VehicleAssignmentsController extends Controller
                 $currUpdateReq = $currentCustomer->update($CC->id, $request);
                 $currUpdateRes = (json_decode(json_encode($currUpdateReq), true)['original']);
 
+                dd($currUpdateReq);
+
                 if ($currUpdateReq->status() === 200) {
                     $request['id'] = $VA->id;
                     $request['vehicle_status'] = 1;
