@@ -37,7 +37,6 @@ class IntegrationController extends Controller
 
                     else {
                         $newVehicleUpload = $this->submitVehicle();
-                        print_r($newVehicleUpload);
 
                         // Vehicle is successfully uploaded to integration server!
                         if($newVehicleUpload['Status'] === 'Success')
@@ -50,12 +49,9 @@ class IntegrationController extends Controller
                 else {
                     $newDeviceUpload = $this->submitDevice();
 
-                    print_r($newDeviceUpload);
                     // Device is successfully uploaded to integration server!
                     if($newDeviceUpload['Status'] === 'Success') {
                         $newVehicleUpload = $this->submitVehicle();
-
-                        print_r($newVehicleUpload);
 
                         // Vehicle is successfully uploaded to integration server!
                         if($newVehicleUpload['Status'] === 'Success')
