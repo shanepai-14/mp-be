@@ -153,7 +153,7 @@ class IntegrationController extends Controller
             "Category" => "Concrete Mixer",
             "CompanyName" => "W-locate Pte Ltd",
             "Status" => 1,
-            "Mileage" => $this->mileAge,
+            "Mileage" => $this->mileAge ?? 0,
             "Driver" => $this->driverName,
             "Division" => "Software",
             "Group" => "Athena",
