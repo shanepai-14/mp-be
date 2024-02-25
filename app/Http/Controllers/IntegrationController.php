@@ -10,7 +10,7 @@ class IntegrationController extends Controller
     protected $integrationURI = 'https://findplus.w-locate.com/integration';
     protected $token = null;
     protected $deviceID_plateNum = null;
-    protected $mileAge = null;
+    protected $mileAge = 0;
     protected $driverName = null;
 
     public function __construct($deviceID_plateNum, $mileAge, $driverName)
