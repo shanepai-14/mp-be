@@ -146,7 +146,11 @@ class CurrentCustomerController extends Controller
      *                     property="customer_id",
      *                     type="integer"
      *                 ),
-     *                 example={"customer_id": 0}
+     *                  @OA\Property(
+     *                     property="transporter_id",
+     *                     type="integer"
+     *                 ),
+     *                 example={"customer_id": 0, "transporter_id": 0}
      *             )
      *         )
      *     ),
@@ -166,12 +170,18 @@ class CurrentCustomerController extends Controller
      */
     public function list(Request $request)
     {
-        $req = CurrentCustomer::select();
+        // $req = CurrentCustomer::select();
+        $req = CurrentCustomer::join('Customers', 'customers.id', 'current_customers.customer_id')
+                ->select('current_customers.*', 'customers.transporter_id');
 
         if ($request->customer_id)
-            $req->where('customer_id', $request->customer_id);
+            $req->where('current_customers.customer_id', $request->customer_id);
 
-        $data = $req->with(['vehicleAssignment', 'customer', 'ipport', 'register_by', 'updated_by'])->get();
+        if ($request->transporter_id)
+            $req->where('customers.transporter_id', $request->transporter_id);
+
+        // $data = $req->with(['vehicleAssignment', 'customer', 'ipport', 'register_by', 'updated_by'])->get();
+        $data = $req->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }
@@ -313,10 +323,10 @@ class CurrentCustomerController extends Controller
             $customer->ipport->makeHidden(['created_at', 'updated_at']);
 
         if ($customer->register_by)
-            $customer->register_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+            $customer->register_by->makeHidden(['username_email', 'password', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         if ($customer->updated_by)
-            $customer->updated_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+            $customer->updated_by->makeHidden(['username_email', 'password', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         return $customer;
     }
