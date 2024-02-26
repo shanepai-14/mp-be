@@ -41,14 +41,14 @@ class Vehicle extends Model
     //  */
     // private $driver_name;
 
-    /**
-     * @OA\Property(
-     *     description="Vehicle Status Id",
-     * )
-     *
-     * @var string
-     */
-    private $vehicle_status;
+    // /**
+    //  * @OA\Property(
+    //  *     description="Vehicle Status Id",
+    //  * )
+    //  *
+    //  * @var string
+    //  */
+    // private $vehicle_status;
 
     /**
      * @OA\Property(
@@ -102,7 +102,7 @@ class Vehicle extends Model
     protected $fillable = [
         'device_id_plate_no',
         'transporter_id',
-        'vehicle_status',
+        // 'vehicle_status',
         // 'driver_name',
         // 'mileage',
         'register_by_user_id',
