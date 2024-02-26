@@ -28,8 +28,8 @@ class UnregisteredVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     public function headings(): array
     {
         return [
-            'Transporter Name',
-            'Device ID/Plate No',
+            'Vendor',
+            'Plate Number',
             'Driver Name',
             'Mileage',
             'Customer',

@@ -171,7 +171,7 @@ class CurrentCustomerController extends Controller
     public function list(Request $request)
     {
         // $req = CurrentCustomer::select();
-        $req = CurrentCustomer::join('Customers', 'customers.id', 'current_customers.customer_id')
+        $req = CurrentCustomer::join('customers', 'customers.id', 'current_customers.customer_id')
                 ->select('current_customers.*', 'customers.transporter_id');
 
         if ($request->customer_id)
