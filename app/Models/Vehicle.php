@@ -61,6 +61,7 @@ class Vehicle extends Model
 
     /**
      * @OA\Property(
+     *     property="vendor_id",
      *     description="Transporter Id",
      * )
      *
@@ -109,13 +110,22 @@ class Vehicle extends Model
         'updated_by_user_id'
     ];
 
+    protected $appends = [
+        'vendor_id'
+    ];
+
     protected $hidden = [
         // 'created_at',
         // 'updated_at',
+        'transporter_id',
         'deleted_at'
     ];
 
-    public function transporter(): BelongsTo
+    public function getVendorIdAttribute(){
+        return $this->attributes['transporter_id'];
+    }
+
+    public function vendor(): BelongsTo
     {
         return $this->belongsTo(Transporter::class);
     }

@@ -32,11 +32,11 @@ class VehicleController extends Controller
      *                     type="string"
      *                 ),
      *                  @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
      *                 example={"device_id_plate_no": "ATH0001",
-     *                          "transporter_id": 1 }
+     *                          "vendor_id": 1 }
      *             )
      *         )
      *     ),
@@ -75,7 +75,7 @@ class VehicleController extends Controller
         else {
             $newVehicle = Vehicle::create([
                 'device_id_plate_no' => $request->device_id_plate_no,
-                'transporter_id' => $request->transporter_id,
+                'transporter_id' => $request->vendor_id,
                 // 'vehicle_status' => $request->vehicle_status,
                 'register_by_user_id' => Auth::user()->id
                 // 'driver_name' => $request->driver_name,
@@ -112,7 +112,7 @@ class VehicleController extends Controller
      *                     type="string"
      *                 ),
      *                  @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
@@ -136,7 +136,7 @@ class VehicleController extends Controller
      *                     type="integer"
      *                 ),
      *                 example={"device_id_plate_no": "ATH0001",
-     *                          "transporter_id": 1, "vehicle_status": 4,
+     *                          "vendor_id": 1, "vehicle_status": 4,
      *                          "driver_name": "Juan Dela Cruz", "mileage": 1825,
      *                          "customer_id": 1, "ipport_id": 1 }
      *             )
@@ -215,16 +215,16 @@ class VehicleController extends Controller
      *     operationId="VehicleList",
      *     security={{"bearerAuth": {}}},
      * @OA\RequestBody(
-     *         description="Vehicle Id - NOTE: If vehicle_id object is omitted then all users will be return.",
+     *         description="Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
      *         required=false,
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
      *                 @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
-     *                 example={"transporter_id": 0}
+     *                 example={"vendor_id": 0}
      *             )
      *         )
      *     ),
@@ -245,12 +245,12 @@ class VehicleController extends Controller
     public function list(Request $request)
     {
         $vehicleReq = Vehicle::select();
-        if ($request->transporter_id)
-            $vehicleReq->where('transporter_id', $request->transporter_id);
+        if ($request->vendor_id)
+            $vehicleReq->where('transporter_id', $request->vendor_id);
         // if ($request->vehicle_status)
         //     $vehicleReq->where('vehicle_status', $request->vehicle_status);
 
-        $data = $vehicleReq->with(['transporter', 'register_by', 'updated_by'])->get();
+        $data = $vehicleReq->with(['vendor', 'register_by', 'updated_by'])->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }
@@ -286,7 +286,7 @@ class VehicleController extends Controller
      */
     public function vehicleById($id)
     {
-        $vehicle = Vehicle::with(['transporter', 'register_by', 'updated_by'])->find($id);
+        $vehicle = Vehicle::with(['vendor', 'register_by', 'updated_by'])->find($id);
 
         if ($vehicle) {
             return $this->hideFields($vehicle);
@@ -328,7 +328,7 @@ class VehicleController extends Controller
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 )
      *             )
@@ -387,7 +387,7 @@ class VehicleController extends Controller
     {
         $vehicle->update([
             'device_id_plate_no' => $request['device_id_plate_no'],
-            'transporter_id' => $request['transporter_id'],
+            'transporter_id' => $request['vendor_id'],
             // 'vehicle_status' => $request['vehicle_status'],
             'updated_by_user_id' => Auth::user()->id
             // 'driver_name' => $request['driver_name,
@@ -418,7 +418,7 @@ class VehicleController extends Controller
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 )
      *             )
@@ -515,22 +515,22 @@ class VehicleController extends Controller
 
     public function vehicleExport(Request $request)
     {
-        $transporter_id = $request->query('transporter_id');
-        $vehicle_status = $request->query('vehicle_status');
-        return (new VehiclesExport($transporter_id, $vehicle_status))->download('vehicles.xlsx');
+        $vendor_id = $request->vendor_id;
+        $vehicle_status = $request->vehicle_status;
+        return (new VehiclesExport($vendor_id, $vehicle_status))->download('vehicles.xlsx');
     }
 
     public function provisioningExport(Request $request)
     {
-        $transporter_id = $request->query('transporter_id');
-        $vehicle_status = $request->query('vehicle_status');
-        return (new ProvisioningVehiclesExport($transporter_id, $vehicle_status))->download('provisioning_vehicles.xlsx');
+        $vendor_id = $request->vendor_id;
+        $vehicle_status = $request->vehicle_status;
+        return (new ProvisioningVehiclesExport($vendor_id, $vehicle_status))->download('provisioning_vehicles.xlsx');
     }
 
     public function unregisteredExport(Request $request)
     {
-        $transporter_id = $request->query('transporter_id');
-        return (new UnregisteredVehiclesExport($transporter_id))->download('unregistered_vehicles.xlsx');
+        $vendor_id = $request->vendor_id;
+        return (new UnregisteredVehiclesExport($vendor_id))->download('unregistered_vehicles.xlsx');
     }
 
     private function hideFields($vehicle)

@@ -17,13 +17,13 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
 {
     use Exportable;
 
-    private $transporter_id;
+    private $vendor_id;
     private $vehicle_status;
 
 
-    public function __construct($transporter_id, $vehicle_status)
+    public function __construct($vendor_id, $vehicle_status)
     {
-        $this->transporter_id = $transporter_id;
+        $this->vendor_id = $vendor_id;
         $this->vehicle_status = $vehicle_status;
     }
 
@@ -33,7 +33,7 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
             'Vendor',
             'Plate Number',
             'Driver Name',
-            'Mileage',
+            // 'Mileage',
             'Customer',
             'Registered By',
             'Registered On',
@@ -46,8 +46,8 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     public function columnFormats(): array
     {
         return [
-            'G' => 'yyyy-MMM-dd HH:mm',
-            'J' => 'yyyy-MMM-dd HH:mm',
+            'F' => 'yyyy-MMM-dd HH:mm',
+            'I' => 'yyyy-MMM-dd HH:mm',
         ];
     }
 
@@ -65,12 +65,12 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
         ->select('vehicles.*', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'customers.customer_name', 'vehicle_assignments.vehicle_status');
 
 
-        if ($this->transporter_id) {
-            $query->where('transporter_id', '=', $this->transporter_id);
+        if ($this->vendor_id) {
+            $query->where('vehicles.transporter_id', '=', $this->vendor_id);
         }
 
         if ($this->vehicle_status) {
-            $query->where('vehicle_status', '=', $this->vehicle_status);
+            $query->where('vehicle_assignments.vehicle_status', '=', $this->vehicle_status);
         }
 
 
@@ -80,10 +80,10 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     public function map($vehicle): array
     {
         return [
-            $vehicle->transporter->transporter_name,
+            $vehicle->vendor->vendor_name,
             $vehicle->device_id_plate_no,
             $vehicle->driver_name,
-            $vehicle->mileage,
+            // $vehicle->mileage,
             $vehicle->customer_name,
             $vehicle->register_by->full_name,
             Date::dateTimeToExcel($vehicle->created_at),

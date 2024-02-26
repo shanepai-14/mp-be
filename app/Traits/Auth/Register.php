@@ -59,7 +59,7 @@ trait Register
      *                     type="integer"
      *                 ),
      *                 example={"username_email": "wloc@example.com", "password": "samplepassword",
-     *                          "full_name": "Sample User", "transporter_id": "0", 
+     *                          "full_name": "Sample User", "transporter_id": "0",
      *                          "contact_no": "+123", "user_role": "0"}
      *             )
      *         )
@@ -104,7 +104,7 @@ trait Register
 
         else {
             $isUserExist = User::where('full_name', $request->first_name)
-                ->where('transporter_id', $request->transporter_id)
+                ->where('transporter_id', $request->vendor_id)
                 ->where('user_role', $request->user_role)
                 ->exists();
 
@@ -120,7 +120,7 @@ trait Register
                     // 'password' => Hash::make($generatedPwd),     // Temporarily Disable Password generation
                     'password' => Hash::make($request->password),   // Temporary Password
                     'full_name' => $request->full_name,
-                    'transporter_id' => $request->transporter_id,
+                    'transporter_id' => $request->vendor_id,
                     'contact_no' => $request->contact_no,
                     'user_role' => $request->user_role,
                     'first_login' => $request->first_login ?? true

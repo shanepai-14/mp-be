@@ -159,10 +159,10 @@ class VehicleAssignmentsController extends Controller
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
-     *                 example={"vehicle_id": 0, "vehicle_status": 0, "transporter_id": 0}
+     *                 example={"vehicle_id": 0, "vehicle_status": 0, "vendor_id": 0}
      *             )
      *         )
      *     ),
@@ -185,7 +185,7 @@ class VehicleAssignmentsController extends Controller
         // $req = VehicleAssignment::select();
         // $req = VehicleAssignment::join('vehicles', 'vehicles.id', 'vehicle_assignments.vehicle_id')
         //     ->select('vehicle_assignments.*', 'vehicles.transporter_id');
-       
+
         $req = VehicleAssignment::select('vehicle_assignments.id', 'vehicle_assignments.vehicle_id', 'vehicle_assignments.vehicle_status', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'vehicle_assignments.created_at')
             ->join(DB::raw('(SELECT vehicle_id, MAX(created_at) AS created_at FROM vehicle_assignments GROUP BY vehicle_id) as t2'), function($join) {
                 $join->on('vehicle_assignments.vehicle_id', '=', 't2.vehicle_id');
@@ -199,8 +199,8 @@ class VehicleAssignmentsController extends Controller
         if ($request->vehicle_status)
             $req->where('vehicle_assignments.vehicle_status', $request->vehicle_status);
 
-        if ($request->transporter_id)
-            $req->where('vehicles.transporter_id', $request->transporter_id);
+        if ($request->vendor_id)
+            $req->where('vehicles.transporter_id', $request->vendor_id);
 
 
         // $data = $req->with(['vehicle', 'register_by', 'updated_by'])->get();

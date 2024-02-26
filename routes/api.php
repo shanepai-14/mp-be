@@ -31,7 +31,7 @@ Route::post('/login', [UserController::class, 'login'])->name('login');
 Route::post('/logout', [UserController::class, 'logout'])->middleware('auth:api');
 Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
-Route::post('/transporter/create-with-account', [TransporterController::class, 'publicCreate']);
+Route::post('/vendor/create-with-account', [TransporterController::class, 'publicCreate']);
 Route::post('/user/publicRegister', [UserController::class, 'publicRegister']);
 
 Route::group([
@@ -48,10 +48,10 @@ Route::group([
 
 Route::group([
     'middleware' => 'auth:api',
-    'prefix' => 'transporter'  // Transporter === Vendor
+    'prefix' => 'vendor'  // Transporter === Vendor
 ], function(){
     Route::get('/list', [TransporterController::class, 'list']);
-    Route::get('/transporterById/{id}', [TransporterController::class, 'transporterById']);
+    Route::get('/vendorById/{id}', [TransporterController::class, 'transporterById']);
     Route::put('/update/{id}', [TransporterController::class, 'update']);
     Route::delete('/delete/{id}', [TransporterController::class, 'delete']);
     Route::post('/create', [TransporterController::class, 'create']);
@@ -66,8 +66,8 @@ Route::group([
     Route::post('/list', [VehicleController::class, 'list']);
     Route::get('/vehicleById/{id}', [VehicleController::class, 'vehicleById']);
     Route::post('/export', [VehicleController::class, 'vehicleExport']);
-    Route::get('/provisioning/export', [VehicleController::class, 'provisioningExport']);
-    Route::get('/unregistered/export', [VehicleController::class, 'unregisteredExport']);
+    Route::post('/provisioning/export', [VehicleController::class, 'provisioningExport']);
+    Route::post('/unregistered/export', [VehicleController::class, 'unregisteredExport']);
     Route::put('/update/{id}', [VehicleController::class, 'update']);
     Route::put('/massUpdate', [VehicleController::class, 'massUpdate']);
     Route::delete('/delete/{id}', [VehicleController::class, 'delete']);

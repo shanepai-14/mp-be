@@ -18,13 +18,13 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
 {
     use Exportable;
 
-    private $transporter_id;
+    private $vendor_id;
     private $vehicle_status;
 
 
-    public function __construct($transporter_id, $vehicle_status)
+    public function __construct($vendor_id, $vehicle_status)
     {
-        $this->transporter_id = $transporter_id;
+        $this->vendor_id = $vendor_id;
         $this->vehicle_status = $vehicle_status;
     }
 
@@ -34,7 +34,7 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
             'Vendor',
             'Plate Number',
             'Driver Name',
-            'Mileage',
+            // 'Mileage',
             'Status',
             'Status Updated On',
         ];
@@ -43,7 +43,7 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
     public function columnFormats(): array
     {
         return [
-            'F' => 'yyyy-MMM-dd HH:mm'
+            'E' => 'yyyy-MMM-dd HH:mm'
         ];
     }
 
@@ -60,8 +60,8 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
         ->join('customers', 'current_customers.customer_id', '=', 'customers.id')
         ->select('vehicles.*', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'customers.customer_name', 'vehicle_assignments.vehicle_status');
 
-        if ($this->transporter_id) {
-            $query->where('transporter_id', '=', $this->transporter_id);
+        if ($this->vendor_id) {
+            $query->where('transporter_id', '=', $this->vendor_id);
         }
 
         if ($this->vehicle_status) {
@@ -74,10 +74,10 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
     public function map($vehicle): array
     {
         return [
-            $vehicle->transporter->transporter_name,
+            $vehicle->vendor->vendor_name,
             $vehicle->device_id_plate_no,
             $vehicle->driver_name,
-            $vehicle->mileage,
+            // $vehicle->mileage,
             $this->_getVehicleStatusTxt($vehicle->vehicle_status),
             Date::dateTimeToExcel($vehicle->updated_at),
         ];

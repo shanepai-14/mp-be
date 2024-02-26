@@ -32,16 +32,16 @@ class UserController extends Controller
      *     operationId="UserList",
      *     security={{"bearerAuth": {}}},
      * @OA\RequestBody(
-     *         description="Transporter Id - NOTE: If transporter_id object is omitted then all users will be return.",
+     *         description="Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
      *         required=false,
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
      *                 @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
-     *                 example={"transporter_id": 0}
+     *                 example={"vendor_id": 0}
      *             )
      *         )
      *     ),
@@ -62,9 +62,9 @@ class UserController extends Controller
     public function list(Request $request)
     {
         if ($request->transporter_id)
-            return User::with(['transporter'])->where('transporter_id', $request->transporter_id)->get();
+            return User::with(['vendor'])->where('transporter_id', $request->vendor_id)->get();
 
-        return User::with(['transporter'])->get();
+        return User::with(['vendor'])->get();
     }
 
     /**
@@ -99,7 +99,7 @@ class UserController extends Controller
      */
     public function userById($id)
     {
-        $user = User::with(['transporter'])->find($id);
+        $user = User::with(['vendor'])->find($id);
 
         if ($user) return $user;
 
@@ -143,7 +143,7 @@ class UserController extends Controller
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
      *                  @OA\Property(
@@ -181,7 +181,7 @@ class UserController extends Controller
 
         if ($id == $request->id) {
             $user = User::find($id);
-            
+
             if ($user) {
                 $user->update($request->all());
                 $userData = $this->userById($user->id);
@@ -322,7 +322,7 @@ class UserController extends Controller
         if ($user) {
             // Generate random password
             $generatedPwd = bin2hex(random_bytes(5));
-     
+
             $user->password = Hash::make($generatedPwd);
             if ($user->save()) {
                 $user->first_login = 1;
