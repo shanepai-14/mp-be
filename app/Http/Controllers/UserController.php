@@ -19,6 +19,11 @@ class UserController extends Controller
 {
     use Register, AuthenticateUser;
 
+    public function publicRegister(Request $request)
+    {
+       return $this->register($request);
+    }
+
     /**
      * @OA\Post(
      *     path="/user/list",
