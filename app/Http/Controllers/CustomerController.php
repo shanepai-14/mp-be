@@ -44,16 +44,16 @@ class CustomerController extends Controller
      *                     type="string",
      *                 ),
      *                  @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
-     *                 example={"customer_name": "Customer1", "customer_address": "Singapore", 
+     *                 example={"customer_name": "Customer1", "customer_address": "Singapore",
      *                          "customer_contact_no": "+123123","customer_email": "sample@sample.com",
-     *                          "customer_code": "0001", "transporter_id": 1 }
+     *                          "customer_code": "0001", "vendor_id": 1 }
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
      *         description="Customer is successfully registered",
@@ -92,7 +92,7 @@ class CustomerController extends Controller
                 'customer_contact_no' => $request->customer_contact_no,
                 'customer_email' => $request->customer_email,
                 'customer_code' => $request->customer_code,
-                'transporter_id' => $request->transporter_id,
+                'transporter_id' => $request->vendor_id,
                 'register_by_user_id' => Auth::user()->id
             ]);
 
@@ -135,7 +135,7 @@ class CustomerController extends Controller
      */
     public function customerById($id)
     {
-        $customer = Customer::with(['transporter', 'register_by', 'updated_by'])->find($id);
+        $customer = Customer::with(['vendor', 'register_by', 'updated_by'])->find($id);
 
         if ($customer) {
             return $this->hideFields($customer);
@@ -153,16 +153,16 @@ class CustomerController extends Controller
      *     operationId="CustomerList",
      *     security={{"bearerAuth": {}}},
      * @OA\RequestBody(
-     *         description="Transporter Id - NOTE: If transporter_id object is omitted then all customers will be return.",
+     *         description="Vendor Id - NOTE: If vendor_id object is omitted then all customers will be return.",
      *         required=false,
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
      *                 @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
-     *                 example={"transporter_id": 0}
+     *                 example={"vendor_id": 0}
      *             )
      *         )
      *     ),
@@ -184,10 +184,10 @@ class CustomerController extends Controller
     {
         $customerReq = Customer::select();
 
-        if ($request->transporter_id)
-            $customerReq->where('transporter_id', $request->transporter_id);
+        if ($request->vendor_id)
+            $customerReq->where('transporter_id', $request->vendor_id);
 
-        $data = $customerReq->with(['transporter', 'register_by', 'updated_by'])->get();
+        $data = $customerReq->with(['vendor', 'register_by', 'updated_by'])->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }
@@ -243,12 +243,12 @@ class CustomerController extends Controller
      *                     type="string"
      *                 ),
      *                  @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
-     *                 example={"id": 0, "customer_name": "Customer1", "customer_address": "Singapore", 
+     *                 example={"id": 0, "customer_name": "Customer1", "customer_address": "Singapore",
      *                          "customer_contact_no": "+123123","customer_email": "sample@sample.com",
-     *                          "customer_code": "0001", "transporter_id": 1 }
+     *                          "customer_code": "0001", "vendor_id": 1 }
      *             )
      *         )
      *     ),
@@ -272,7 +272,7 @@ class CustomerController extends Controller
 
         if ($id == $request->id) {
             $customer = Customer::find($id);
-            
+
             if ($customer) {
                 $customer->update([
                     'customer_name' => $request['customer_name'],
@@ -280,7 +280,7 @@ class CustomerController extends Controller
                     'customer_contact_no' => $request['customer_contact_no'],
                     'customer_email' => $request['customer_email'],
                     'customer_code' => $request['customer_code'],
-                    'transporter_id' => $request['transporter_id'],
+                    'transporter_id' => $request['vendor_id'],
                     'updated_by_user_id' => Auth::user()->id
                 ]);
                 $customerData = $this->customerById($customer->id);

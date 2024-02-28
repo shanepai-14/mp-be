@@ -13,45 +13,45 @@ class TransporterController extends Controller
 {
     /**
      * @OA\Post(
-     *     tags={"Transporter"},
-     *     path="/transporter/create-with-account",
-     *     summary="Create Transporter and User Account",
-     *     operationId="CreateTransporterPublic",
+     *     tags={"Vendor"},
+     *     path="/vendor/create-with-account",
+     *     summary="Create Vendor and User Account",
+     *     operationId="CreateVendorPublic",
      *     @OA\RequestBody(
-     *         description="Transporter Information",
+     *         description="Vendor Information",
      *         required=true,
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
      *                 @OA\Property(
-     *                     property="transporter_name",
+     *                     property="vendor_name",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_address",
+     *                     property="vendor_address",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_contact_no",
+     *                     property="vendor_contact_no",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_email",
+     *                     property="vendor_email",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
      *                     property="username_email",
-     *                     description="Email for transporter's account username",
+     *                     description="Email for vendor's account username",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
      *                     property="password",
-     *                     description="Password for transporter's account",
+     *                     description="Password for vendor's account",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
      *                     property="full_name",
-     *                     description="Full name of transporter's user account",
+     *                     description="Full name of vendor's user account",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
@@ -62,16 +62,16 @@ class TransporterController extends Controller
      *                     property="user_role",
      *                     type="integer"
      *                 ),
-     *                 example={"transporter_name": "transporter", "transporter_address": "Singapore", 
-     *                          "transporter_contact_no": "+123123", "transporter_email": "transporter@sample.com",
+     *                 example={"vendor_name": "Vendor", "vendor_address": "Singapore",
+     *                          "vendor_contact_no": "+123123", "vendor_email": "vendor@sample.com",
      *                          "username_email": "username@username.com", "password": "samplepassword", "full_name": "Juan Dela Cruz", "contact_no": "+222222", "user_role": "0"}
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
-     *         description="Transporter is successfully registered",
+     *         description="Vendor is successfully registered",
      *         @OA\JsonContent(ref="#/components/schemas/Transporter")
      *     ),
      *     @OA\Response(
@@ -84,7 +84,7 @@ class TransporterController extends Controller
      *      ),
      *     @OA\Response(
      *          response=409,
-     *          description="Transporter already exist!",
+     *          description="Vendor already exist!",
      *      ),
      *     @OA\Response(
      *          response=500,
@@ -102,8 +102,8 @@ class TransporterController extends Controller
 
 
         // Check if user with the given fullname, transporterId and userRole already exist
-        $isUserExist = User::where('full_name', $request->first_name)
-            ->where('transporter_id', $request->transporter_id)
+        $isUserExist = User::where('full_name', $request->vendor_name)
+            ->where('transporter_id', $request->vendor_id)
             ->where('user_role', $request->user_role)
             ->exists();
 
@@ -118,59 +118,59 @@ class TransporterController extends Controller
         if ($response['status'] === 200) {
             $userCreate = new UserController();
 
-            $request['transporter_id'] = $response['data']['transporter']['id'];
+            $request['vendor_id'] = $response['data']['transporter']['id'];
             $createUser = $userCreate->register($request);
             return json_decode(json_encode($createUser), true)['original'];
-        } 
-        
+        }
+
         else if ($response['status'] === 409)
-            return response('Transporter already exist!', 409);
+            return response('Vendor already exist!', 409);
 
         return response('Server Error', 500);
     }
 
      /**
      * @OA\Post(
-     *     tags={"Transporter"},
-     *     path="/transporter/create",
-     *     summary="Create Transporter",
-     *     operationId="CreateTransporter",
+     *     tags={"Vendor"},
+     *     path="/vendor/create",
+     *     summary="Create Vendor",
+     *     operationId="CreateVendor",
      *     security={{"bearerAuth": {}}},
      *     @OA\RequestBody(
-     *         description="Transporter Information",
+     *         description="Vendor Information",
      *         required=true,
      *         @OA\MediaType(
      *             mediaType="application/json",
      *             @OA\Schema(
      *                 @OA\Property(
-     *                     property="transporter_name",
+     *                     property="vendor_name",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_address",
+     *                     property="vendor_address",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_contact_no",
+     *                     property="vendor_contact_no",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_code",
+     *                     property="vendor_code",
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_email",
+     *                     property="vendor_email",
      *                     type="string"
      *                 ),
-     *                 example={"transporter_name": "transporter", "transporter_address": "Singapore", 
-     *                          "transporter_contact_no": "+123123", "transporter_code": "VE", "transporter_email": "transporter@sample.com"}
+     *                 example={"vendor_name": "Vendor", "vendor_address": "Singapore",
+     *                          "vendor_contact_no": "+123123", "vendor_code": "VE", "vendor_email": "vendor@sample.com"}
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
-     *         description="Transporter is successfully registered",
+     *         description="Vendor is successfully registered",
      *         @OA\JsonContent(ref="#/components/schemas/Transporter")
      *     ),
      *     @OA\Response(
@@ -183,7 +183,7 @@ class TransporterController extends Controller
      *      ),
      *     @OA\Response(
      *          response=409,
-     *          description="Transporter already exist!",
+     *          description="Vendor already exist!",
      *      ),
      *     @OA\Response(
      *          response=500,
@@ -195,24 +195,24 @@ class TransporterController extends Controller
     {
         $response = new ApiResponse();
         // $isTransporterExist = Transporter::where('transporter_code', $request->transporter_code)->exists();
-        $isTransporterExist = Transporter::where('transporter_name', $request->transporter_name)->exists();
+        $isTransporterExist = Transporter::where('transporter_name', $request->vendor_name)->exists();
 
         if ($isTransporterExist)
             return $response->ErrorResponse('Transporter already exist!', 409);
 
         else {
             $newTransporter = Transporter::create([
-                'transporter_name' => $request->transporter_name,
-                'transporter_address' => $request->transporter_address,
-                'transporter_contact_no' => $request->transporter_contact_no,
-                'transporter_code' => $request->transporter_code,
-                'transporter_email' => $request->transporter_email,
+                'transporter_name' => $request->vendor_name,
+                'transporter_address' => $request->vendor_address,
+                'transporter_contact_no' => $request->vendor_contact_no,
+                'transporter_code' => $request->vendor_code,
+                'transporter_email' => $request->vendor_email,
                 'transporter_key' => Str::uuid()->toString()
             ]);
 
             if ($newTransporter) {
                 $responseData = ['transporter' => $newTransporter];
-                return $response->SuccessResponse('Transporter is successfully registered', $responseData);
+                return $response->SuccessResponse('Vendor is successfully registered', $responseData);
             }
 
             return $response->ErrorResponse('Server Error', 500);
@@ -221,10 +221,10 @@ class TransporterController extends Controller
 
     /**
      * @OA\Get(
-     *     tags={"Transporter"},
-     *     path="/transporter/list",
-     *     summary="Get list of transporters",
-     *     operationId="GetTransporterList",
+     *     tags={"Vendor"},
+     *     path="/vendor/list",
+     *     summary="Get list of vendors",
+     *     operationId="GetVendorList",
      *     security={{"bearerAuth": {}}},
      *     @OA\Response(
      *         response=200,
@@ -248,10 +248,10 @@ class TransporterController extends Controller
 
     /**
      * @OA\Get(
-     *     tags={"Transporter"},
-     *     path="/transporter/transporterById/{id}",
-     *     summary="Get transporter by transporter id",
-     *     operationId="GetTransporterById",
+     *     tags={"Vendor"},
+     *     path="/vendor/vendorById/{id}",
+     *     summary="Get vendor by vendor id",
+     *     operationId="GetVendorById",
      *     security={{"bearerAuth": {}}},
      *     @OA\Parameter(
      *         in="path",
@@ -268,7 +268,7 @@ class TransporterController extends Controller
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Transporter not found"
+     *         description="Vendor not found"
      *     ),
      * )
      */
@@ -279,16 +279,16 @@ class TransporterController extends Controller
         if ($transporter) return $transporter;
 
         $response = new ApiResponse();
-        return $response->ErrorResponse('Transporter not found!', 404);
+        return $response->ErrorResponse('Vendor not found!', 404);
     }
 
     /**
      * @OA\Put(
-     *     tags={"Transporter"},
-     *     path="/transporter/update/{id}",
-     *     summary="Updated Transporter",
-     *     description="Update Transporter information.",
-     *     operationId="UpdateTransporter",
+     *     tags={"Vendor"},
+     *     path="/vendor/update/{id}",
+     *     summary="Updated Vendor",
+     *     description="Update Vendor information.",
+     *     operationId="UpdateVendor",
      *     security={{"bearerAuth": {}}},
      *     @OA\Parameter(
      *         in="path",
@@ -300,7 +300,7 @@ class TransporterController extends Controller
      *         )
      *     ),
      *    @OA\RequestBody(
-     *         description="Updated Transporter object",
+     *         description="Updated Vendor object",
      *         required=true,
      *         @OA\MediaType(
      *             mediaType="application/json",
@@ -310,23 +310,23 @@ class TransporterController extends Controller
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_name",
+     *                     property="vendor_name",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_address",
+     *                     property="vendor_address",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_contact_no",
+     *                     property="vendor_contact_no",
      *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_code",
+     *                     property="vendor_code",
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_email",
+     *                     property="vendor_email",
      *                     type="string"
      *                 ),
      *             )
@@ -334,15 +334,15 @@ class TransporterController extends Controller
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Transporter is successfully updated!"
+     *         description="Vendor is successfully updated!"
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Transporter not found"
+     *         description="Vendor not found"
      *     ),
      *     @OA\Response(
      *         response=400,
-     *         description="Transporter Id does not matched!"
+     *         description="Vendor Id does not matched!"
      *     )
      * )
      */
@@ -354,22 +354,28 @@ class TransporterController extends Controller
             $transporter = Transporter::find($id);
 
             if ($transporter) {
-                $transporter->update($request->all());
-                return $response->SuccessResponse('Transporter is successfully updated!', $transporter);
+                $transporter->update([
+                    'transporter_name' => $request->vendor_name,
+                    'transporter_address' => $request->vendor_address,
+                    'transporter_contact_no' => $request->vendor_contact_no,
+                    'transporter_code' => $request->vendor_code,
+                    'transporter_email' => $request->vendor_email,
+                ]);
+                return $response->SuccessResponse('Vendor is successfully updated!', $transporter);
             }
 
-            return $response->ErrorResponse('Transporter not found!', 404);
+            return $response->ErrorResponse('Vendor not found!', 404);
         }
 
-        return $response->ErrorResponse('Transporter Id does not matched!', 400);
+        return $response->ErrorResponse('Vendor Id does not matched!', 400);
     }
 
     /**
      * @OA\Delete(
-     *     tags={"Transporter"},
-     *     path="/transporter/delete/{id}",
-     *     summary="Delete transporter by transporter id",
-     *     operationId="DeleteTransporter",
+     *     tags={"Vendor"},
+     *     path="/vendor/delete/{id}",
+     *     summary="Delete vendor by vendor id",
+     *     operationId="DeleteVendor",
      *     security={{"bearerAuth": {}}},
      *     @OA\Parameter(
      *         in="path",
@@ -381,12 +387,12 @@ class TransporterController extends Controller
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Transporter is successfully deleted!",
+     *         description="Vendor is successfully deleted!",
      *         @OA\JsonContent(ref="#/components/schemas/Transporter")
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Transporter does not exist!"
+     *         description="Vendor does not exist!"
      *     ),
      * )
      */
@@ -397,9 +403,9 @@ class TransporterController extends Controller
 
         if ($transporter) {
             $transporter->delete();
-            return $response->SuccessResponse('Transporter is successfully deleted!', $transporter);
+            return $response->SuccessResponse('Vendor is successfully deleted!', $transporter);
         }
 
-        return $response->ErrorResponse('Transporter does not exist!', 404);
+        return $response->ErrorResponse('Vendor does not exist!', 404);
     }
 }

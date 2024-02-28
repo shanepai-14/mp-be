@@ -34,12 +34,12 @@ class CustomerIpPortController extends Controller
      *                     property="port",
      *                     type="integer"
      *                 ),
-     *                 example={"customer_id": 1, 
+     *                 example={"customer_id": 1,
      *                          "ip": "123.123.123.123","port": 123, }
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
      *         description="Customer IP and Port is successfully registered",
@@ -147,10 +147,10 @@ class CustomerIpPortController extends Controller
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
-     *                 example={"customer_id": 0, "transporter_id": 0}
+     *                 example={"customer_id": 0, "vendor_id": 0}
      *             )
      *         )
      *     ),
@@ -171,16 +171,15 @@ class CustomerIpPortController extends Controller
     public function list(Request $request)
     {
         // $ipPorts = CustomerIpPorts::with(['customer'])->select();
-        $ipPorts = CustomerIpPorts::join('customers', 'customers.id', 'customer_ip_ports.customer_id')
-                    ->select(['customer_ip_ports.*', 'customers.transporter_id']);
+        $ipPorts = CustomerIpPorts::join('customers', 'customers.id', 'customer_ip_ports.customer_id');
 
         if ($request->customer_id)
             $ipPorts->where('customer_ip_ports.customer_id', $request->customer_id);
 
-        if ($request->transporter_id)
-            $ipPorts->where('customers.transporter_id', $request->transporter_id);
+        if ($request->vendor_id)
+            $ipPorts->where('customers.transporter_id', $request->vendor_id);
 
-        $data = $ipPorts->get();
+        $data = $ipPorts->select(['customer_ip_ports.*', 'customers.transporter_id as vendor_id'])->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }
@@ -227,7 +226,7 @@ class CustomerIpPortController extends Controller
      *                     property="port",
      *                     type="integer"
      *                 ),
-     *                 example={"id": 0, "customer_id": 1, 
+     *                 example={"id": 0, "customer_id": 1,
      *                          "ip": "123.123.123.123","port": 123, }
      *             )
      *         )
@@ -252,7 +251,7 @@ class CustomerIpPortController extends Controller
 
         if ($id == $request->id) {
             $custIpPort = CustomerIpPorts::find($id);
-            
+
             if ($custIpPort) {
                 $custIpPort->update($request->all());
                 $custIpPortData = $this->ipPortById($custIpPort->id);

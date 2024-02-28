@@ -34,12 +34,12 @@ class CurrentCustomerController extends Controller
      *                     property="ipport_id",
      *                     type="integer"
      *                 ),
-     *                 example={"vehicle_assignment_id": 1, 
+     *                 example={"vehicle_assignment_id": 1,
      *                          "customer_id": 1,"ipport_id": 1, }
      *             )
      *         )
      *     ),
-     
+
      *     @OA\Response(
      *         response=200,
      *         description="Current customer is successfully registered",
@@ -147,10 +147,10 @@ class CurrentCustomerController extends Controller
      *                     type="integer"
      *                 ),
      *                  @OA\Property(
-     *                     property="transporter_id",
+     *                     property="vendor_id",
      *                     type="integer"
      *                 ),
-     *                 example={"customer_id": 0, "transporter_id": 0}
+     *                 example={"customer_id": 0, "vendor_id": 0}
      *             )
      *         )
      *     ),
@@ -177,8 +177,8 @@ class CurrentCustomerController extends Controller
         if ($request->customer_id)
             $req->where('current_customers.customer_id', $request->customer_id);
 
-        if ($request->transporter_id)
-            $req->where('customers.transporter_id', $request->transporter_id);
+        if ($request->vendor_id)
+            $req->where('customers.transporter_id', $request->vendor_id);
 
         // $data = $req->with(['vehicleAssignment', 'customer', 'ipport', 'register_by', 'updated_by'])->get();
         $data = $req->get();
@@ -228,7 +228,7 @@ class CurrentCustomerController extends Controller
      *                     property="ipport_id",
      *                     type="integer"
      *                 ),
-     *                 example={"id": 1, "vehicle_assignment_id": 1, 
+     *                 example={"id": 1, "vehicle_assignment_id": 1,
      *                          "customer_id": 1,"ipport_id": 1, }
      *             )
      *         )
@@ -250,10 +250,10 @@ class CurrentCustomerController extends Controller
     public function update($id, Request $request)
     {
         $response = new ApiResponse();
-       
+
         if ($id == $request->id) {
             $cust = CurrentCustomer::find($id);
-            
+
             if ($cust) {
                 $cust->update([
                     'vehicle_assignment_id' => $request['vehicle_assignment_id'],
@@ -318,7 +318,7 @@ class CurrentCustomerController extends Controller
 
         if ($customer->customer)
             $customer->customer->makeHidden(['customer_address', 'customer_contact_no', 'customer_email', 'created_at', 'updated_at']);
-       
+
         if ($customer->ipport)
             $customer->ipport->makeHidden(['created_at', 'updated_at']);
 

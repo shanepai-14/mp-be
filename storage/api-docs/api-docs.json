@@ -136,14 +136,14 @@
                                     "customer_id": {
                                         "type": "integer"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
                                     "customer_id": 0,
-                                    "transporter_id": 0
+                                    "vendor_id": 0
                                 }
                             }
                         }
@@ -304,7 +304,7 @@
                                     "customer_code": {
                                         "type": "string"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
@@ -315,7 +315,7 @@
                                     "customer_contact_no": "+123123",
                                     "customer_email": "sample@sample.com",
                                     "customer_code": "0001",
-                                    "transporter_id": 1
+                                    "vendor_id": 1
                                 }
                             }
                         }
@@ -399,19 +399,19 @@
                 "summary": "Get list of customers",
                 "operationId": "CustomerList",
                 "requestBody": {
-                    "description": "Transporter Id - NOTE: If transporter_id object is omitted then all customers will be return.",
+                    "description": "Vendor Id - NOTE: If vendor_id object is omitted then all customers will be return.",
                     "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "transporter_id": 0
+                                    "vendor_id": 0
                                 }
                             }
                         }
@@ -479,7 +479,7 @@
                                     "customer_code": {
                                         "type": "string"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
@@ -491,7 +491,7 @@
                                     "customer_contact_no": "+123123",
                                     "customer_email": "sample@sample.com",
                                     "customer_code": "0001",
-                                    "transporter_id": 1
+                                    "vendor_id": 1
                                 }
                             }
                         }
@@ -675,14 +675,14 @@
                                     "customer_id": {
                                         "type": "integer"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
                                     "customer_id": 0,
-                                    "transporter_id": 0
+                                    "vendor_id": 0
                                 }
                             }
                         }
@@ -871,42 +871,42 @@
                 }
             }
         },
-        "/transporter/create-with-account": {
+        "/vendor/create-with-account": {
             "post": {
                 "tags": [
-                    "Transporter"
+                    "Vendor"
                 ],
-                "summary": "Create Transporter and User Account",
-                "operationId": "CreateTransporterPublic",
+                "summary": "Create Vendor and User Account",
+                "operationId": "CreateVendorPublic",
                 "requestBody": {
-                    "description": "Transporter Information",
+                    "description": "Vendor Information",
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "transporter_name": {
+                                    "vendor_name": {
                                         "type": "string"
                                     },
-                                    "transporter_address": {
+                                    "vendor_address": {
                                         "type": "string"
                                     },
-                                    "transporter_contact_no": {
+                                    "vendor_contact_no": {
                                         "type": "string"
                                     },
-                                    "transporter_email": {
+                                    "vendor_email": {
                                         "type": "string"
                                     },
                                     "username_email": {
-                                        "description": "Email for transporter's account username",
+                                        "description": "Email for vendor's account username",
                                         "type": "string"
                                     },
                                     "password": {
-                                        "description": "Password for transporter's account",
+                                        "description": "Password for vendor's account",
                                         "type": "string"
                                     },
                                     "full_name": {
-                                        "description": "Full name of transporter's user account",
+                                        "description": "Full name of vendor's user account",
                                         "type": "string"
                                     },
                                     "contact_no": {
@@ -918,10 +918,10 @@
                                 },
                                 "type": "object",
                                 "example": {
-                                    "transporter_name": "transporter",
-                                    "transporter_address": "Singapore",
-                                    "transporter_contact_no": "+123123",
-                                    "transporter_email": "transporter@sample.com",
+                                    "vendor_name": "Vendor",
+                                    "vendor_address": "Singapore",
+                                    "vendor_contact_no": "+123123",
+                                    "vendor_email": "vendor@sample.com",
                                     "username_email": "username@username.com",
                                     "password": "samplepassword",
                                     "full_name": "Juan Dela Cruz",
@@ -934,7 +934,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Transporter is successfully registered",
+                        "description": "Vendor is successfully registered",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -950,7 +950,7 @@
                         "description": "Forbidden"
                     },
                     "409": {
-                        "description": "Transporter already exist!"
+                        "description": "Vendor already exist!"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -958,43 +958,43 @@
                 }
             }
         },
-        "/transporter/create": {
+        "/vendor/create": {
             "post": {
                 "tags": [
-                    "Transporter"
+                    "Vendor"
                 ],
-                "summary": "Create Transporter",
-                "operationId": "CreateTransporter",
+                "summary": "Create Vendor",
+                "operationId": "CreateVendor",
                 "requestBody": {
-                    "description": "Transporter Information",
+                    "description": "Vendor Information",
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "transporter_name": {
+                                    "vendor_name": {
                                         "type": "string"
                                     },
-                                    "transporter_address": {
+                                    "vendor_address": {
                                         "type": "string"
                                     },
-                                    "transporter_contact_no": {
+                                    "vendor_contact_no": {
                                         "type": "string"
                                     },
-                                    "transporter_code": {
+                                    "vendor_code": {
                                         "type": "integer"
                                     },
-                                    "transporter_email": {
+                                    "vendor_email": {
                                         "type": "string"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "transporter_name": "transporter",
-                                    "transporter_address": "Singapore",
-                                    "transporter_contact_no": "+123123",
-                                    "transporter_code": "VE",
-                                    "transporter_email": "transporter@sample.com"
+                                    "vendor_name": "Vendor",
+                                    "vendor_address": "Singapore",
+                                    "vendor_contact_no": "+123123",
+                                    "vendor_code": "VE",
+                                    "vendor_email": "vendor@sample.com"
                                 }
                             }
                         }
@@ -1002,7 +1002,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Transporter is successfully registered",
+                        "description": "Vendor is successfully registered",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1018,7 +1018,7 @@
                         "description": "Forbidden"
                     },
                     "409": {
-                        "description": "Transporter already exist!"
+                        "description": "Vendor already exist!"
                     },
                     "500": {
                         "description": "Internal Server Error"
@@ -1031,13 +1031,13 @@
                 ]
             }
         },
-        "/transporter/list": {
+        "/vendor/list": {
             "get": {
                 "tags": [
-                    "Transporter"
+                    "Vendor"
                 ],
-                "summary": "Get list of transporters",
-                "operationId": "GetTransporterList",
+                "summary": "Get list of vendors",
+                "operationId": "GetVendorList",
                 "responses": {
                     "200": {
                         "description": "ok",
@@ -1063,13 +1063,13 @@
                 ]
             }
         },
-        "/transporter/transporterById/{id}": {
+        "/vendor/vendorById/{id}": {
             "get": {
                 "tags": [
-                    "Transporter"
+                    "Vendor"
                 ],
-                "summary": "Get transporter by transporter id",
-                "operationId": "GetTransporterById",
+                "summary": "Get vendor by vendor id",
+                "operationId": "GetVendorById",
                 "parameters": [
                     {
                         "name": "id",
@@ -1092,7 +1092,7 @@
                         }
                     },
                     "404": {
-                        "description": "Transporter not found"
+                        "description": "Vendor not found"
                     }
                 },
                 "security": [
@@ -1102,14 +1102,14 @@
                 ]
             }
         },
-        "/transporter/update/{id}": {
+        "/vendor/update/{id}": {
             "put": {
                 "tags": [
-                    "Transporter"
+                    "Vendor"
                 ],
-                "summary": "Updated Transporter",
-                "description": "Update Transporter information.",
-                "operationId": "UpdateTransporter",
+                "summary": "Updated Vendor",
+                "description": "Update Vendor information.",
+                "operationId": "UpdateVendor",
                 "parameters": [
                     {
                         "name": "id",
@@ -1122,7 +1122,7 @@
                     }
                 ],
                 "requestBody": {
-                    "description": "Updated Transporter object",
+                    "description": "Updated Vendor object",
                     "required": true,
                     "content": {
                         "application/json": {
@@ -1131,19 +1131,19 @@
                                     "id": {
                                         "type": "integer"
                                     },
-                                    "transporter_name": {
+                                    "vendor_name": {
                                         "type": "string"
                                     },
-                                    "transporter_address": {
+                                    "vendor_address": {
                                         "type": "string"
                                     },
-                                    "transporter_contact_no": {
+                                    "vendor_contact_no": {
                                         "type": "string"
                                     },
-                                    "transporter_code": {
+                                    "vendor_code": {
                                         "type": "integer"
                                     },
-                                    "transporter_email": {
+                                    "vendor_email": {
                                         "type": "string"
                                     }
                                 },
@@ -1154,13 +1154,13 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Transporter is successfully updated!"
+                        "description": "Vendor is successfully updated!"
                     },
                     "404": {
-                        "description": "Transporter not found"
+                        "description": "Vendor not found"
                     },
                     "400": {
-                        "description": "Transporter Id does not matched!"
+                        "description": "Vendor Id does not matched!"
                     }
                 },
                 "security": [
@@ -1170,13 +1170,13 @@
                 ]
             }
         },
-        "/transporter/delete/{id}": {
+        "/vendor/delete/{id}": {
             "delete": {
                 "tags": [
-                    "Transporter"
+                    "Vendor"
                 ],
-                "summary": "Delete transporter by transporter id",
-                "operationId": "DeleteTransporter",
+                "summary": "Delete vendor by vendor id",
+                "operationId": "DeleteVendor",
                 "parameters": [
                     {
                         "name": "id",
@@ -1189,7 +1189,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Transporter is successfully deleted!",
+                        "description": "Vendor is successfully deleted!",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1199,7 +1199,7 @@
                         }
                     },
                     "404": {
-                        "description": "Transporter does not exist!"
+                        "description": "Vendor does not exist!"
                     }
                 },
                 "security": [
@@ -1217,19 +1217,19 @@
                 "summary": "Get list of registered users",
                 "operationId": "UserList",
                 "requestBody": {
-                    "description": "Transporter Id - NOTE: If transporter_id object is omitted then all users will be return.",
+                    "description": "Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
                     "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "transporter_id": 0
+                                    "vendor_id": 0
                                 }
                             }
                         }
@@ -1330,7 +1330,7 @@
                                     "full_name": {
                                         "type": "string"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     },
                                     "contact_no": {
@@ -1613,7 +1613,7 @@
                                     "vehicle_status": {
                                         "type": "integer"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
@@ -1621,7 +1621,7 @@
                                 "example": {
                                     "vehicle_id": 0,
                                     "vehicle_status": 0,
-                                    "transporter_id": 0
+                                    "vendor_id": 0
                                 }
                             }
                         }
@@ -1932,14 +1932,14 @@
                                     "device_id_plate_no": {
                                         "type": "string"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
                                     "device_id_plate_no": "ATH0001",
-                                    "transporter_id": 1
+                                    "vendor_id": 1
                                 }
                             }
                         }
@@ -1993,7 +1993,7 @@
                                     "device_id_plate_no": {
                                         "type": "string"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     },
                                     "vehicle_status": {
@@ -2015,7 +2015,7 @@
                                 "type": "object",
                                 "example": {
                                     "device_id_plate_no": "ATH0001",
-                                    "transporter_id": 1,
+                                    "vendor_id": 1,
                                     "vehicle_status": 4,
                                     "driver_name": "Juan Dela Cruz",
                                     "mileage": 1825,
@@ -2058,19 +2058,19 @@
                 "summary": "Get list of registered vehicles",
                 "operationId": "VehicleList",
                 "requestBody": {
-                    "description": "Vehicle Id - NOTE: If vehicle_id object is omitted then all users will be return.",
+                    "description": "Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
                     "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "transporter_id": 0
+                                    "vendor_id": 0
                                 }
                             }
                         }
@@ -2165,7 +2165,7 @@
                                     "device_id_plate_no": {
                                         "type": "string"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
@@ -2213,7 +2213,7 @@
                                     "device_id_plate_no": {
                                         "type": "string"
                                     },
-                                    "transporter_id": {
+                                    "vendor_id": {
                                         "type": "integer"
                                     }
                                 },
@@ -2480,7 +2480,7 @@
                         "description": "Customer code",
                         "type": "string"
                     },
-                    "transporter_id": {
+                    "vendor_id": {
                         "description": "Transporter ID",
                         "type": "integer",
                         "format": "int64"
@@ -2550,7 +2550,7 @@
                 ],
                 "properties": {
                     "CompanyKey": {
-                        "description": "Transporter Key or Company Key",
+                        "description": "Vendor Key or Company Key",
                         "type": "string",
                         "format": "string"
                     },
@@ -2615,7 +2615,7 @@
                         "format": "int32"
                     },
                     "Drum_Status": {
-                        "description": "1 - Unloading, 0 - Mixing",
+                        "description": "2 - Unloading, 1 - Mixing, 0 - Stop",
                         "type": "integer",
                         "format": "int32",
                         "nullable": true
@@ -2643,29 +2643,29 @@
                         "type": "integer",
                         "format": "int64"
                     },
-                    "transporter_name": {
-                        "description": "Transporter Name",
+                    "vendor_name": {
+                        "description": "Vendor Name",
                         "type": "string"
                     },
-                    "transporter_address": {
-                        "description": "Transporter Address",
+                    "vendor_address": {
+                        "description": "Vendor Address",
                         "type": "string"
                     },
-                    "transporter_contact_no": {
-                        "description": "Transporter Contact no.",
+                    "vendor_contact_no": {
+                        "description": "Vendor Contact no.",
                         "type": "string"
                     },
-                    "transporter_email": {
-                        "description": "Transporter Email",
+                    "vendor_email": {
+                        "description": "Vendor Email",
                         "type": "string",
                         "format": "email"
                     },
-                    "transporter_code": {
-                        "description": "Transporter code",
+                    "vendor_code": {
+                        "description": "Vendor code",
                         "type": "string"
                     },
-                    "transporter_key": {
-                        "description": "Transporter Key",
+                    "vendor_key": {
+                        "description": "Vendor Key",
                         "type": "string"
                     }
                 },
@@ -2677,7 +2677,7 @@
                 "required": [
                     "username_email",
                     "full_name",
-                    "transporter_id",
+                    "vendor_id",
                     "user_role"
                 ],
                 "properties": {
@@ -2700,8 +2700,8 @@
                         "description": "Full name",
                         "type": "string"
                     },
-                    "transporter_id": {
-                        "description": "Transporter ID",
+                    "vendor_id": {
+                        "description": "Vendor ID",
                         "type": "integer",
                         "format": "int64"
                     },
@@ -2731,7 +2731,7 @@
                         "description": "Device Id/Plate No.",
                         "type": "string"
                     },
-                    "transporter_id": {
+                    "vendor_id": {
                         "description": "Transporter Id",
                         "type": "string"
                     },

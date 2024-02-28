@@ -16,7 +16,7 @@ use Laravel\Passport\HasApiTokens;
  * @OA\Schema(
  *     title="User",
  *     description="User",
- *     required={"username_email", "full_name", "transporter_id", "user_role"}
+ *     required={"username_email", "full_name", "vendor_id", "user_role"}
  * )
  */
 class User extends Authenticatable
@@ -43,7 +43,7 @@ class User extends Authenticatable
      */
     private $username_email;
 
-     /**
+    /**
      * @OA\Property(
      *     description="Password",
      *     maximum=255
@@ -64,15 +64,16 @@ class User extends Authenticatable
 
     /**
      * @OA\Property(
+     *     property="vendor_id",
      *     format="int64",
-     *     description="Transporter ID",
+     *     description="Vendor ID",
      * )
      *
      * @var integer
      */
     private $transporter_id;
 
-     /**
+    /**
      * @OA\Property(
      *     format="msisdn",
      *     description="Phone",
@@ -107,6 +108,10 @@ class User extends Authenticatable
         'first_login'
     ];
 
+    protected $appends = [
+        'vendor_id'
+    ];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -114,6 +119,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         // 'password',
+        'transporter_id',
         'remember_token',
         'created_at',
         'updated_at'
@@ -130,7 +136,11 @@ class User extends Authenticatable
 
     protected $attributes = [ 'user_role' => 'user' ];
 
-    public function transporter(): BelongsTo
+    public function getVendorIdAttribute(){
+        return $this->attributes['transporter_id'];
+    }
+
+    public function vendor(): BelongsTo
     {
         return $this->belongsTo(Transporter::class);
     }

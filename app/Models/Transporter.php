@@ -31,7 +31,8 @@ class Transporter extends Model
 
     /**
      * @OA\Property(
-     *     description="Transporter Name",
+     *     property="vendor_name",
+     *     description="Vendor Name",
      * )
      *
      * @var string
@@ -40,7 +41,8 @@ class Transporter extends Model
 
     /**
      * @OA\Property(
-     *     description="Transporter Address",
+     *     property="vendor_address",
+     *     description="Vendor Address",
      * )
      *
      * @var string
@@ -49,7 +51,8 @@ class Transporter extends Model
 
     /**
      * @OA\Property(
-     *     description="Transporter Contact no.",
+     *     property="vendor_contact_no",
+     *     description="Vendor Contact no.",
      * )
      *
      * @var string
@@ -58,8 +61,9 @@ class Transporter extends Model
 
     /**
      * @OA\Property(
+     *     property="vendor_email",
      *     format="email",
-     *     description="Transporter Email",
+     *     description="Vendor Email",
      * )
      *
      * @var string
@@ -68,7 +72,8 @@ class Transporter extends Model
 
     /**
      * @OA\Property(
-     *     description="Transporter code",
+     *     property="vendor_code",
+     *     description="Vendor code",
      * )
      *
      * @var string
@@ -77,7 +82,8 @@ class Transporter extends Model
 
     /**
      * @OA\Property(
-     *     description="Transporter Key",
+     *     property="vendor_key",
+     *     description="Vendor Key",
      * )
      *
      * @var string
@@ -93,11 +99,51 @@ class Transporter extends Model
         'transporter_key'
     ];
 
+    protected $appends = [
+        'vendor_name',
+        'vendor_address',
+        'vendor_contact_no',
+        'vendor_email',
+        'vendor_code',
+        'vendor_key',
+    ];
+
     protected $hidden = [
+        'transporter_name',
+        'transporter_address',
+        'transporter_contact_no',
+        'transporter_email',
+        'transporter_code',
+        'transporter_key',
         'created_at',
         'updated_at',
         'deleted_at'
     ];
+
+    public function getVendorNameAttribute(){
+        return $this->attributes['transporter_name'];
+    }
+
+    public function getVendorAddressAttribute(){
+        return $this->attributes['transporter_address'];
+    }
+
+    public function getVendorContactNoAttribute(){
+        return $this->attributes['transporter_contact_no'];
+    }
+
+    public function getVendorEmailAttribute(){
+        return $this->attributes['transporter_email'];
+    }
+
+    public function getVendorCodeAttribute(){
+        return $this->attributes['transporter_code'];
+    }
+
+    public function getVendorKeyAttribute(){
+        return $this->attributes['transporter_key'];
+    }
+
 
     public function user(): HasMany
     {

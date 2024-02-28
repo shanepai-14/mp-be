@@ -28,11 +28,11 @@ class Gps extends Model
      * @OA\Property(
      *     property="CompanyKey",
      *     format="string",
-     *     description="Transporter Key or Company Key"
+     *     description="Vendor Key or Company Key"
      * )
      *
      * @var string
-     * 
+     *
      */
     private $CompanyKey;
 
@@ -160,7 +160,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="1 - Unloading, 0 - Mixing",
+     *     description="2 - Unloading, 1 - Mixing, 0 - Stop",
      *     nullable=true
      * )
      *
