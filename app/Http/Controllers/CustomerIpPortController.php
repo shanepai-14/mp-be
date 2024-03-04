@@ -171,15 +171,12 @@ class CustomerIpPortController extends Controller
     public function list(Request $request)
     {
         // $ipPorts = CustomerIpPorts::with(['customer'])->select();
-        $ipPorts = CustomerIpPorts::join('customers', 'customers.id', 'customer_ip_ports.customer_id');
+        $ipPorts = CustomerIpPorts::select();
 
         if ($request->customer_id)
             $ipPorts->where('customer_ip_ports.customer_id', $request->customer_id);
 
-        if ($request->vendor_id)
-            $ipPorts->where('customers.transporter_id', $request->vendor_id);
-
-        $data = $ipPorts->select(['customer_ip_ports.*', 'customers.transporter_id as vendor_id'])->get();
+        $data = $ipPorts->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
         }

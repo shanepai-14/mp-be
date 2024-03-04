@@ -135,15 +135,11 @@
                                 "properties": {
                                     "customer_id": {
                                         "type": "integer"
-                                    },
-                                    "vendor_id": {
-                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
                                 "example": {
-                                    "customer_id": 0,
-                                    "vendor_id": 0
+                                    "customer_id": 0
                                 }
                             }
                         }
@@ -303,9 +299,6 @@
                                     },
                                     "customer_code": {
                                         "type": "string"
-                                    },
-                                    "vendor_id": {
-                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
@@ -314,8 +307,7 @@
                                     "customer_address": "Singapore",
                                     "customer_contact_no": "+123123",
                                     "customer_email": "sample@sample.com",
-                                    "customer_code": "0001",
-                                    "vendor_id": 1
+                                    "customer_code": "0001"
                                 }
                             }
                         }
@@ -398,25 +390,6 @@
                 ],
                 "summary": "Get list of customers",
                 "operationId": "CustomerList",
-                "requestBody": {
-                    "description": "Vendor Id - NOTE: If vendor_id object is omitted then all customers will be return.",
-                    "required": false,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "vendor_id": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "type": "object",
-                                "example": {
-                                    "vendor_id": 0
-                                }
-                            }
-                        }
-                    }
-                },
                 "responses": {
                     "200": {
                         "description": "ok"
@@ -478,9 +451,6 @@
                                     },
                                     "customer_code": {
                                         "type": "string"
-                                    },
-                                    "vendor_id": {
-                                        "type": "integer"
                                     }
                                 },
                                 "type": "object",
@@ -490,8 +460,7 @@
                                     "customer_address": "Singapore",
                                     "customer_contact_no": "+123123",
                                     "customer_email": "sample@sample.com",
-                                    "customer_code": "0001",
-                                    "vendor_id": 1
+                                    "customer_code": "0001"
                                 }
                             }
                         }
@@ -1509,7 +1478,12 @@
                                         "type": "string"
                                     },
                                     "mileage": {
+                                        "description": "",
                                         "type": "integer"
+                                    },
+                                    "customer_code": {
+                                        "description": "",
+                                        "type": "string"
                                     }
                                 },
                                 "type": "object",
@@ -1517,7 +1491,8 @@
                                     "vehicle_id": 1,
                                     "vehicle_status": 4,
                                     "driver_name": "Juan Dela Cruz",
-                                    "mileage": 1825
+                                    "mileage": 1825,
+                                    "customer_code": "ICPL, Alliance"
                                 }
                             }
                         }
@@ -1685,6 +1660,9 @@
                                     },
                                     "mileage": {
                                         "type": "integer"
+                                    },
+                                    "customer_code": {
+                                        "type": "string"
                                     }
                                 },
                                 "type": "object",
@@ -1693,7 +1671,8 @@
                                     "vehicle_id": 1,
                                     "vehicle_status": 4,
                                     "driver_name": "Juan Dela Cruz",
-                                    "mileage": 1825
+                                    "mileage": 1825,
+                                    "customer_code": "ICPL, Alliance"
                                 }
                             }
                         }
@@ -1758,14 +1737,25 @@
                                     "mileage": {
                                         "type": "integer"
                                     },
-                                    "current_customer_id": {
-                                        "type": "integer"
+                                    "customer_code": {
+                                        "type": "string"
                                     },
-                                    "customer_id": {
-                                        "type": "integer"
-                                    },
-                                    "ipport_id": {
-                                        "type": "integer"
+                                    "customers": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "current_customer_id": {
+                                                    "type": "integer"
+                                                },
+                                                "customer_id": {
+                                                    "type": "integer"
+                                                },
+                                                "ipport_id": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -1855,14 +1845,22 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "ipport_id": {
-                                        "type": "integer"
+                                    "customers": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "customer_id": {
+                                                    "type": "integer"
+                                                },
+                                                "ipport_id": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
-                                "type": "object",
-                                "example": {
-                                    "ipport_id": 0
-                                }
+                                "type": "object"
                             }
                         }
                     }
@@ -1872,7 +1870,7 @@
                         "description": "Vehicle assignment is approved!"
                     },
                     "404": {
-                        "description": "Current customer not found or Vehicle assignment not found"
+                        "description": "Vehicle Assignment not found!"
                     }
                 },
                 "security": [
@@ -2005,11 +2003,22 @@
                                     "mileage": {
                                         "type": "integer"
                                     },
-                                    "customer_id": {
-                                        "type": "integer"
+                                    "customer_code": {
+                                        "type": "string"
                                     },
-                                    "ipport_id": {
-                                        "type": "integer"
+                                    "customers": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "customer_id": {
+                                                    "type": "integer"
+                                                },
+                                                "ipport_id": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
                                 "type": "object",
@@ -2018,9 +2027,14 @@
                                     "vendor_id": 1,
                                     "vehicle_status": 4,
                                     "driver_name": "Juan Dela Cruz",
-                                    "mileage": 1825,
-                                    "customer_id": 1,
-                                    "ipport_id": 1
+                                    "mileage": 0,
+                                    "customer_code": "ICPL, ALNC",
+                                    "customers": [
+                                        {
+                                            "customer_id": 1,
+                                            "ipport_id": 1
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -2480,11 +2494,6 @@
                         "description": "Customer code",
                         "type": "string"
                     },
-                    "vendor_id": {
-                        "description": "Transporter ID",
-                        "type": "integer",
-                        "format": "int64"
-                    },
                     "register_by_user_id": {
                         "description": "Register By UserId",
                         "type": "integer",
@@ -2770,6 +2779,10 @@
                     },
                     "vehicle_status": {
                         "description": "Vehicle Status Id",
+                        "type": "string"
+                    },
+                    "customer_code": {
+                        "description": "Customer code",
                         "type": "string"
                     },
                     "driver_name": {

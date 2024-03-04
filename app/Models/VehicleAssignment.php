@@ -52,6 +52,15 @@ class VehicleAssignment extends Model
 
     /**
      * @OA\Property(
+     *     description="Customer code",
+     * )
+     *
+     * @var string
+     */
+    private $customer_code;
+
+    /**
+     * @OA\Property(
      *     description="Driver name",
      * )
      *
@@ -94,6 +103,7 @@ class VehicleAssignment extends Model
         'vehicle_status',
         'driver_name',
         'mileage',
+        'customer_code',
         'register_by_user_id',
         'updated_by_user_id'
     ];
