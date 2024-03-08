@@ -77,17 +77,6 @@ class Customer extends Model
      */
     private $customer_code;
 
-     /**
-     * @OA\Property(
-     *     property="vendor_id",
-     *     format="int64",
-     *     description="Transporter ID",
-     * )
-     *
-     * @var integer
-     */
-    private $transporter_id;
-
     /**
      * @OA\Property(
      *     format="int64",
@@ -114,31 +103,15 @@ class Customer extends Model
         'customer_contact_no',
         'customer_email',
         'customer_code',
-        'transporter_id',
         'register_by_user_id',
         'updated_by_user_id'
     ];
 
-    protected $appends = [
-        'vendor_id'
-    ];
-
     protected $hidden = [
-        'transporter_id',
         'created_at',
         'updated_at',
         'deleted_at'
     ];
-
-    public function getVendorIdAttribute(){
-        return $this->attributes['transporter_id'];
-    }
-
-    // *NOTE: VENDOR === TRANSPORTER
-    public function vendor(): BelongsTo
-    {
-        return $this->belongsTo(Transporter::class, 'transporter_id', 'id');
-    }
 
     public function customerIpPort(): HasMany
     {

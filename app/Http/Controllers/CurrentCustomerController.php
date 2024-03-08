@@ -146,11 +146,7 @@ class CurrentCustomerController extends Controller
      *                     property="customer_id",
      *                     type="integer"
      *                 ),
-     *                  @OA\Property(
-     *                     property="vendor_id",
-     *                     type="integer"
-     *                 ),
-     *                 example={"customer_id": 0, "vendor_id": 0}
+     *                 example={"customer_id": 0}
      *             )
      *         )
      *     ),
@@ -172,13 +168,10 @@ class CurrentCustomerController extends Controller
     {
         // $req = CurrentCustomer::select();
         $req = CurrentCustomer::join('customers', 'customers.id', 'current_customers.customer_id')
-                ->select('current_customers.*', 'customers.transporter_id');
+                ->select('current_customers.*');
 
         if ($request->customer_id)
             $req->where('current_customers.customer_id', $request->customer_id);
-
-        if ($request->vendor_id)
-            $req->where('customers.transporter_id', $request->vendor_id);
 
         // $data = $req->with(['vehicleAssignment', 'customer', 'ipport', 'register_by', 'updated_by'])->get();
         $data = $req->get();

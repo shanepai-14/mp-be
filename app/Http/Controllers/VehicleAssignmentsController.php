@@ -39,10 +39,16 @@ class VehicleAssignmentsController extends Controller
      *                 ),
      *                 @OA\Property(
      *                     property="mileage",
+     *                     description="",
      *                     type="integer"
      *                 ),
+     *                 @OA\Property(
+     *                     property="customer_code",
+     *                     description="",
+     *                     type="string"
+     *                 ),
      *                 example={"vehicle_id": 1, "vehicle_status": 4,
-     *                          "driver_name": "Juan Dela Cruz","mileage": 1825, }
+     *                          "driver_name": "Juan Dela Cruz","mileage": 1825, "customer_code": "ICPL, Alliance" }
      *             )
      *         )
      *     ),
@@ -85,6 +91,7 @@ class VehicleAssignmentsController extends Controller
                 'vehicle_status' => $request->vehicle_status,
                 'driver_name' => $request->driver_name,
                 'mileage' => $request->mileage,
+                'customer_code' => $request->customer_code,
                 'register_by_user_id' => Auth::user()->id
             ]);
 
@@ -186,8 +193,16 @@ class VehicleAssignmentsController extends Controller
         // $req = VehicleAssignment::join('vehicles', 'vehicles.id', 'vehicle_assignments.vehicle_id')
         //     ->select('vehicle_assignments.*', 'vehicles.transporter_id');
 
-        $req = VehicleAssignment::select('vehicle_assignments.id', 'vehicle_assignments.vehicle_id', 'vehicle_assignments.vehicle_status', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'vehicle_assignments.created_at')
-            ->join(DB::raw('(SELECT vehicle_id, MAX(created_at) AS created_at FROM vehicle_assignments GROUP BY vehicle_id) as t2'), function($join) {
+        $req = VehicleAssignment::select(
+            'vehicle_assignments.id',
+            'vehicle_assignments.vehicle_id',
+            'vehicle_assignments.vehicle_status',
+            'vehicle_assignments.driver_name',
+            'vehicle_assignments.mileage',
+            'vehicle_assignments.customer_code',
+            'vehicle_assignments.created_at'
+        )
+            ->join(DB::raw('(SELECT vehicle_id, MAX(created_at) AS created_at FROM vehicle_assignments GROUP BY vehicle_id) as t2'), function ($join) {
                 $join->on('vehicle_assignments.vehicle_id', '=', 't2.vehicle_id');
                 $join->on('vehicle_assignments.created_at', '=', 't2.created_at');
             })
@@ -255,8 +270,12 @@ class VehicleAssignmentsController extends Controller
      *                     property="mileage",
      *                     type="integer"
      *                 ),
+     *                  @OA\Property(
+     *                     property="customer_code",
+     *                     type="string"
+     *                 ),
      *                 example={"id": 1, "vehicle_id": 1, "vehicle_status": 4,
-     *                          "driver_name": "Juan Dela Cruz","mileage": 1825, }
+     *                          "driver_name": "Juan Dela Cruz","mileage": 1825, "customer_code": "ICPL, Alliance" }
      *             )
      *         )
      *     ),
@@ -321,6 +340,7 @@ class VehicleAssignmentsController extends Controller
             'vehicle_status' => $request['vehicle_status'],
             'driver_name' => $request['driver_name'],
             'mileage' => $request['mileage'],
+            'customer_code' => $request->has('customer_code') ? $request['customer_code'] : $VA->customer_code,
             'updated_by_user_id' => Auth::user()->id
         ]);
     }
@@ -368,18 +388,28 @@ class VehicleAssignmentsController extends Controller
      *                     property="mileage",
      *                     type="integer"
      *                 ),
-     *                 @OA\Property(
-     *                     property="current_customer_id",
-     *                     type="integer"
+     *                  @OA\Property(
+     *                     property="customer_code",
+     *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="customer_id",
-     *                     type="integer"
+     *                     property="customers",
+     *                     type="array",
+     *                     @OA\Items(
+     *                      @OA\Property(
+     *                          property="current_customer_id",
+     *                          type="integer"
+     *                      ),
+     *                      @OA\Property(
+     *                          property="customer_id",
+     *                          type="integer"
+     *                      ),
+     *                      @OA\Property(
+     *                          property="ipport_id",
+     *                          type="integer"
+     *                      )
+     *                     )
      *                 ),
-     *                 @OA\Property(
-     *                     property="ipport_id",
-     *                     type="integer"
-     *                 )
      *             )
      *         )
      *     ),
@@ -404,38 +434,73 @@ class VehicleAssignmentsController extends Controller
 
         if ($id == $request->id) {
             $VA = VehicleAssignment::find($id);
+            $customerCount = count($request->customers ?? []);
+            $currCustomers = [];
 
             if ($VA->vehicle_id != $request->vehicle_id) $isAssignmentChange = true;
             if ($VA->driver_name != $request->driver_name) $isAssignmentChange = true;
             if ($VA->mileage != $request->mileage) $isAssignmentChange = true;
+            if ($customerCount === 0 && $VA->customer_code != $request->customer_code) $isAssignmentChange = true;
+            if ($VA->vehicle_status !== 1 && $customerCount > 0) $isAssignmentChange = true;
 
             if ($isAssignmentChange) {
                 // if ipport_id is present in request body that means Operator/Admin is doing the update
                 // Set status to approved once Operator/Admin is doing the update
-                if (!$request->missing('ipport_id')) {
+                // Only the admin can select customers
+                if ($customerCount > 0) {
                     $request['vehicle_status'] = 1;
                     $updateAssign = $this->update($id, $request);
                     $assignResponse = (json_decode(json_encode($updateAssign), true)['original']);
 
                     if ($updateAssign->status() == 200) {
-                        $currCust = new CurrentCustomerController();
-                        $currCust_req = new Request();
-                        $currCust_req['id'] = $request->current_customer_id;
-                        $currCust_req['vehicle_assignment_id'] = $request->id;
-                        $currCust_req['customer_id'] = $request->customer_id;
-                        $currCust_req['ipport_id'] = $request->ipport_id;
+                        $customerCount = count($request->customers ?? []);
 
-                        $updateCurrCust = $currCust->update($request->current_customer_id, $currCust_req);
-                        $currCustResponse = (json_decode(json_encode($updateCurrCust), true)['original']);
+                        if ($customerCount > 0) {
+                            $currCust = new CurrentCustomerController();
+                            for ($i = 0; $i < $customerCount; $i++) {
+                                $currentCustomer = $request->customers[$i];
+                                $currCust_req = new Request();
+                                $hasCurrCustomerId = array_key_exists('current_customer_id', $currentCustomer);
+                                $currCust_req['id'] = $hasCurrCustomerId ? $currentCustomer['current_customer_id'] : null;
+                                $currCust_req['vehicle_assignment_id'] = $request->id;
+                                $currCust_req['customer_id'] = $currentCustomer['customer_id'];
+                                $currCust_req['ipport_id'] = $currentCustomer['ipport_id'];
 
-                        if ($updateCurrCust->status() == 200) {
-                            return $response->SuccessResponse('Successfully updated!', [
-                                'vehicle_assignment' => $assignResponse['data'],
-                                'current_customer' => $currCustResponse['data'],
-                            ]);
+                                if ($hasCurrCustomerId) {
+                                    $updateCurrCust = $currCust->update($currCust_req['id'], $currCust_req);
+                                    $updateCurrCustRes = (json_decode(json_encode($updateCurrCust), true)['original']);
+
+                                    if ($updateCurrCust->status() !== 200) {
+                                        return $response->ErrorResponse($updateCurrCustRes['message'] ?? 'Failed to update!', $updateCurrCust->status());
+                                    }
+
+                                    array_push($currCustomers, $updateCurrCustRes['data']);
+                                } else {
+                                    $currCustCreate = $currCust->create($currCust_req);
+                                    $currCustCreateRes = (json_decode(json_encode($currCustCreate), true)['original']);
+
+                                    if ($currCustCreateRes->status() !== 200) {
+                                        return $response->ErrorResponse($currCustCreateRes['message'] ?? 'Failed to update!', $currCustCreate->status());
+                                    }
+
+                                    array_push($currCustomers, $currCustCreateRes['data']['current-customer']);
+                                }
+                            }
+
+                            if (count($currCustomers) > 0) {
+                                $updateVehicleAssignment = VehicleAssignment::find($request->id);
+                                $updateVehicleAssignment['customer_code'] = join(", ", array_unique(array_map(function ($value) {
+                                    return $value['customer']['customer_code'];
+                                }, $currCustomers)));
+                                $updateVehicleAssignment->save();
+                                $assignResponse['data'] = $updateVehicleAssignment;
+                            }
                         }
 
-                        return $response->ErrorResponse($currCustResponse['message'] ?? 'Current - Failed to update!', $updateCurrCust->status());
+                        return $response->SuccessResponse('Successfully updated!', [
+                            'vehicle_assignment' => $assignResponse['data'],
+                            'current_customer' => $currCustomers,
+                        ]);
                     }
 
                     return $response->ErrorResponse($assignResponse['message'] ?? 'Assignment - Failed to update!', $updateAssign->status());
@@ -448,45 +513,59 @@ class VehicleAssignmentsController extends Controller
                     $assignResponse = (json_decode(json_encode($createAssign), true)['original']);
 
                     if ($createAssign->status() == 200) {
-
-                        $currCust = new CurrentCustomerController();
-                        $currCust_req = new Request();
-                        $currCust_req['id'] = $request->current_customer_id;
-                        $currCust_req['vehicle_assignment_id'] = $assignResponse['data']['vehicle-assignment']['id'];
-                        $currCust_req['customer_id'] = $request->customer_id;
-                        $currCust_req['ipport_id'] = $request->ipport_id;
-                        $currCustUpdate = $currCust->update($request->current_customer_id, $currCust_req);
-                        $currCustResponse = (json_decode(json_encode($currCustUpdate), true)['original']);
-
-                        if ($currCustUpdate->status() == 200) {
-                            return $response->SuccessResponse('Vehicle successfully created!', [
-                                'vehicle_assignment' => $assignResponse['data']['vehicle-assignment'],
-                                'current_customer' => $currCustResponse['data']
-                            ]);
-                        }
-
-                        return $response->ErrorResponse($currCustResponse['message'] ?? 'Current - Failed to update!', $currCustUpdate->status());
+                        return $response->SuccessResponse('Vehicle successfully created!', [
+                            'vehicle_assignment' => $assignResponse['data']['vehicle-assignment'],
+                        ]);
                     }
 
                     return $response->ErrorResponse($assignResponse['message'] ?? 'Assignment - Failed to update!', $createAssign->status());
                 }
             } else {
-                $currCust = new CurrentCustomerController();
-                $currCust_req = new Request();
-                $currCust_req['id'] = $request->current_customer_id;
-                $currCust_req['vehicle_assignment_id'] = $request->id;
-                $currCust_req['customer_id'] = $request->customer_id;
-                $currCust_req['ipport_id'] = $request->ipport_id;
-                $updateCurrCust = $currCust->update($request->current_customer_id, $currCust_req);
-                $currCustResponse = (json_decode(json_encode($updateCurrCust), true)['original']);
+                if ($customerCount > 0) {
+                    $currCust = new CurrentCustomerController();
 
-                if ($updateCurrCust->status() == 200) {
+                    for ($i = 0; $i < $customerCount; $i++) {
+                        $currentCustomer = $request->customers[$i];
+                        $currCust_req = new Request();
+                        $hasCurrCustomerId = array_key_exists('current_customer_id', $currentCustomer);
+                        $currCust_req['id'] = $hasCurrCustomerId ? $currentCustomer['current_customer_id'] : null;
+                        $currCust_req['vehicle_assignment_id'] = $request->id;
+                        $currCust_req['customer_id'] = $currentCustomer['customer_id'];
+                        $currCust_req['ipport_id'] = $currentCustomer['ipport_id'];
+
+                        if ($hasCurrCustomerId) {
+                            $updateCurrCust = $currCust->update($currCust_req['id'], $currCust_req);
+                            $updateCurrCustRes = (json_decode(json_encode($updateCurrCust), true)['original']);
+                            if ($updateCurrCust->status() !== 200) {
+                                return $response->ErrorResponse($updateCurrCustRes['message'] ?? 'Failed to update!', $updateCurrCust->status());
+                            }
+
+                            array_push($currCustomers, $updateCurrCustRes['data']);
+                        } else {
+                            $currCustCreate = $currCust->create($currCust_req);
+                            $updateCurrCustRes = (json_decode(json_encode($currCustCreate), true)['original']);
+                            if ($currCustCreate->status() !== 200) {
+                                return $response->ErrorResponse($updateCurrCustRes['message'] ?? 'Failed to update!', $currCustCreate->status());
+                            }
+
+                            array_push($currCustomers, $updateCurrCustRes['data']['current-customer']);
+                        }
+                    }
+
+                    $updateVehicleAssignment = VehicleAssignment::find($request->id);
+                    $updateVehicleAssignment['customer_code'] = join(", ", array_unique(array_map(function ($value) {
+                        return $value['customer']['customer_code'];
+                    }, $currCustomers)));
+                    $updateVehicleAssignment->save();
+                    $assignResponse['data'] = $updateVehicleAssignment;
+
                     return $response->SuccessResponse('Successfully updated!', [
-                        'current_customer' => $currCustResponse['data']
+                        'vehicle_assignment' => $updateVehicleAssignment,
+                        'current_customer' => $currCustomers
                     ]);
+                } else {
+                    return $response->SuccessResponse('No Changes!', []);
                 }
-
-                return $response->ErrorResponse($currCustResponse['message'] ?? 'Failed to update!', $updateCurrCust->status());
             }
         }
 
@@ -555,10 +634,19 @@ class VehicleAssignmentsController extends Controller
      *             mediaType="application/json",
      *             @OA\Schema(
      *                  @OA\Property(
-     *                     property="ipport_id",
-     *                     type="integer"
+     *                     property="customers",
+     *                     type="array",
+     *                     @OA\Items(
+     *                      @OA\Property(
+     *                          property="customer_id",
+     *                          type="integer"
+     *                      ),
+     *                      @OA\Property(
+     *                          property="ipport_id",
+     *                          type="integer"
+     *                      )
+     *                     )
      *                 ),
-     *                 example={"ipport_id": 0}
      *             )
      *         )
      *     ),
@@ -568,7 +656,7 @@ class VehicleAssignmentsController extends Controller
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Current customer not found or Vehicle assignment not found"
+     *         description="Vehicle Assignment not found!"
      *     ),
      * )
      */
@@ -576,33 +664,49 @@ class VehicleAssignmentsController extends Controller
     {
         $response = new ApiResponse();
         $VA = VehicleAssignment::find($id);
-        $CC = CurrentCustomer::where('vehicle_assignment_id', '=', $VA->id)->get();
 
-        if (count($CC) > 0) {
-            $CC = $CC->first();
-            if ($VA) {
-                $currentCustomer = new CurrentCustomerController();
-                $request['id'] = $CC->id;
-                $request['vehicle_assignment_id'] = $id;
-                $request['customer_id'] = $CC->customer_id;
-                $request['ipport_id'] = $request->ipport_id;
-                $currUpdateReq = $currentCustomer->update($CC->id, $request);
-                $currUpdateRes = (json_decode(json_encode($currUpdateReq), true)['original']);
+        if ($VA) {
+            $currCustomerCreated = [];
+            $currCust = new CurrentCustomerController();
+            for ($i = 0; $i < count($request->customers); $i++) {
+                $currentCustomer = $request->customers[$i];
+                $isCCExisted = CurrentCustomer::where([
+                    ['vehicle_assignment_id', $VA->id],
+                    ['customer_id', $currentCustomer['customer_id']],
+                    ['ipport_id', $currentCustomer['ipport_id']]
+                ])->count() > 0;
 
-                if ($currUpdateReq->status() === 200) {
-                    $request['id'] = $VA->id;
-                    $request['vehicle_status'] = 1;
-                    $request['vehicle_id'] = $VA->vehicle_id;
-                    $request['driver_name'] = $VA->driver_name;
-                    $request['mileage'] = $VA->mileage;
-                    $assignmentReq = $this->update($id, $request);
-                    $assignmentRes = (json_decode(json_encode($assignmentReq), true)['original']);
-                    if ($assignmentReq->status() === 200) {
-                        return $response->SuccessResponse('Vehicle assignment is approved!', 200);
-                    } else return $response->ErrorResponse($assignmentRes['message'] ?? 'Failed to update vehicle assignment!', 400);
-                } else return $response->ErrorResponse($currUpdateRes['message'] ?? 'Failed to update current customer!', 400);
-            } else return $response->ErrorResponse('Vehicle Assignment not found!', 404);
-        } else return $response->ErrorResponse('Current customer not found!', 404);
+                if (!$isCCExisted) {
+                    $currCust_req = new Request();
+                    $currCust_req['vehicle_assignment_id'] = $VA->id;
+                    $currCust_req['customer_id'] = $currentCustomer['customer_id'];
+                    $currCust_req['ipport_id'] = $currentCustomer['ipport_id'];
+                    $currCustCreate = $currCust->create($currCust_req);
+                    $currCustCreateRes = (json_decode(json_encode($currCustCreate), true)['original']);
+                    if ($currCustCreate->status() !== 200) {
+                        return $response->ErrorResponse($currCustCreateRes['message'] ?? 'Failed to update!', $currCustCreate->status());
+                    }
+
+                    array_push($currCustomerCreated, $currCustCreateRes['data']['current-customer']);
+                }
+            }
+
+            $request['id'] = $VA->id;
+            $request['vehicle_status'] = 1;
+            $request['vehicle_id'] = $VA->vehicle_id;
+            $request['driver_name'] = $VA->driver_name;
+            $request['mileage'] = $VA->mileage;
+            if (count($currCustomerCreated) > 0) {
+                $request['customer_code'] = join(", ", array_unique(array_map(function ($value) {
+                    return $value['customer']['customer_code'];
+                }, $currCustomerCreated)));
+            }
+            $assignmentReq = $this->update($id, $request);
+            $assignmentRes = (json_decode(json_encode($assignmentReq), true)['original']);
+            if ($assignmentReq->status() === 200) {
+                return $response->SuccessResponse('Vehicle assignment is approved!', 200);
+            } else return $response->ErrorResponse($assignmentRes['message'] ?? 'Failed to update vehicle assignment!', 400);
+        } else return $response->ErrorResponse('Vehicle Assignment not found!', 404);
     }
 
     /**

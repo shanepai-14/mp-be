@@ -7,6 +7,7 @@ use App\Exports\UnregisteredVehiclesExport;
 use App\Exports\VehiclesExport;
 use App\Http\Response\ApiResponse;
 use App\Models\Vehicle;
+use App\Models\VehicleAssignment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -128,17 +129,27 @@ class VehicleController extends Controller
      *                     type="integer"
      *                 ),
      *                 @OA\Property(
-     *                     property="customer_id",
-     *                     type="integer"
+     *                     property="customer_code",
+     *                     type="string"
      *                 ),
      *                 @OA\Property(
-     *                     property="ipport_id",
-     *                     type="integer"
+     *                     property="customers",
+     *                     type="array",
+     *                     @OA\Items(
+     *                      @OA\Property(
+     *                          property="customer_id",
+     *                          type="integer"
+     *                      ),
+     *                      @OA\Property(
+     *                          property="ipport_id",
+     *                          type="integer"
+     *                      )
+     *                     )
      *                 ),
      *                 example={"device_id_plate_no": "ATH0001",
      *                          "vendor_id": 1, "vehicle_status": 4,
-     *                          "driver_name": "Juan Dela Cruz", "mileage": 1825,
-     *                          "customer_id": 1, "ipport_id": 1 }
+     *                          "driver_name": "Juan Dela Cruz", "mileage": 0, "customer_code": "ICPL, ALNC",
+     *                          "customers": {{ "customer_id": 1, "ipport_id": 1 }} }
      *             )
      *         )
      *     ),
@@ -167,44 +178,64 @@ class VehicleController extends Controller
      */
     public function createCompleteData(Request $request)
     {
-       $response = new ApiResponse();
-       $vehicleCreate = $this->create($request);
-       $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
+        $response = new ApiResponse();
+        $vehicleCreate = $this->create($request);
+        $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
 
-       if($vehicleCreate->status() == 200)
-       {
-            $request['vehicle_id'] = $vehicleResponse['data']['vehicle']['id'];
+        try {
+            if ($vehicleCreate->status() == 200) {
+                $request['vehicle_id'] = $vehicleResponse['data']['vehicle']['id'];
 
-            $assignment = new VehicleAssignmentsController();
-            $assignCreate = $assignment->create($request);
-
-            if($assignCreate->status() == 200) {
+                $assignment = new VehicleAssignmentsController();
+                $assignCreate = $assignment->create($request);
                 $assignResponse = (json_decode(json_encode($assignCreate), true)['original']);
-                $request['vehicle_assignment_id'] = $assignResponse['data']['vehicle-assignment']['id'];
 
-                $currCust = new CurrentCustomerController();
-                $currCustCreate = $currCust->create($request);
-                $currCustResponse = (json_decode(json_encode($currCustCreate), true)['original']);
+                if ($assignCreate->status() == 200) {
+                    $vehicleAssignmentCreated = $assignResponse['data']['vehicle-assignment'];
+                    $request['vehicle_assignment_id'] = $vehicleAssignmentCreated['id'];
 
-                if($currCustCreate->status() == 200) {
+                    $customerCount = count($request->customers ?? []);
+                    $currCustomersCreated = [];
+                    if ($customerCount > 0) {
+                        $currCust = new CurrentCustomerController();
+                        for ($i = 0; $i < $customerCount; $i++) {
+                            $currentCustomer = $request->customers[$i];
+                            $request['customer_id'] = $currentCustomer['customer_id'];
+                            $request['ipport_id'] = $currentCustomer['ipport_id'];
+                            $currCustCreate = $currCust->create($request);
+                            $currCustResponse = (json_decode(json_encode($currCustCreate), true)['original']);
+
+                            if ($currCustCreate->status() == 200) {
+                                array_push($currCustomersCreated, $currCustResponse['data']['current-customer']);
+                            } else {
+                                $this->forceDelete($request['vehicle_id']);
+                                return $response->ErrorResponse($currCustResponse['message'] ?? 'Failed to create current customer', $vehicleCreate->status());
+                            }
+                        }
+
+                        $vehicleAssignmentCreated = VehicleAssignment::find($request['vehicle_assignment_id']);
+                        $vehicleAssignmentCreated['customer_code'] = join(", ", array_unique(array_map(function ($value) {
+                            return $value['customer']['customer_code'];
+                        }, $currCustomersCreated)));
+                        $vehicleAssignmentCreated->save();
+                    }
+
                     return $response->SuccessResponse('Vehicle successfully created!', [
                         'vehicle' => $vehicleResponse['data']['vehicle'],
-                        'vehicle_assignment' => $assignResponse['data']['vehicle-assignment'],
-                        'current_customer' => $currCustResponse['data']['current-customer']
+                        'vehicle_assignment' => $vehicleAssignmentCreated,
+                        'current_customer' => $currCustomersCreated
                     ]);
+                } else {
+                    $this->forceDelete($request['vehicle_id']);
+                    return $response->ErrorResponse($assignResponse['message'] ?? 'Failed to assign vehicle', $vehicleCreate->status());
                 }
-                else {
-                    $assignment->delete($request['vehicle_assignment_id']);
-                    $this->delete($request['vehicle_id']);
-                }
-
             }
+        } catch (\Throwable $th) {
+            $this->forceDelete($request['vehicle_id']);
+            throw $th;
+        }
 
-            else
-                $this->delete($request['vehicle_id']);
-       }
-
-       return $response->ErrorResponse($vehicleResponse['message'] ?? 'Failed to create vehicle', $vehicleCreate->status());
+        return $response->ErrorResponse($vehicleResponse['message'] ?? 'Failed to create vehicle', $vehicleCreate->status());
     }
 
     /**
@@ -545,5 +576,11 @@ class VehicleController extends Controller
             $vehicle->updated_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 
         return $vehicle;
+    }
+
+    private function forceDelete($id)
+    {
+        $vehicle = Vehicle::find($id);
+        $vehicle->forceDelete();
     }
 }
