@@ -26,9 +26,9 @@ class IntegrationController extends Controller
         // Check Storage/App if IntegrationToken already exist
         if (Storage::disk('local')->exists('IntegrationToken.txt')) {
             $verification = $this->verifyToken();
-           
+
             if ($verification)
-            { 
+            {
                 if($this->checkDevice()) {
                     // If Device already exist in integration server
                     // check vehicle if also exist
@@ -40,12 +40,11 @@ class IntegrationController extends Controller
 
                         // Vehicle is successfully uploaded to integration server!
                         if($newVehicleUpload['Status'] === 'Success')
-                            return 200;   
-                            
+                            return 200;
+
                         return 500;
                     }
                 }
-
                 else {
                     $newDeviceUpload = $this->submitDevice();
 
@@ -55,11 +54,11 @@ class IntegrationController extends Controller
 
                         // Vehicle is successfully uploaded to integration server!
                         if($newVehicleUpload['Status'] === 'Success')
-                            return 200;   
-                            
+                            return 200;
+
                         return 500;
                     }
-                
+
                     return 500;              // Something went wrong when uploading to integration server!
                 }
             }
@@ -69,8 +68,8 @@ class IntegrationController extends Controller
                 if($newLogin)
                     return $this->uploading();
             }
-        } 
-        
+        }
+
         else {
             $newLogin = $this->login();
             if($newLogin)
@@ -84,7 +83,9 @@ class IntegrationController extends Controller
         $response = Http::withHeaders([
             'Token' => $this->token
         ])->get($this->integrationURI . '/Device/' . $this->deviceID_plateNum);
-        
+
+
+        info($response->json());
         return $response->throw()->json();
     }
 
@@ -94,7 +95,8 @@ class IntegrationController extends Controller
         $response = Http::withHeaders([
             'Token' => $this->token
         ])->get($this->integrationURI . '/Vehicle/' . $this->deviceID_plateNum);
-        
+
+        info($response->json());
         return $response->throw()->json();
     }
 
@@ -105,6 +107,7 @@ class IntegrationController extends Controller
         if ($response)
             Storage::disk('local')->put('IntegrationToken.txt', $response['ApiKey']);
 
+        info($response);
         return $response->throw()->json();
     }
 
@@ -113,10 +116,11 @@ class IntegrationController extends Controller
         $this->token = Storage::get('IntegrationToken.txt');
 
         $response = Http::get($this->integrationURI . '/Account?Key=' . $this->token)->json();
+        info($response);
         return $response;
     }
 
-    public function submitDevice() 
+    public function submitDevice()
     {
         $response = Http::withHeaders([
             'Token' => $this->token
@@ -134,11 +138,12 @@ class IntegrationController extends Controller
             "DeviceType" => "K3G",
             "DevicePhone" => ""
         ])->json();
-      
+
+        info($response);
         return $response;
     }
-    
-    public function submitVehicle() 
+
+    public function submitVehicle()
     {
         $response = Http::withHeaders([
             'Token' => $this->token
@@ -158,7 +163,8 @@ class IntegrationController extends Controller
             "IdlingLimit" => 0,
             "FuelCapacity" => 0
         ])->json();
-      
+
+        info($response);
         return $response;
     }
 }
