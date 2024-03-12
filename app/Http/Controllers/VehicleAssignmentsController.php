@@ -97,6 +97,16 @@ class VehicleAssignmentsController extends Controller
 
             if ($newVA) {
                 $newVARec = $this->assignmentById($newVA->id);
+                if ($request->vehicle_status === 1) {
+                    $request['id'] = $newVA->id;
+                    $uploadVehicleReq = $this->update($newVA->id, $request);
+                    $uploadVehicleRes = (json_decode(json_encode($uploadVehicleReq), true)['original']);
+                    $reqStatus = $uploadVehicleReq->status();
+                    if ($reqStatus !== 200) {
+                        return $response->ErrorResponse($uploadVehicleRes['message'] ?? 'Create assignment - something went wrong in integration server', $reqStatus);
+                    }
+                }
+
 
                 $responseData = ['vehicle-assignment' => $newVARec];
                 return $response->SuccessResponse('Vehicle assignment is successfully registered', $responseData);

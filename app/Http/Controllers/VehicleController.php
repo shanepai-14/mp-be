@@ -190,7 +190,7 @@ class VehicleController extends Controller
                 $assignCreate = $assignment->create($request);
                 $assignResponse = (json_decode(json_encode($assignCreate), true)['original']);
 
-                if ($assignCreate->status() == 200) {
+                if ($assignCreate->status() === 200) {
                     $vehicleAssignmentCreated = $assignResponse['data']['vehicle-assignment'];
                     $request['vehicle_assignment_id'] = $vehicleAssignmentCreated['id'];
 
@@ -227,7 +227,7 @@ class VehicleController extends Controller
                     ]);
                 } else {
                     $this->forceDelete($request['vehicle_id']);
-                    return $response->ErrorResponse($assignResponse['message'] ?? 'Failed to assign vehicle', $vehicleCreate->status());
+                    return $response->ErrorResponse($assignResponse['message'] ?? 'Failed to assign vehicle', $assignCreate->status());
                 }
             }
         } catch (\Throwable $th) {
