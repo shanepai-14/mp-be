@@ -38,6 +38,16 @@ class Gps extends Model
 
     /**
      * @OA\Property(
+     *     format="string",
+     *     description="Unique identifier for the tracker device, e.g. vehicle plate",
+     * )
+     *
+     * @var string
+     */
+    private $Vehicle_ID;
+
+    /**
+     * @OA\Property(
      *     format="datetime",
      *     type="string",
      *     description="TimeStamp in UTC FORMAT",
@@ -178,16 +188,6 @@ class Gps extends Model
      * @var integer
      */
     private $RPM;
-
-    /**
-     * @OA\Property(
-     *     format="string",
-     *     description="Unique identifier for the tracker device, e.g. vehicle plate",
-     * )
-     *
-     * @var string
-     */
-    private $Vehicle_ID;
 
     protected $fillable = [
         'Vendor_Key',
