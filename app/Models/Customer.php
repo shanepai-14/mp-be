@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * Class Customer.
@@ -103,6 +105,9 @@ class Customer extends Model
         'customer_contact_no',
         'customer_email',
         'customer_code',
+        'customer_username',
+        'customer_password',
+        'customer_api_key',
         'register_by_user_id',
         'updated_by_user_id'
     ];
@@ -112,6 +117,20 @@ class Customer extends Model
         'updated_at',
         'deleted_at'
     ];
+
+    protected function customerPassword(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? Crypt::decryptString($value) : $value,
+        );
+    }
+
+    protected function customerApiKey(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? Crypt::decryptString($value) : $value,
+        );
+    }
 
     public function customerIpPort(): HasMany
     {
