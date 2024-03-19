@@ -28,7 +28,7 @@ class Gps extends Model
      * @OA\Property(
      *     property="CompanyKey",
      *     format="string",
-     *     description="Vendor Key or Company Key"
+     *     description="Vendor API Key"
      * )
      *
      * @var string
@@ -39,7 +39,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="string",
-     *     description="Unique identifier for the tracker device, e.g. vehicle plate",
+     *     description="Vehicle Plate Number. Remove in-between spaces. Alphanumer only.",
      * )
      *
      * @var string
@@ -50,7 +50,7 @@ class Gps extends Model
      * @OA\Property(
      *     format="datetime",
      *     type="string",
-     *     description="TimeStamp in UTC FORMAT",
+     *     description="Position timeStamp in UTC FORMAT",
      * )
      *
      * @var \DateTime
@@ -60,7 +60,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="1 - GPS tracker is online, 0 - GPS tracker is offline",
+     *     description="1 - GPS tracker is online. 0 - GPS tracker is offline.",
      * )
      *
      * @var integer
@@ -70,7 +70,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="1 - ON, 0 - OFF",
+     *     description="1 - Ignition is ON. 0 - Ignition is OFF",
      * )
      *
      * @var integer
@@ -80,7 +80,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="Range: -90.0° to 90.0°, Decimal degree: up to 6th decimal point",
+     *     description="Coordinate of the position data. Precision: 6 decimal places",
      * )
      *
      * @var float
@@ -90,7 +90,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="Range: -180.0° to 180.0°, Decimal degree: up to 6th decimal point",
+     *     description="Coordinate of the position data. Precision: 6 decimal places",
      * )
      *
      * @var float
@@ -100,7 +100,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="float",
-     *     description="Integer in meter",
+     *     description="Altitude in meters. Set to 0 if data unavailable.",
      * )
      *
      * @var float
@@ -110,7 +110,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Integer in km/h. Range 0 to 999",
+     *     description="Range from 0 to 999 in kilometer per hour.",
      * )
      *
      * @var integer
@@ -120,7 +120,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Integer in degree. Range 0 to 359",
+     *     description="Angle of direction where vehicle is heading in degrees. Range from 0 to 359",
      * )
      *
      * @var integer
@@ -130,7 +130,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Number of satellites",
+     *     description="Number of satellites detected by the tracker. if data unavailable, set to 4 satellites.",
      * )
      *
      * @var integer
@@ -160,7 +160,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Device mileage in KM",
+     *     description="Device mileage in kilometers",
      * )
      *
      * @var integer
@@ -181,7 +181,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
-     *     description="Mixer drum RPM counter",
+     *     description="Concrete mixer drum rounds per minute.",
      *     nullable=true
      * )
      *

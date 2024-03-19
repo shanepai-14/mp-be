@@ -2,79 +2,51 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Storage;
+use App\Http\Response\ApiResponse;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 
 class IntegrationController extends Controller
 {
-    protected $integrationURI = 'https://findplus.w-locate.com/integration';
+    public static $integrationURI = 'https://findplus.w-locate.com/integration';
     protected $token = null;
-    protected $deviceID_plateNum = null;
-    protected $mileAge = 0;
-    protected $driverName = null;
+    protected $customer = null;
+    protected $vehicleAssignment = null;
+    protected $vehicle = null;
+    protected $gateway = null;
+    private $loginRetries = 0;
 
-    public function __construct($deviceID_plateNum, $mileAge, $driverName)
+    public function __construct($customer, $vehicle, $vehicleAssignment, $gateway)
     {
-        $this->deviceID_plateNum = $deviceID_plateNum;
-        $this->mileAge = $mileAge;
-        $this->driverName = $driverName;
+        $this->customer = $customer;
+        $this->vehicle = $vehicle;
+        $this->vehicleAssignment = $vehicleAssignment;
+        $this->gateway = $gateway;
+        $this->token = $customer['customer_api_key'];
     }
 
     // Check if token is already exist and stored in Storage/App/IntegrationToken.txt
     public function uploading()
     {
-        // Check Storage/App if IntegrationToken already exist
-        if (Storage::disk('local')->exists('IntegrationToken.txt')) {
-            $verification = $this->verifyToken();
+        $response = new ApiResponse();
+        if ($this->loginRetries < 3) {
+            $valid = $this->customer['customer_api_key'] ? $this->verifyToken() : $this->login();
 
-            if ($verification)
-            {
-                if($this->checkDevice()) {
-                    // If Device already exist in integration server
-                    // check vehicle if also exist
-                    if($this->checkVehicle())
-                        return 409;             // Vehicle already exist in integration server!
+            if ($valid) {
+                $newDeviceUpload = $this->submitDevice();
+                if ($newDeviceUpload && ($newDeviceUpload['Status'] === 'Success')) {
+                    $newVehicleUpload = $this->submitVehicle();
+                    if ($newVehicleUpload && $newVehicleUpload['Status'] === 'Success') return $response->SuccessResponse('', 200);
 
-                    else {
-                        $newVehicleUpload = $this->submitVehicle();
-
-                        // Vehicle is successfully uploaded to integration server!
-                        if($newVehicleUpload['Status'] === 'Success')
-                            return 200;
-
-                        return 500;
-                    }
+                    return $response->ErrorResponse(array_key_exists('Message', $newVehicleUpload) ? $newVehicleUpload['Message'] : 'Upload Vehicle - something went wrong in integration server', 500);
                 }
-                else {
-                    $newDeviceUpload = $this->submitDevice();
 
-                    // Device is successfully uploaded to integration server!
-                    if($newDeviceUpload['Status'] === 'Success') {
-                        $newVehicleUpload = $this->submitVehicle();
-
-                        // Vehicle is successfully uploaded to integration server!
-                        if($newVehicleUpload['Status'] === 'Success')
-                            return 200;
-
-                        return 500;
-                    }
-
-                    return 500;              // Something went wrong when uploading to integration server!
-                }
-            }
-
-            else {
-                $newLogin = $this->login();
-                if($newLogin)
-                    return $this->uploading();
-            }
-        }
-
-        else {
-            $newLogin = $this->login();
-            if($newLogin)
+                return $response->ErrorResponse(array_key_exists('Message', $newDeviceUpload) ? $newDeviceUpload['Message'] : 'Upload Device - something went wrong in integration server!', 500);
+            } else {
+                $this->loginRetries++;
                 return $this->uploading();
-        }
+            }
+        } else return $response->ErrorResponse('Failed to login to the account of the customer', 500);
     }
 
     // Check if device already exist in the Device List
@@ -82,7 +54,7 @@ class IntegrationController extends Controller
     {
         $response = Http::withHeaders([
             'Token' => $this->token
-        ])->get($this->integrationURI . '/Device/' . $this->deviceID_plateNum);
+        ])->get($this::$integrationURI . '/Device/' . $this->vehicle['device_id_plate_no']);
 
 
         info($response->json());
@@ -94,7 +66,7 @@ class IntegrationController extends Controller
     {
         $response = Http::withHeaders([
             'Token' => $this->token
-        ])->get($this->integrationURI . '/Vehicle/' . $this->deviceID_plateNum);
+        ])->get($this::$integrationURI . '/Vehicle/' . $this->vehicle['device_id_plate_no']);
 
         info($response->json());
         return $response->throw()->json();
@@ -102,42 +74,124 @@ class IntegrationController extends Controller
 
     public function login()
     {
-        $response = Http::post($this->integrationURI . '/Account/Authenticate', ['Username' => 'athena.my', 'Password' => 'Athena2022']);
+        $response = Http::post($this::$integrationURI . '/Account/Authenticate', ['Username' => $this->customer['customer_username'], 'Password' => $this->customer['customer_password']]);
+        $responseData = $response->json();
 
-        if ($response)
-            Storage::disk('local')->put('IntegrationToken.txt', $response['ApiKey']);
+        if ($response->status() === 200) {
+            $this->token = $responseData['ApiKey'];
+            $this->customer['customer_api_key'] = Crypt::encryptString($this->token);
+            return true;
+        }
 
-        info($response);
-        return $response->throw()->json();
+        return false;
+    }
+
+    public static function validateAccount($username, $password, $apiKey)
+    {
+        try {
+            if ($username && $password) {
+                $response = Http::post(IntegrationController::$integrationURI . '/Account/Authenticate', ['Username' => $username, 'Password' => $password]);
+                return $response->status() === 200;
+            }
+            else if ($apiKey) {
+                $response = Http::withHeaders([
+                    'Token' => $apiKey
+                ])->get(IntegrationController::$integrationURI . '/Account');
+                return $response->status() === 200;
+            }
+
+            return false;
+        } catch (\Throwable $th) {
+            info($th);
+            return false;
+        }
     }
 
     public function verifyToken()
     {
-        $this->token = Storage::get('IntegrationToken.txt');
+        $response = Http::withHeaders([
+            "Token" => $this->token
+        ])->get($this::$integrationURI . '/Account');
+        return $response->status() === 200;
+    }
 
-        $response = Http::get($this->integrationURI . '/Account?Key=' . $this->token)->json();
-        info($response);
-        return $response;
+    public function hasLoginCredentials()
+    {
+        return $this->customer['customer_api_key'] || ($this->customer['customer_username'] && $this->customer['customer_password']);
+    }
+
+    public function getDevice()
+    {
+        $response = Http::withHeaders([
+            'Token' => $this->token
+        ])->get($this::$integrationURI . '/Device/' . $this->vehicle['device_id_plate_no']);
+
+        return [
+            'is_success' => $response->status() === 200 || $response->status() === 204,
+            'data' => $response->json()
+        ];
+    }
+
+    public function getVehicle()
+    {
+        $response = Http::withHeaders([
+            'Token' => $this->token
+        ])->get($this::$integrationURI . '/Vehicle/' . $this->vehicle['device_id_plate_no']);
+
+        return [
+            'is_success' => $response->status() === 200,
+            'data' => $response->json()
+        ];
     }
 
     public function submitDevice()
     {
-        $response = Http::withHeaders([
-            'Token' => $this->token
-        ])->put($this->integrationURI . '/Device', [
-            "DeviceName" => $this->deviceID_plateNum,
-            "CompanyName" => "W-locate Pte Ltd",
-            "Status" => 1,
-            "ServerIP" => "20.195.56.146",
-            "ServerPort" => 2199,
-            "Protocol" => 0,
-            "Division" => "*",
-            "Group" => "*",
-            "IntervalOn" => 1,
-            "IntervalOff" => 10,
-            "DeviceType" => "K3G",
-            "DevicePhone" => ""
-        ])->json();
+        $response = null;
+        $deviceRes = $this->getDevice();
+
+        if ($deviceRes['is_success']) {
+            $device = $deviceRes['data'];
+            if ($device) {
+                info('Update device');
+                //Update the device if it's already recorded
+                $response = Http::withHeaders([
+                    'Token' => $this->token
+                ])->put($this::$integrationURI . '/Device', [
+                    "DeviceID" => $device['DeviceID'],
+                    "DeviceName" => $this->vehicle['device_id_plate_no'],
+                    "CompanyName" => $this->customer['customer_name'],
+                    "Status" =>array_key_exists('StatusID', $device) ? $device['StatusID'] : 1,
+                    "ServerIP" => $this->gateway['ip'],
+                    "ServerPort" => $this->gateway['port'],
+                    "Protocol" => array_key_exists('Protocol', $device) ? $device['Protocol'] : 0,
+                    "Division" => array_key_exists('Division', $device) ? $device['Division'] : "*",
+                    "Group" => array_key_exists('Group', $device) ? $device['Group'] : "*",
+                    "IntervalOn" => array_key_exists('IntervalOn', $device) ? $device['IntervalOn'] : 1,
+                    "IntervalOff" => array_key_exists('IntervalOff', $device) ? $device['IntervalOff'] : 10,
+                    "DeviceType" => "K3G",
+                    "DevicePhone" => ""
+                ])->json();
+            } else {
+                //Create new device
+                $response = Http::withHeaders([
+                    'Token' => $this->token
+                ])->put($this::$integrationURI . '/Device', [
+                    "DeviceID" => 0,
+                    "DeviceName" => $this->vehicle['device_id_plate_no'],
+                    "CompanyName" => $this->customer['customer_name'],
+                    "Status" => 1,
+                    "ServerIP" => $this->gateway['ip'],
+                    "ServerPort" => $this->gateway['port'],
+                    "Protocol" => 0,
+                    "Division" => "*",
+                    "Group" => "*",
+                    "IntervalOn" => 1,
+                    "IntervalOff" => 10,
+                    "DeviceType" => "K3G",
+                    "DevicePhone" => ""
+                ])->json();
+            }
+        }
 
         info($response);
         return $response;
@@ -145,24 +199,54 @@ class IntegrationController extends Controller
 
     public function submitVehicle()
     {
-        $response = Http::withHeaders([
-            'Token' => $this->token
-        ])->put($this->integrationURI . '/Vehicle', [
-            "VehicleID" => 0,
-            "VehicleName" => $this->deviceID_plateNum,
-            "DeviceName" => $this->deviceID_plateNum,
-            "Category" => "Concrete Mixer",
-            "CompanyName" => "W-locate Pte Ltd",
-            "Status" => 1,
-            "Mileage" => $this->mileAge ?? 0,
-            "Driver" => $this->driverName,
-            "Division" => "Software",
-            "Group" => "Athena",
-            "Remarks" => "Testing vehicle",
-            "SpeedLimit" => 0,
-            "IdlingLimit" => 0,
-            "FuelCapacity" => 0
-        ])->json();
+        $response = null;
+        $vehicleRes = $this->getVehicle();
+
+        if ($vehicleRes['is_success']) {
+            $vehicle = $vehicleRes['data'];
+            if (array_key_exists('VehicleID', $vehicle ?? [])) {
+                info('Update vehicle');
+                //Update the vehicle if it's already recorded
+                $response = Http::withHeaders([
+                    'Token' => $this->token
+                ])->put($this::$integrationURI . '/Vehicle', [
+                    "VehicleID" => array_key_exists('VehicleID', $vehicle) ? $vehicle['VehicleID'] : 0,
+                    "VehicleName" => $this->vehicle['device_id_plate_no'],
+                    "DeviceName" => $this->vehicle['device_id_plate_no'],
+                    "Category" => array_key_exists('Category', $vehicle) ? $vehicle['Category'] : "Concrete Mixer",
+                    "CompanyName" => $this->customer['customer_name'],
+                    "Status" => 1,
+                    "Mileage" => $this->vehicleAssignment['mileage'] ?? 0,
+                    "Driver" => $this->vehicleAssignment['driver_name'] ?? '',
+                    "Division" => array_key_exists('Division', $vehicle) ? $vehicle['Division'] : "Software",
+                    "Group" => array_key_exists('Group', $vehicle) ? $vehicle['Group'] : "Athena",
+                    "Remarks" => array_key_exists('Remarks', $vehicle) ? $vehicle['Remarks'] : "Testing vehicle",
+                    "SpeedLimit" => 0,
+                    "IdlingLimit" => 0,
+                    "FuelCapacity" => 0
+                ])->json();
+            } else {
+                //Create new vehicle
+                $response = Http::withHeaders([
+                    'Token' => $this->token
+                ])->put($this::$integrationURI . '/Vehicle', [
+                    "VehicleID" => 0,
+                    "VehicleName" => $this->vehicle['device_id_plate_no'],
+                    "DeviceName" => $this->vehicle['device_id_plate_no'],
+                    "Category" => "Concrete Mixer",
+                    "CompanyName" => $this->customer['customer_name'],
+                    "Status" => 1,
+                    "Mileage" => $this->vehicleAssignment['mileage'] ?? 0,
+                    "Driver" => $this->vehicleAssignment['driver_name'] ?? '',
+                    "Division" => "Software",
+                    "Group" => "Athena",
+                    "Remarks" => "Testing vehicle",
+                    "SpeedLimit" => 0,
+                    "IdlingLimit" => 0,
+                    "FuelCapacity" => 0
+                ])->json();
+            }
+        }
 
         info($response);
         return $response;

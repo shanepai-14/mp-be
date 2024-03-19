@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Response\ApiResponse;
 use App\Models\Customer;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -43,9 +44,21 @@ class CustomerController extends Controller
      *                     property="customer_code",
      *                     type="string",
      *                 ),
+     *                  @OA\Property(
+     *                     property="customer_username",
+     *                     type="string",
+     *                 ),
+     *                  @OA\Property(
+     *                     property="customer_password",
+     *                     type="string",
+     *                 ),
+     *                  @OA\Property(
+     *                     property="customer_api_key",
+     *                     type="string",
+     *                 ),
      *                 example={"customer_name": "Customer1", "customer_address": "Singapore",
      *                          "customer_contact_no": "+123123","customer_email": "sample@sample.com",
-     *                          "customer_code": "0001" }
+     *                          "customer_code": "0001", "customer_username": "", "customer_password": "", "customer_api_key": "" }
      *             )
      *         )
      *     ),
@@ -82,23 +95,29 @@ class CustomerController extends Controller
             return $response->ErrorResponse('Customer already exist!', 409);
 
         else {
-            $newCustomer = Customer::create([
-                'customer_name' => $request->customer_name,
-                'customer_address' => $request->customer_address,
-                'customer_contact_no' => $request->customer_contact_no,
-                'customer_email' => $request->customer_email,
-                'customer_code' => $request->customer_code,
-                'register_by_user_id' => Auth::user()->id
-            ]);
+            if (IntegrationController::validateAccount($request->customer_username, $request->customer_password, $request->customer_api_key)) {
+                $newCustomer = Customer::create([
+                    'customer_name' => $request->customer_name,
+                    'customer_address' => $request->customer_address,
+                    'customer_contact_no' => $request->customer_contact_no,
+                    'customer_email' => $request->customer_email,
+                    'customer_code' => $request->customer_code,
+                    'customer_username' => $request->customer_username ? $request->customer_username : null,
+                    'customer_password' => $request->customer_password ? Crypt::encryptString($request->customer_password) : null,
+                    'customer_api_key' => $request->customer_api_key ? Crypt::encryptString($request->customer_api_key) : null,
+                    'register_by_user_id' => Auth::user()->id
+                ]);
 
-            if ($newCustomer) {
-                $newCustomerRec = $this->customerById($newCustomer->id);
+                if ($newCustomer) {
+                    $newCustomerRec = $this->customerById($newCustomer->id);
 
-                $responseData = ['customer' => $newCustomerRec];
-                return $response->SuccessResponse('Customer is successfully registered', $responseData);
+                    $responseData = ['customer' => $newCustomerRec];
+                    return $response->SuccessResponse('Customer is successfully registered', $responseData);
+                }
+
+                return $response->ErrorResponse('Server Error', 500);
             }
-
-            return $response->ErrorResponse('Server Error', 500);
+            else return $response->ErrorResponse('Invalid customer credentials or API key', 400);
         }
     }
 
@@ -173,7 +192,7 @@ class CustomerController extends Controller
         return $data;
     }
 
-     /**
+    /**
      * @OA\Put(
      *     tags={"Customer"},
      *     path="/customer/update/{id}",
@@ -220,9 +239,21 @@ class CustomerController extends Controller
      *                     property="customer_code",
      *                     type="string"
      *                 ),
+     *                  @OA\Property(
+     *                     property="customer_username",
+     *                     type="string"
+     *                 ),
+     *                  @OA\Property(
+     *                     property="customer_password",
+     *                     type="string"
+     *                 ),
+     *                  @OA\Property(
+     *                     property="customer_api_key",
+     *                     type="string"
+     *                 ),
      *                 example={"id": 0, "customer_name": "Customer1", "customer_address": "Singapore",
      *                          "customer_contact_no": "+123123","customer_email": "sample@sample.com",
-     *                          "customer_code": "0001" }
+     *                          "customer_code": "0001", "customer_username": "", "customer_password": "", "customer_api_key": "" }
      *             )
      *         )
      *     ),
@@ -254,6 +285,9 @@ class CustomerController extends Controller
                     'customer_contact_no' => $request['customer_contact_no'],
                     'customer_email' => $request['customer_email'],
                     'customer_code' => $request['customer_code'],
+                    'customer_username' => $request['customer_username'] ? $request['customer_username'] : null,
+                    'customer_password' => $request['customer_password'] ? Crypt::encryptString($request['customer_password']) : null,
+                    'customer_api_key' => $request['customer_api_key'] ? Crypt::encryptString($request['customer_api_key']) : null,
                     'updated_by_user_id' => Auth::user()->id
                 ]);
                 $customerData = $this->customerById($customer->id);

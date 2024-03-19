@@ -190,7 +190,7 @@ class VehicleController extends Controller
                 $assignCreate = $assignment->create($request);
                 $assignResponse = (json_decode(json_encode($assignCreate), true)['original']);
 
-                if ($assignCreate->status() == 200) {
+                if ($assignCreate->status() === 200) {
                     $vehicleAssignmentCreated = $assignResponse['data']['vehicle-assignment'];
                     $request['vehicle_assignment_id'] = $vehicleAssignmentCreated['id'];
 
@@ -213,11 +213,25 @@ class VehicleController extends Controller
                             }
                         }
 
+                        //Update customer code based on the current customer records
                         $vehicleAssignmentCreated = VehicleAssignment::find($request['vehicle_assignment_id']);
                         $vehicleAssignmentCreated['customer_code'] = join(", ", array_unique(array_map(function ($value) {
                             return $value['customer']['customer_code'];
                         }, $currCustomersCreated)));
                         $vehicleAssignmentCreated->save();
+
+                        //Upload the vehicle and device when it's created by the operator
+                        if ($request->vehicle_status === 1) {
+                            $request['id'] = $request['vehicle_assignment_id'];
+                            $vehicleAssignCtrl = new VehicleAssignmentsController();
+                            $uploadVehicleReq = $vehicleAssignCtrl->update($request['vehicle_assignment_id'], $request);
+                            $uploadVehicleRes = (json_decode(json_encode($uploadVehicleReq), true)['original']);
+                            $reqStatus = $uploadVehicleReq->status();
+                            if ($reqStatus !== 200) {
+                                $this->forceDelete($request['vehicle_id']);
+                                return $response->ErrorResponse($uploadVehicleRes['message'] ?? 'Create vehicle - something went wrong in integration server', $reqStatus);
+                            }
+                        }
                     }
 
                     return $response->SuccessResponse('Vehicle successfully created!', [
@@ -227,7 +241,7 @@ class VehicleController extends Controller
                     ]);
                 } else {
                     $this->forceDelete($request['vehicle_id']);
-                    return $response->ErrorResponse($assignResponse['message'] ?? 'Failed to assign vehicle', $vehicleCreate->status());
+                    return $response->ErrorResponse($assignResponse['message'] ?? 'Failed to assign vehicle', $assignCreate->status());
                 }
             }
         } catch (\Throwable $th) {
@@ -474,8 +488,7 @@ class VehicleController extends Controller
         foreach ($datas as $updateData) {
             $exist = Vehicle::find($updateData['id']);
 
-            if ($exist)
-            {
+            if ($exist) {
                 // // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
                 // // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
                 // if ($updateData['vehicle_status'] === 1) {
@@ -492,14 +505,12 @@ class VehicleController extends Controller
                 //         array_push($failed, $updateData);
 
                 // } else
-                    $this->updateInfo($exist, $updateData);
-            }
-
-            else
+                $this->updateInfo($exist, $updateData);
+            } else
                 array_push($failed, $updateData);
         }
 
-        if(count($failed) == count($datas))
+        if (count($failed) == count($datas))
             return $response->ErrorResponse('Failed, No vehicle was updated', 500);
 
         return $response->SuccessResponse('Vehicle is successfully updated!', $failed);

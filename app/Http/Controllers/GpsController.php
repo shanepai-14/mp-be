@@ -30,24 +30,24 @@ class GpsController extends Controller
      *     ),
      * @OA\Response(
      *         response=200,
-     *         description="successful operation",
+     *         description="Success",
      *         @OA\JsonContent(ref="#/components/schemas/User")
      *     ),
      *      @OA\Response(
-     *          response=409,
-     *          description="Unrecognized vehicle already exist!",
+     *          response=401,
+     *          description="Unauthorized User",
      *      ),
      *      @OA\Response(
      *          response=404,
-     *          description="Company key/Transporter key does not exist!"
+     *          description="Vendor key not found"
+     *      ),
+     *      @OA\Response(
+     *          response=409,
+     *          description="Vehicle is not registered",
      *      ),
      *     @OA\Response(
      *          response=500,
      *          description="Internal Server Error",
-     *      ),
-     *      @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
      *      ),
      * )
      */
@@ -70,7 +70,7 @@ class GpsController extends Controller
                 $isExist = Vehicle::where('device_id_plate_no', $gpsInput['Device_ID'])->get();
 
                 // If vehicle does not exist create vehicle with status unregistered and ignore gps data
-                if ($isExist->value('id') == null) { 
+                if ($isExist->value('id') == null) {
                     $newVehicle = Vehicle::create([
                         'vehicle_status' => 3,
                         'device_id_plate_no' => $gpsInput['Device_ID'],
@@ -131,9 +131,7 @@ class GpsController extends Controller
                 // If vehicle already exist and with status of unregistered
                 else
                     $successList->push($gpsInput);
-            }
-
-            else $failedList->push($gpsInput);
+            } else $failedList->push($gpsInput);
         });
 
         return $response->ArrayResponse('Status of data submitted', $successList, $failedList);
@@ -193,7 +191,7 @@ class GpsController extends Controller
         //             // $socketCtrl = new GPSSocketController();
         //             // $socketCtrl->submitFormattedGPS($transformedData);
 
-        //             if ($newGps) 
+        //             if ($newGps)
         //                 array_push($success, $gpsInput);
         //                 // return $response->SuccessResponse('Position is successfully saved.', $gpsInput);
 

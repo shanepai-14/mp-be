@@ -8,6 +8,7 @@ use App\Http\Controllers\VehicleController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GpsController;
+use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\TransporterController;
 use App\Http\Controllers\VehicleAssignmentsController;
 use App\Http\Response\ApiResponse;
@@ -33,6 +34,13 @@ Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
 Route::post('/vendor/create-with-account', [TransporterController::class, 'publicCreate']);
 Route::post('/user/publicRegister', [UserController::class, 'publicRegister']);
+Route::post('/test', function() {
+    // $integration = new IntegrationController(['api_key' => 'BxOqs8591k-TMHjxsflgiQ2'], ['deviceID_plateNum' => 'asdasds'], []);
+    // $response = $integration->getVehicle();
+    // info($response);
+    // if ($response['is_success']) return 'good';
+    return 'test';
+});
 
 Route::group([
     'middleware' => 'auth:api',
