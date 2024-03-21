@@ -34,6 +34,13 @@ Route::post('/position', [GpsController::class, 'sendGPS']);
 Route::post('/check-server', [GpsController::class, 'checkServer']);
 Route::post('/vendor/create-with-account', [TransporterController::class, 'publicCreate']);
 Route::post('/user/publicRegister', [UserController::class, 'publicRegister']);
+Route::post('/test', function() {
+    // $integration = new IntegrationController(['api_key' => 'BxOqs8591k-TMHjxsflgiQ2'], ['deviceID_plateNum' => 'asdasds'], []);
+    // $response = $integration->getVehicle();
+    // info($response);
+    // if ($response['is_success']) return 'good';
+    return 'test';
+});
 
 Route::group([
     'middleware' => 'auth:api',
