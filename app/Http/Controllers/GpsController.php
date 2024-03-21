@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Response\ApiResponse;
+use App\Models\CurrentCustomer;
 use App\Models\Gps;
 use App\Models\Vehicle;
 use App\Models\Transporter;
+use App\Models\VehicleAssignment;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -54,87 +56,101 @@ class GpsController extends Controller
     public function sendGPS(Request $request)
     {
         $response = new ApiResponse();
-        $successList = new Collection();
-        $failedList = new Collection();
 
         // VALIDATE THE INPUT FIRST
-        foreach ($request->collect() as $item) {
-            $this->validateInput($item);
-        }
+        $validatator = $this->validateInput($request);
 
-        $request->collect()->each(function ($gpsInput) use ($successList, $failedList) {
-            $transporter = Transporter::where('transporter_key', $gpsInput['CompanyKey']);
+        if (!$validatator->fails()) {
+            $transporter = Transporter::where('transporter_key', $request['CompanyKey'])->first();
             $response = new ApiResponse();
 
-            if ($transporter->value('id')) {
-                $isExist = Vehicle::where('device_id_plate_no', $gpsInput['Device_ID'])->get();
+            if ($transporter) {
+                $vehicle = Vehicle::where('device_id_plate_no', $request['Vehicle_ID'])->first();
 
                 // If vehicle does not exist create vehicle with status unregistered and ignore gps data
-                if ($isExist->value('id') == null) {
+                if (!$vehicle) {
                     $newVehicle = Vehicle::create([
-                        'vehicle_status' => 3,
-                        'device_id_plate_no' => $gpsInput['Device_ID'],
-                        'transporter_id' => $transporter->value('id'),
-                        // 'mileage' => $gpsInput['Mileage']
+                        // 'vehicle_status' => 3,
+                        'device_id_plate_no' => $request['Vehicle_ID'],
+                        'transporter_id' => $transporter->id,
+                        // 'mileage' => array_key_exists('Mileage', $request) ? $request['Mileage'] : 0
                     ]);
 
-                    if ($newVehicle)
-                        $successList->push($gpsInput);
-
-                    else
-                        $response->ErrorResponse('Server Error', 500);
-                }
-
-                // Save GPS/Position data if vehicle exist and status is not unregistered
-                else if ($isExist->value('vehicle_status') != 3) {
-                    // Add default value if these are missing in the payload
-                    if (!array_key_exists('Drum_Status', $gpsInput))  $gpsInput['Drum_Status'] = 0;
-                    if (!array_key_exists('RPM', $gpsInput))  $gpsInput['RPM'] = 0;
-                    // $gpsInput->mergeIfMissing(['Drum_Status' => 0]);
-                    // $gpsInput->mergeIfMissing(['RPM' => 0]);
-
-                    $transformedData = $isExist->value('vehicle_status') == 1 ? $this->dataTransformation($gpsInput) : null;
-
-                    // Save GPS Data to MongoDB
-                    $newGps = Gps::create([
-                        'Vendor_Key' => $gpsInput['CompanyKey'],
-                        'Timestamp' => $gpsInput['Timestamp'],
-                        'GPS' => $gpsInput['GPS'],
-                        'Ignition' => $gpsInput['Ignition'],
-                        'Latitude' => $gpsInput['Latitude'],
-                        'Longitude' => $gpsInput['Longitude'],
-                        'Altitude' => $gpsInput['Altitude'],
-                        'Speed' => $gpsInput['Speed'],
-                        'Course' => $gpsInput['Course'],
-                        'Satellite_Count' => $gpsInput['Satellite_Count'],
-                        'ADC1' => $gpsInput['ADC1'],
-                        'ADC2' => $gpsInput['ADC2'],
-                        // 'Drum_Status' => $gpsInput['Drum_Status'],
-                        'Drum_Status' => 0,                             // Always ZERO  as of now
-                        'Mileage' => $gpsInput['Mileage'],
-                        'RPM' => $gpsInput['RPM'] ?? 0,
-                        'Device_ID' => $gpsInput['Device_ID'],
-                        'Position' => $transformedData
+                    $newVehicleAssignment = VehicleAssignment::create([
+                        'vehicle_id' => $newVehicle->id,
+                        'mileage' => $request->has('Mileage') ? $request['Mileage'] : 0,
+                        'vehicle_status' => 3
                     ]);
 
-                    // Forward transformed GPS data to Wlocate
-                    $socketCtrl = new GPSSocketController();
-                    $socketCtrl->submitFormattedGPS($transformedData, $transporter->value('wl_ip'), $transporter->value('wl_port'));
-
-                    if ($newGps)
-                        $successList->push($gpsInput);
+                    if ($newVehicle && $newVehicleAssignment)
+                        info('Unrecognized vehicle is saved. ' . $request['CompanyKey']);
 
                     else
-                        $response->ErrorResponse('Server Error', 500);
+                        info('Server Error ' . $request['CompanyKey']);
+                } else {
+                    // Save GPS/Position data if vehicle exist and status is not unregistered
+                    $vehicleAssignment = VehicleAssignment::where('vehicle_id', $vehicle->id)->latest('id')->first();
+                    if ($vehicleAssignment->vehicle_status != 3) {
+                        // Add default value if these are missing in the payload
+                        if ($request->has("Drum_Status"))  $request['Drum_Status'] = 0;
+                        if ($request->has("RPM")) $request['RPM'] = 0;
+                        // $request->mergeIfMissing(['Drum_Status' => 0]);
+                        // $request->mergeIfMissing(['RPM' => 0]);
+
+                        $transformedData = $vehicleAssignment->vehicle_status == 1 ? $this->dataTransformation($request) : null;
+
+                        // Save GPS Data to MongoDB
+                        $newGps = Gps::create([
+                            'Vendor_Key' => $request['CompanyKey'],
+                            'Timestamp' => $request['Timestamp'],
+                            'GPS' => $request['GPS'],
+                            'Ignition' => $request['Ignition'],
+                            'Latitude' => $request['Latitude'],
+                            'Longitude' => $request['Longitude'],
+                            'Altitude' => $request['Altitude'],
+                            'Speed' => $request['Speed'],
+                            'Course' => $request['Course'],
+                            'Satellite_Count' => $request['Satellite_Count'],
+                            'ADC1' => $request['ADC1'],
+                            'ADC2' => $request['ADC2'],
+                            // 'Drum_Status' => $request['Drum_Status'],
+                            'Drum_Status' => 0,                             // Always ZERO  as of now
+                            'Mileage' => $request['Mileage'],
+                            'RPM' => $request['RPM'],
+                            'Vehicle_ID' => $request['Vehicle_ID'],
+                            'Position' => $transformedData
+                        ]);
+
+
+                        if ($vehicleAssignment->vehicle_status == 1) {
+                            //Get IP port
+                            $currentCustomer = CurrentCustomer::with(['ipport'])->where('vehicle_assignment_id', $vehicleAssignment->id)->first();
+                            $ipport = $currentCustomer->ipport;
+
+                            // Forward transformed GPS data to Wlocate
+                            $socketCtrl = new GPSSocketController();
+                            $socketCtrl->submitFormattedGPS($transformedData, $ipport->ip, $ipport->port);
+                        }
+
+                        if (true)
+                            info('Position is successfully saved.');
+                        else
+                            info('Internal Server Error');
+                    }
+                    else {
+                        return $response->ErrorResponse("Vehicle is not registered", 409);
+                    }
                 }
 
-                // If vehicle already exist and with status of unregistered
-                else
-                    $successList->push($gpsInput);
-            } else $failedList->push($gpsInput);
-        });
+                return $response->SuccessResponse('Success', null);
+            } else {
+                return $response->ErrorResponse("Vendor key not found", 404);
+            }
+        } else {
+            return $response->ErrorResponse($validatator->errors(), 400);
+        }
 
-        return $response->ArrayResponse('Status of data submitted', $successList, $failedList);
+
         // foreach ($request->all() as $gpsInput) {
         //     $transporter->value('id') = Vendor::where('vendor_key', $gpsInput['CompanyKey'])->value('id');
 
@@ -288,8 +304,7 @@ class GpsController extends Controller
 
     private function validateInput($request)
     {
-        // return Validator::make($request->all(), [
-        return Validator::make($request, [
+        return Validator::make($request->all(), [
             'CompanyKey' => ['required', 'string'],
             'Timestamp' => ['required', 'date'],
             'GPS' => ['required', 'boolean'],
@@ -303,9 +318,9 @@ class GpsController extends Controller
             'ADC1' => ['required', 'numeric'],
             'ADC2' => ['required', 'numeric'],
             'Mileage' => ['required', 'integer'],
-            'Drum_Status' => ['boolean'],
+            'Drum_Status' => ['integer'],
             'RPM' => ['integer'],
-            'Device_ID' => ['required', 'string'],
-        ])->validate();
+            'Vehicle_ID' => ['required', 'string'],
+        ]);
     }
 }
