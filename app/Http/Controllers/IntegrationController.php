@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 
 class IntegrationController extends Controller
 {
-    public static $integrationURI = 'https://findplus.w-locate.com/integration';
+    public static $integrationURI = 'https://findplus.w-locate.com:8443/integration';
     protected $token = null;
     protected $customer = null;
     protected $vehicleAssignment = null;
