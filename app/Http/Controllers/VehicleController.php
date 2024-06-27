@@ -72,7 +72,6 @@ class VehicleController extends Controller
 
         if ($isVehicleExist)
             return $response->ErrorResponse('Vehicle already exist!', 409);
-
         else {
             $newVehicle = Vehicle::create([
                 'device_id_plate_no' => $request->device_id_plate_no,
@@ -183,14 +182,14 @@ class VehicleController extends Controller
         $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
 
         try {
-            if ($vehicleCreate->status() == 200) {
+            if ($vehicleCreate?->status() == 200) {
                 $request['vehicle_id'] = $vehicleResponse['data']['vehicle']['id'];
 
                 $assignment = new VehicleAssignmentsController();
                 $assignCreate = $assignment->create($request);
                 $assignResponse = (json_decode(json_encode($assignCreate), true)['original']);
 
-                if ($assignCreate->status() === 200) {
+                if ($assignCreate?->status() === 200) {
                     $vehicleAssignmentCreated = $assignResponse['data']['vehicle-assignment'];
                     $request['vehicle_assignment_id'] = $vehicleAssignmentCreated['id'];
 
@@ -205,11 +204,11 @@ class VehicleController extends Controller
                             $currCustCreate = $currCust->create($request);
                             $currCustResponse = (json_decode(json_encode($currCustCreate), true)['original']);
 
-                            if ($currCustCreate->status() == 200) {
+                            if ($currCustCreate?->status() == 200) {
                                 array_push($currCustomersCreated, $currCustResponse['data']['current-customer']);
                             } else {
                                 $this->forceDelete($request['vehicle_id']);
-                                return $response->ErrorResponse($currCustResponse['message'] ?? 'Failed to create current customer', $vehicleCreate->status());
+                                return $response->ErrorResponse($currCustResponse['message'] ?? 'Failed to create current customer', $vehicleCreate?->status());
                             }
                         }
 
@@ -226,7 +225,7 @@ class VehicleController extends Controller
                             $vehicleAssignCtrl = new VehicleAssignmentsController();
                             $uploadVehicleReq = $vehicleAssignCtrl->update($request['vehicle_assignment_id'], $request);
                             $uploadVehicleRes = (json_decode(json_encode($uploadVehicleReq), true)['original']);
-                            $reqStatus = $uploadVehicleReq->status();
+                            $reqStatus = $uploadVehicleReq?->status();
                             if ($reqStatus !== 200) {
                                 $this->forceDelete($request['vehicle_id']);
                                 return $response->ErrorResponse($uploadVehicleRes['message'] ?? 'Create vehicle - something went wrong in integration server', $reqStatus);
@@ -241,7 +240,7 @@ class VehicleController extends Controller
                     ]);
                 } else {
                     $this->forceDelete($request['vehicle_id']);
-                    return $response->ErrorResponse($assignResponse['message'] ?? 'Failed to assign vehicle', $assignCreate->status());
+                    return $response->ErrorResponse($assignResponse['message'] ?? 'Failed to assign vehicle', $assignCreate?->status());
                 }
             }
         } catch (\Throwable $th) {
@@ -249,7 +248,7 @@ class VehicleController extends Controller
             throw $th;
         }
 
-        return $response->ErrorResponse($vehicleResponse['message'] ?? 'Failed to create vehicle', $vehicleCreate->status());
+        return $response->ErrorResponse($vehicleResponse['message'] ?? 'Failed to create vehicle', $vehicleCreate?->status());
     }
 
     /**

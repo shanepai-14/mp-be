@@ -17,8 +17,7 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+.vagrant
 Vagrantfile
-
 after.sh
-
 aliases
