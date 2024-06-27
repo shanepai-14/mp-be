@@ -13,8 +13,8 @@ use Jenssegers\Mongodb\Eloquent\SoftDeletes;
  * @OA\Schema(
  *     title="Position",
  *     description="Position",
- *     required={"CompanyKey", "Timestamp", "GPS", "Ignition", "Latitude", "Longitude", "Altitude", "Speed",
- *              "Course", "Satellite_Count", "ADC1", "ADC2", "Mileage", "Vehicle_ID"}
+ *     required={"CompanyKey", "Vehicle_ID", "Timestamp", "GPS", "Ignition", "Latitude", "Longitude", "Altitude", "Speed",
+ *              "Course", "Mileage"}
  * )
  */
 class Gps extends Model
@@ -39,7 +39,7 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="string",
-     *     description="Vehicle Plate Number. Remove in-between spaces. Alphanumer only.",
+     *     description="Unique ID number for the vehicle (e.g. truck number, plate number, * etc.). Remove in-between spaces. Field accepts alphanumeric only.",
      * )
      *
      * @var string
@@ -130,6 +130,16 @@ class Gps extends Model
     /**
      * @OA\Property(
      *     format="int32",
+     *     description="Device mileage in kilometers",
+     * )
+     *
+     * @var integer
+     */
+    private $Mileage;
+
+    /**
+     * @OA\Property(
+     *     format="int32",
      *     description="Number of satellites detected by the tracker. if data unavailable, set to 4 satellites.",
      * )
      *
@@ -156,16 +166,6 @@ class Gps extends Model
      * @var float
      */
     private $ADC2;
-
-    /**
-     * @OA\Property(
-     *     format="int32",
-     *     description="Device mileage in kilometers",
-     * )
-     *
-     * @var integer
-     */
-    private $Mileage;
 
     /**
      * @OA\Property(

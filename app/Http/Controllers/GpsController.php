@@ -33,7 +33,6 @@ class GpsController extends Controller
      * @OA\Response(
      *         response=200,
      *         description="Success",
-     *         @OA\JsonContent(ref="#/components/schemas/User")
      *     ),
      *      @OA\Response(
      *          response=401,
@@ -102,6 +101,7 @@ class GpsController extends Controller
                         // Save GPS Data to MongoDB
                         $newGps = Gps::create([
                             'Vendor_Key' => $request['CompanyKey'],
+                            'Vehicle_ID' => $request['Vehicle_ID'],
                             'Timestamp' => $request['Timestamp'],
                             'GPS' => $request['GPS'],
                             'Ignition' => $request['Ignition'],
@@ -110,14 +110,12 @@ class GpsController extends Controller
                             'Altitude' => $request['Altitude'],
                             'Speed' => $request['Speed'],
                             'Course' => $request['Course'],
-                            'Satellite_Count' => $request['Satellite_Count'],
-                            'ADC1' => $request['ADC1'],
-                            'ADC2' => $request['ADC2'],
-                            // 'Drum_Status' => $request['Drum_Status'],
-                            'Drum_Status' => 0,                             // Always ZERO  as of now
                             'Mileage' => $request['Mileage'],
-                            'RPM' => $request['RPM'],
-                            'Vehicle_ID' => $request['Vehicle_ID'],
+                            'Satellite_Count' => $request->has('Satellite_Count') ? $request['Satellite_Count'] : 0,
+                            'ADC1' => $request->has('ADC1') ? $request['ADC1'] : 0,
+                            'ADC2' => $request->has('ADC2') ? $request['ADC2'] : 0,
+                            'Drum_Status' => $request->has('Drum_Status') ? $request['Drum_Status'] : 0,
+                            'RPM' => $request->has('RPM') ? $request['RPM'] : 0,
                             'Position' => $transformedData
                         ]);
 
@@ -306,21 +304,21 @@ class GpsController extends Controller
     {
         return Validator::make($request->all(), [
             'CompanyKey' => ['required', 'string'],
+            'Vehicle_ID' => ['required', 'string'],
             'Timestamp' => ['required', 'date'],
-            'GPS' => ['required', 'boolean'],
-            'Ignition' => ['required', 'boolean'],
+            'GPS' => ['required', 'integer', 'min:0', 'max:1'],
+            'Ignition' => ['required', 'integer', 'min:0', 'max:1'],
             'Latitude' => ['required', 'numeric'],
             'Longitude' => ['required', 'numeric'],
-            'Altitude' => ['required', 'integer'],
+            'Altitude' => ['required', 'numeric', 'min:0'],
             'Speed' => ['required', 'integer', 'between:0,999'],
             'Course' => ['required', 'integer', 'between:0,359'],
-            'Satellite_Count' => ['required', 'integer'],
-            'ADC1' => ['required', 'numeric'],
-            'ADC2' => ['required', 'numeric'],
             'Mileage' => ['required', 'integer'],
-            'Drum_Status' => ['integer'],
+            'Satellite_Count' => ['integer'],
+            'ADC1' => ['numeric'],
+            'ADC2' => ['numeric'],
+            'Drum_Status' => ['integer', 'min:0', 'max:2'],
             'RPM' => ['integer'],
-            'Vehicle_ID' => ['required', 'string'],
         ]);
     }
 }

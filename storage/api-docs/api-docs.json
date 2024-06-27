@@ -15,384 +15,6 @@
         }
     ],
     "paths": {
-
-        "/vehicle/create": {
-            "post": {
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Create vehicle",
-                "operationId": "CreateVehicle",
-                "requestBody": {
-                    "description": "Vehicle Information",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "device_id_plate_no": {
-                                        "type": "string"
-                                    },
-                                    "vendor_id": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "type": "object",
-                                "example": {
-                                    "device_id_plate_no": "ATH0001",
-                                    "vendor_id": 1
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Vehicle is successfully registered",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Vehicle"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    },
-                    "409": {
-                        "description": "Vehicle already exist!"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vehicle/create-complete-info": {
-            "post": {
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Create vehicle with assignment and customer",
-                "operationId": "CreateVehicleAssignmentCustomer",
-                "requestBody": {
-                    "description": "Vehicle, Assignment and Customer Information",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "device_id_plate_no": {
-                                        "type": "string"
-                                    },
-                                    "vendor_id": {
-                                        "type": "integer"
-                                    },
-                                    "vehicle_status": {
-                                        "type": "integer"
-                                    },
-                                    "driver_name": {
-                                        "type": "string"
-                                    },
-                                    "mileage": {
-                                        "type": "integer"
-                                    },
-                                    "customer_code": {
-                                        "type": "string"
-                                    },
-                                    "customers": {
-                                        "type": "array",
-                                        "items": {
-                                            "properties": {
-                                                "customer_id": {
-                                                    "type": "integer"
-                                                },
-                                                "ipport_id": {
-                                                    "type": "integer"
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    }
-                                },
-                                "type": "object",
-                                "example": {
-                                    "device_id_plate_no": "ATH0001",
-                                    "vendor_id": 1,
-                                    "vehicle_status": 4,
-                                    "driver_name": "Juan Dela Cruz",
-                                    "mileage": 0,
-                                    "customer_code": "ICPL, ALNC",
-                                    "customers": [
-                                        {
-                                            "customer_id": 1,
-                                            "ipport_id": 1
-                                        }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Vehicle is successfully registered"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    },
-                    "409": {
-                        "description": "Vehicle already exist!"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vehicle/list": {
-            "post": {
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Get list of registered vehicles",
-                "operationId": "VehicleList",
-                "requestBody": {
-                    "description": "Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
-                    "required": false,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "vendor_id": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "type": "object",
-                                "example": {
-                                    "vendor_id": 0
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "ok"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "403": {
-                        "description": "Forbidden"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vehicle/vehicleById/{id}": {
-            "get": {
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Get vehicle by vehicle id",
-                "operationId": "GetVehicleById",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "ok",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Vehicle"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Vehicle not found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vehicle/update/{id}": {
-            "put": {
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Updated Vehicle",
-                "description": "Update vehicle information.",
-                "operationId": "UpdateVehicle",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "description": "id to be updated",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "description": "Updated vehicle object",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "id": {
-                                        "type": "integer"
-                                    },
-                                    "device_id_plate_no": {
-                                        "type": "string"
-                                    },
-                                    "vendor_id": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Vehicle is successfully updated!"
-                    },
-                    "404": {
-                        "description": "Vehicle not found"
-                    },
-                    "409": {
-                        "description": "Vehicle Id does not matched!"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vehicle/massUpdate": {
-            "put": {
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Updated Vehicles",
-                "description": "Mass update vehicle information.",
-                "operationId": "MassUpdateVehicle",
-                "requestBody": {
-                    "description": "Updated vehicles array of object",
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "properties": {
-                                    "id": {
-                                        "type": "integer"
-                                    },
-                                    "device_id_plate_no": {
-                                        "type": "string"
-                                    },
-                                    "vendor_id": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": {
-                        "description": "Vehicle is successfully updated!"
-                    },
-                    "404": {
-                        "description": "Vehicle not found"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
-        "/vehicle/delete/{id}": {
-            "delete": {
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Delete vehicle by vehicle id",
-                "operationId": "DeleteVehicle",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Vehicle is successfully deleted!",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Vehicle"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Vehicle does not exist!"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/current/create": {
             "post": {
                 "tags": [
@@ -1204,14 +826,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Success",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/User"
-                                }
-                            }
-                        }
+                        "description": "Success"
                     },
                     "401": {
                         "description": "Unauthorized User"
@@ -2315,6 +1930,383 @@
                 ]
             }
         },
+        "/vehicle/create": {
+            "post": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Create vehicle",
+                "operationId": "CreateVehicle",
+                "requestBody": {
+                    "description": "Vehicle Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "device_id_plate_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "device_id_plate_no": "ATH0001",
+                                    "vendor_id": 1
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vehicle is successfully registered",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vehicle"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Vehicle already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/create-complete-info": {
+            "post": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Create vehicle with assignment and customer",
+                "operationId": "CreateVehicleAssignmentCustomer",
+                "requestBody": {
+                    "description": "Vehicle, Assignment and Customer Information",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "device_id_plate_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    },
+                                    "vehicle_status": {
+                                        "type": "integer"
+                                    },
+                                    "driver_name": {
+                                        "type": "string"
+                                    },
+                                    "mileage": {
+                                        "type": "integer"
+                                    },
+                                    "customer_code": {
+                                        "type": "string"
+                                    },
+                                    "customers": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "customer_id": {
+                                                    "type": "integer"
+                                                },
+                                                "ipport_id": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "device_id_plate_no": "ATH0001",
+                                    "vendor_id": 1,
+                                    "vehicle_status": 4,
+                                    "driver_name": "Juan Dela Cruz",
+                                    "mileage": 0,
+                                    "customer_code": "ICPL, ALNC",
+                                    "customers": [
+                                        {
+                                            "customer_id": 1,
+                                            "ipport_id": 1
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Vehicle is successfully registered"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "409": {
+                        "description": "Vehicle already exist!"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/list": {
+            "post": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Get list of registered vehicles",
+                "operationId": "VehicleList",
+                "requestBody": {
+                    "description": "Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object",
+                                "example": {
+                                    "vendor_id": 0
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "ok"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/vehicleById/{id}": {
+            "get": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Get vehicle by vehicle id",
+                "operationId": "GetVehicleById",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vehicle"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Vehicle not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/update/{id}": {
+            "put": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Updated Vehicle",
+                "description": "Update vehicle information.",
+                "operationId": "UpdateVehicle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "id to be updated",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated vehicle object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "device_id_plate_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Vehicle not found"
+                    },
+                    "409": {
+                        "description": "Vehicle Id does not matched!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/massUpdate": {
+            "put": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Updated Vehicles",
+                "description": "Mass update vehicle information.",
+                "operationId": "MassUpdateVehicle",
+                "requestBody": {
+                    "description": "Updated vehicles array of object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "id": {
+                                        "type": "integer"
+                                    },
+                                    "device_id_plate_no": {
+                                        "type": "string"
+                                    },
+                                    "vendor_id": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Vehicle is successfully updated!"
+                    },
+                    "404": {
+                        "description": "Vehicle not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/vehicle/delete/{id}": {
+            "delete": {
+                "tags": [
+                    "Vehicle"
+                ],
+                "summary": "Delete vehicle by vehicle id",
+                "operationId": "DeleteVehicle",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vehicle is successfully deleted!",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Vehicle"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Vehicle does not exist!"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/login": {
             "post": {
                 "tags": [
@@ -2568,6 +2560,7 @@
                 "description": "Position",
                 "required": [
                     "CompanyKey",
+                    "Vehicle_ID",
                     "Timestamp",
                     "GPS",
                     "Ignition",
@@ -2576,11 +2569,7 @@
                     "Altitude",
                     "Speed",
                     "Course",
-                    "Satellite_Count",
-                    "ADC1",
-                    "ADC2",
-                    "Mileage",
-                    "Vehicle_ID"
+                    "Mileage"
                 ],
                 "properties": {
                     "CompanyKey": {
@@ -2589,7 +2578,7 @@
                         "format": "string"
                     },
                     "Vehicle_ID": {
-                        "description": "Vehicle Plate Number. Remove in-between spaces. Alphanumer only.",
+                        "description": "Unique ID number for the vehicle (e.g. truck number, plate number, * etc.). Remove in-between spaces. Field accepts alphanumeric only.",
                         "type": "string",
                         "format": "string"
                     },
@@ -2633,6 +2622,11 @@
                         "type": "integer",
                         "format": "int32"
                     },
+                    "Mileage": {
+                        "description": "Device mileage in kilometers",
+                        "type": "integer",
+                        "format": "int32"
+                    },
                     "Satellite_Count": {
                         "description": "Number of satellites detected by the tracker. if data unavailable, set to 4 satellites.",
                         "type": "integer",
@@ -2647,11 +2641,6 @@
                         "description": "Vehicle battery in volts. Minimum value: 0",
                         "type": "number",
                         "format": "float"
-                    },
-                    "Mileage": {
-                        "description": "Device mileage in kilometers",
-                        "type": "integer",
-                        "format": "int32"
                     },
                     "Drum_Status": {
                         "description": "2 - Unloading, 1 - Mixing, 0 - Stop",
