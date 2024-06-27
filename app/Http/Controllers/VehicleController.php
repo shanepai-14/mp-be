@@ -564,7 +564,7 @@ class VehicleController extends Controller
     public function provisioningExport(Request $request)
     {
         $vendor_id = $request->vendor_id;
-        $vehicle_status = $request->vehicle_status;
+        $vehicle_status = $request->vehicle_status ?? 4;
         return (new ProvisioningVehiclesExport($vendor_id, $vehicle_status))->download('provisioning_vehicles.xlsx');
     }
 
