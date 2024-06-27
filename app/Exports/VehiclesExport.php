@@ -32,7 +32,7 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
     {
         return [
             'Vendor',
-            'Plate Number',
+            'Vehicle ID',
             'Driver Name',
             // 'Mileage',
             'Status',

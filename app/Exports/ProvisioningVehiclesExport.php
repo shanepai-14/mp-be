@@ -31,7 +31,7 @@ class ProvisioningVehiclesExport implements FromQuery, WithHeadings, ShouldAutoS
     {
         return [
             'Vendor',
-            'Plate Number',
+            'Vehicle ID',
             'Driver Name',
             // 'Mileage',
             'Customer',
