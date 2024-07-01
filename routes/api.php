@@ -30,9 +30,9 @@ use App\Http\Response\ApiResponse;
 
 Route::post('/login', [UserController::class, 'login'])->name('login')->middleware('throttle:60,1');
 Route::post('/logout', [UserController::class, 'logout'])->middleware(['auth:api', 'throttle:60,1']);
-Route::post('/position', [GpsController::class, 'sendGPS'])->middleware('throttle:1000,1');
+Route::post('/position', [GpsController::class, 'sendGPS'])->middleware('throttle:position');
 Route::post('/check-server', [GpsController::class, 'checkServer']);
-Route::post('/vendor/create-with-account', [TransporterController::class, 'publicCreate'])->middleware('throttle:60,1');;
+Route::post('/vendor/create-with-account', [TransporterController::class, 'publicCreate'])->middleware('throttle:60,1');
 Route::post('/user/publicRegister', [UserController::class, 'publicRegister'])->middleware('throttle:60,1');;
 
 Route::group([
