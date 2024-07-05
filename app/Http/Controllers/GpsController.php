@@ -63,8 +63,8 @@ class GpsController extends Controller
         if (!$validatator->fails()) {
             $key = "position_rate_limit_key_$request->Vehicle_ID";
             //2 data max per 60 seconds
-            if (!RateLimiter::tooManyAttempts($key, 2)) {
-                RateLimiter::hit($key);
+            if (!RateLimiter::tooManyAttempts($key, 1)) {
+                RateLimiter::hit($key, 30);
 
                 $transporter = Transporter::where('transporter_key', $request['CompanyKey'])->first();
                 $response = new ApiResponse();
@@ -74,24 +74,26 @@ class GpsController extends Controller
 
                     // If vehicle does not exist create vehicle with status unregistered and ignore gps data
                     if (!$vehicle) {
-                        $newVehicle = Vehicle::create([
-                            // 'vehicle_status' => 3,
-                            'device_id_plate_no' => $request['Vehicle_ID'],
-                            'transporter_id' => $transporter->id,
-                            // 'mileage' => array_key_exists('Mileage', $request) ? $request['Mileage'] : 0
-                        ]);
-
-                        $newVehicleAssignment = VehicleAssignment::create([
-                            'vehicle_id' => $newVehicle->id,
-                            'mileage' => $request->has('Mileage') ? $request['Mileage'] : 0,
-                            'vehicle_status' => 3
-                        ]);
-
-                        if ($newVehicle && $newVehicleAssignment)
-                            info('Unrecognized vehicle is saved. ' . $request['CompanyKey']);
-
-                        else
-                            info('Server Error ' . $request['CompanyKey']);
+                        //Discard all unregistered vehicle as per pj request
+                        return $response->SuccessResponse('Vehicle is not registered', '');
+//                        $newVehicle = Vehicle::create([
+//                            // 'vehicle_status' => 3,
+//                            'device_id_plate_no' => $request['Vehicle_ID'],
+//                            'transporter_id' => $transporter->id,
+//                            // 'mileage' => array_key_exists('Mileage', $request) ? $request['Mileage'] : 0
+//                        ]);
+//
+//                        $newVehicleAssignment = VehicleAssignment::create([
+//                            'vehicle_id' => $newVehicle->id,
+//                            'mileage' => $request->has('Mileage') ? $request['Mileage'] : 0,
+//                            'vehicle_status' => 3
+//                        ]);
+//
+//                        if ($newVehicle && $newVehicleAssignment)
+//                            info('Unrecognized vehicle is saved. ' . $request['CompanyKey']);
+//
+//                        else
+//                            info('Server Error ' . $request['CompanyKey']);
                     } else {
                         // Save GPS/Position data if vehicle exist and status is not unregistered
                         $vehicleAssignment = VehicleAssignment::where('vehicle_id', $vehicle->id)->latest('id')->first();
@@ -105,7 +107,7 @@ class GpsController extends Controller
                             $transformedData = $vehicleAssignment->vehicle_status == 1 ? $this->dataTransformation($request) : null;
 
                             // Save GPS Data to MongoDB
-                            $newGps = Gps::create([
+                            Gps::create([
                                 'Vendor_Key' => $request['CompanyKey'],
                                 'Vehicle_ID' => $request['Vehicle_ID'],
                                 'Timestamp' => $request['Timestamp'],
@@ -135,14 +137,10 @@ class GpsController extends Controller
                                 $socketCtrl = new GPSSocketController();
                                 $socketCtrl->submitFormattedGPS($transformedData, $ipport->ip, $ipport->port);
                             }
-
-                            if (true)
-                                info('Position is successfully saved.');
-                            else
-                                info('Internal Server Error');
                         }
                         else {
-                            return $response->ErrorResponse("Vehicle is not registered", 409);
+//                            return $response->ErrorResponse("Vehicle is not registered", 409);
+                            return $response->SuccessResponse('Vehicle is not registered', '');
                         }
                     }
                 } else {
