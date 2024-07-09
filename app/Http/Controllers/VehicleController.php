@@ -10,8 +10,6 @@ use App\Models\Vehicle;
 use App\Models\VehicleAssignment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\Test\Constraint\ResponseHasCookie;
 
 class VehicleController extends Controller
 {
@@ -400,21 +398,6 @@ class VehicleController extends Controller
             $vehicle = Vehicle::find($id);
 
             if ($vehicle) {
-                // // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
-                // // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
-                // if ($request->vehicle_status === 1) {
-                //     $integration = new IntegrationController($request->device_id_plate_no, $request->mileage, $request->driver_name);
-
-                //     // If device and vehicle are successfully uploaded to integration server
-                //     // update vehicle status to approved in mysql server
-                //     $uploadResult = $integration->uploading();
-
-                //     if ($uploadResult == 200 || $uploadResult == 409)
-                //         $this->updateInfo($vehicle, $request);
-
-                //     else
-                //         return $response->ErrorResponse('Failed, something went wrong in integration server', 500);
-                // } else
                 $this->updateInfo($vehicle, $request->collect());
 
                 $vehicleData = $this->vehicleById($vehicle->id);

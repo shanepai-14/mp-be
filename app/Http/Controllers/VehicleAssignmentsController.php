@@ -89,7 +89,8 @@ class VehicleAssignmentsController extends Controller
             $newVA = VehicleAssignment::create([
                 'vehicle_id' => $request->vehicle_id,
                 'vehicle_status' => $request->vehicle_status,
-                'driver_name' => $request->driver_name,
+                //'driver_name' => $request->driver_name,
+                'driver_name' => "",
                 'mileage' => $request->mileage,
                 'customer_code' => $request->customer_code,
                 'register_by_user_id' => Auth::user()->id
@@ -313,6 +314,7 @@ class VehicleAssignmentsController extends Controller
             if ($VA) {
                 // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
                 // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
+
                 if ($request->vehicle_status === 1) {
 
                     // Get vehicle info
@@ -332,7 +334,7 @@ class VehicleAssignmentsController extends Controller
                         $uploadResult = (json_decode(json_encode($uploadResult), true)['original']);
 
                         if ($uploadResult['status'] === 200)  $this->updateInfo($VA, $request);
-                        // if (true) $this->updateInfo($VA, $request);
+//                         if (true) $this->updateInfo($VA, $request);
                         else return $response->ErrorResponse($uploadResult['message'] ?? 'Failed, something went wrong in integration server', 500);
                     } else {
                         return $response->ErrorResponse("There's no integration login credentials found!", 400);
@@ -355,7 +357,8 @@ class VehicleAssignmentsController extends Controller
         $VA->update([
             'vehicle_id' => $request['vehicle_id'],
             'vehicle_status' => $request['vehicle_status'],
-            'driver_name' => $request['driver_name'],
+            //'driver_name' => $request['driver_name'],
+            'driver_name' => "",
             'mileage' => $request['mileage'],
             'customer_code' => $request->has('customer_code') ? $request['customer_code'] : $VA->customer_code,
             'updated_by_user_id' => Auth::user()->id
