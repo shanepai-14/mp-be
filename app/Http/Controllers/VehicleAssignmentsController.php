@@ -496,7 +496,7 @@ class VehicleAssignmentsController extends Controller
                                 $currCustCreate = $currCust->create($currCust_req);
                                 $currCustCreateRes = (json_decode(json_encode($currCustCreate), true)['original']);
 
-                                if ($currCustCreateRes->status() !== 200) {
+                                if ($currCustCreate->status() !== 200) {
                                     return $response->ErrorResponse($currCustCreateRes['message'] ?? 'Failed to update!', $currCustCreate->status());
                                 }
 
