@@ -99,8 +99,11 @@ class GpsController extends Controller
                         $vehicleAssignment = VehicleAssignment::where('vehicle_id', $vehicle->id)->latest('id')->first();
                         if ($vehicleAssignment->vehicle_status != 3) {
                             // Add default value if these are missing in the payload
-                            if ($request->has("Drum_Status"))  $request['Drum_Status'] = 0;
-                            if ($request->has("RPM")) $request['RPM'] = 0;
+                            if (!$request->has("Drum_Status"))  $request['Drum_Status'] = 0;
+                            if (!$request->has("RPM")) $request['RPM'] = 0;
+                            if (!$request->has('ADC1')) $request['ADC1'] = 0;
+                            if (!$request->has('ADC2')) $request['ADC2'] = 0;
+                            if (!$request->has('Satellite_Count')) $request['Satellite_Count'] = 0;
                             // $request->mergeIfMissing(['Drum_Status' => 0]);
                             // $request->mergeIfMissing(['RPM' => 0]);
 
@@ -119,11 +122,11 @@ class GpsController extends Controller
                                 'Speed' => $request['Speed'],
                                 'Course' => $request['Course'],
                                 'Mileage' => $request['Mileage'],
-                                'Satellite_Count' => $request->has('Satellite_Count') ? $request['Satellite_Count'] : 0,
-                                'ADC1' => $request->has('ADC1') ? $request['ADC1'] : 0,
-                                'ADC2' => $request->has('ADC2') ? $request['ADC2'] : 0,
-                                'Drum_Status' => $request->has('Drum_Status') ? $request['Drum_Status'] : 0,
-                                'RPM' => $request->has('RPM') ? $request['RPM'] : 0,
+                                'Satellite_Count' => $request['Satellite_Count'],
+                                'ADC1' => $request['ADC1'],
+                                'ADC2' => $request['ADC2'],
+                                'Drum_Status' => $request['Drum_Status'],
+                                'RPM' => $request['RPM'],
                                 'Position' => $transformedData
                             ]);
 
@@ -270,7 +273,7 @@ class GpsController extends Controller
     private function dataTransformation($data)
     {
         $gpsData = '$';
-        $pattern = ['Timestamp', 'GPS', 'Latitude', 'Longitude', 'Altitude', 'Speed', 'Course', 'Satellite_Count', 'ADC1', 'ADC2', 'IO', 'Mileage', 'RPM', 'Device_ID'];
+        $pattern = ['Timestamp', 'GPS', 'Latitude', 'Longitude', 'Altitude', 'Speed', 'Course', 'Satellite_Count', 'ADC1', 'ADC2', 'IO', 'Mileage', 'RPM', 'Vehicle_ID'];
 
         foreach ($pattern as $patternVal) {
             switch ($patternVal) {
