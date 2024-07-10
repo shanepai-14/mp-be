@@ -330,11 +330,11 @@ class VehicleAssignmentsController extends Controller
                     if ($integration->hasLoginCredentials()) {
                         // If device and vehicle are successfully uploaded to integration server
                         // update vehicle status to approved in mysql server
-                        $uploadResult = $integration->uploading();
-                        $uploadResult = (json_decode(json_encode($uploadResult), true)['original']);
-
-                        if ($uploadResult['status'] === 200)  $this->updateInfo($VA, $request);
-//                         if (true) $this->updateInfo($VA, $request);
+//                        $uploadResult = $integration->uploading();
+//                        $uploadResult = (json_decode(json_encode($uploadResult), true)['original']);
+//
+//                        if ($uploadResult['status'] === 200)  $this->updateInfo($VA, $request);
+                         if (true) $this->updateInfo($VA, $request);
                         else return $response->ErrorResponse($uploadResult['message'] ?? 'Failed, something went wrong in integration server', 500);
                     } else {
                         return $response->ErrorResponse("There's no integration login credentials found!", 400);
