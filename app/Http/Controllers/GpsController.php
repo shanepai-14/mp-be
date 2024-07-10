@@ -135,7 +135,7 @@ class GpsController extends Controller
 
                                 // Forward transformed GPS data to Wlocate
                                 $socketCtrl = new GPSSocketController();
-                                $socketCtrl->submitFormattedGPS($transformedData, $ipport->ip, $ipport->port);
+                                $socketCtrl->submitFormattedGPS($transformedData, $ipport->ip, $ipport->port, $request['Vehicle_ID']);
                             }
                         }
                         else {
