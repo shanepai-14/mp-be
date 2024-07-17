@@ -114,7 +114,8 @@ class GpsController extends Controller
                                 'Vendor_Key' => $request['CompanyKey'],
                                 'Vehicle_ID' => $request['Vehicle_ID'],
                                 'Timestamp' => $request['Timestamp'],
-                                'GPS' => $request['GPS'],
+                                //'GPS' => $request['GPS'], Temporarily set to 1
+                                'GPS' => 1,
                                 'Ignition' => $request['Ignition'],
                                 'Latitude' => $request['Latitude'],
                                 'Longitude' => $request['Longitude'],
