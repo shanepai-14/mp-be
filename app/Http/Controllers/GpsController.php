@@ -107,6 +107,9 @@ class GpsController extends Controller
                             // $request->mergeIfMissing(['Drum_Status' => 0]);
                             // $request->mergeIfMissing(['RPM' => 0]);
 
+                            //Temporarily set GPS to 1
+                            $request['GPS'] = 1;
+
                             $transformedData = $vehicleAssignment->vehicle_status == 1 ? $this->dataTransformation($request) : null;
 
                             // Save GPS Data to MongoDB
@@ -114,8 +117,7 @@ class GpsController extends Controller
                                 'Vendor_Key' => $request['CompanyKey'],
                                 'Vehicle_ID' => $request['Vehicle_ID'],
                                 'Timestamp' => $request['Timestamp'],
-                                //'GPS' => $request['GPS'], Temporarily set to 1
-                                'GPS' => 1,
+                                'GPS' => $request['GPS'],
                                 'Ignition' => $request['Ignition'],
                                 'Latitude' => $request['Latitude'],
                                 'Longitude' => $request['Longitude'],
