@@ -52,7 +52,7 @@ class GPSSocketController extends Controller
 
                     $error_message = 'Could not read data';
                     // get server response
-                     $socket_read = socket_read($socket, 1024);
+                     $socket_read = socket_read($socket, 2048);
                      if ($socket_read) {
                          Log::channel('gpssuccesslog')->info([
                              "Vehicle" => $vehicle_id,
