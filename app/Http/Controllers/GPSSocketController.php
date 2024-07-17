@@ -8,6 +8,8 @@ use PhpOffice\PhpSpreadsheet\Calculation\TextData\Replace;
 
 class GPSSocketController extends Controller
 {
+    protected array $error_data = [];
+
     // Submit formatted GPS data to WL server via TCP/IP
     public function submitFormattedGPS($gpsData, $wl_ip, $wl_port, $vehicle_id)
     {
@@ -21,7 +23,7 @@ class GPSSocketController extends Controller
 
         $socket = null;
         $error_message = 'Could not create socket';
-        $error_data = [
+        $this->error_data = [
             "Vehicle" => $vehicle_id,
             "Date" => now()->toISOString(),
             "Host" => $host,
@@ -29,6 +31,7 @@ class GPSSocketController extends Controller
             "GPS" => $message,
             "Reason" => ""
         ];
+
         try {
             // create socket
             $socket = socket_create(AF_INET, SOCK_STREAM, 0);
@@ -43,8 +46,8 @@ class GPSSocketController extends Controller
                     // send string to server
                     $socket_write = socket_write($socket, $message, strlen($message));
                     if ($socket_write === 0) {
-                        $error_data['Reason'] = "No bytes have been written";
-                        Log::channel('gpserrorlog')->error($error_data);
+                        $this->error_data['Reason'] = "No bytes have been written";
+                        Log::channel('gpserrorlog')->error($this->error_data);
                     }
                     else if ($socket_write === false) {
                         $this->catchSocketError($socket, 'socket_write');
@@ -69,8 +72,8 @@ class GPSSocketController extends Controller
             else $this->catchSocketError($socket, 'socket_create');
         }
         catch(_) {
-            $error_data['Reason'] = $error_message;
-            Log::channel('gpserrorlog')->error($error_data);
+            $this->error_data['Reason'] = $error_message;
+            Log::channel('gpserrorlog')->error($this->error_data);
         }
         finally {
             //The default value of mode in socket_shutdown is 2
@@ -94,8 +97,8 @@ class GPSSocketController extends Controller
             socket_clear_error($socket_instance);
         }
 
-        $error_data['Reason'] = $error;
-        Log::channel('gpserrorlog')->error($error_data);
+        $this->error_data['Reason'] = $error;
+        Log::channel('gpserrorlog')->error($this->error_data);
     }
 }
 
