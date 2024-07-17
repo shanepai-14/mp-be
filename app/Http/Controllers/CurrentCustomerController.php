@@ -39,7 +39,6 @@ class CurrentCustomerController extends Controller
      *             )
      *         )
      *     ),
-
      *     @OA\Response(
      *         response=200,
      *         description="Current customer is successfully registered",
