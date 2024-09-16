@@ -30,27 +30,29 @@ class IntegrationController extends Controller
     public function uploading()
     {
         $response = new ApiResponse();
-        if ($this->loginRetries < 3) {
-            $valid = $this->customer['customer_api_key'] ? $this->verifyToken() : $this->login();
+        return $response->SuccessResponse('', 200);
+        // Removed submitting vehicle and device data to findplus
+        // if ($this->loginRetries < 3) {
+        //     $valid = $this->customer['customer_api_key'] ? $this->verifyToken() : $this->login();
 
-            if ($valid) {
-                $newVehicleUpload = $this->submitVehicle();
-                if ($newVehicleUpload && $newVehicleUpload['is_success']) {
-                    $is_device_exists = $newVehicleUpload['data'] && array_key_exists('DeviceID', $newVehicleUpload['data']) && $newVehicleUpload['data']['DeviceID'] > 0;
-                    $newDeviceUpload = $this->submitDevice($is_device_exists);
-                    if ($newDeviceUpload && $newDeviceUpload['is_success']) {
-                        return $response->SuccessResponse('', 200);
-                    }
+        //     if ($valid) {
+        //         $newVehicleUpload = $this->submitVehicle();
+        //         if ($newVehicleUpload && $newVehicleUpload['is_success']) {
+        //             $is_device_exists = $newVehicleUpload['data'] && array_key_exists('DeviceID', $newVehicleUpload['data']) && $newVehicleUpload['data']['DeviceID'] > 0;
+        //             $newDeviceUpload = $this->submitDevice($is_device_exists);
+        //             if ($newDeviceUpload && $newDeviceUpload['is_success']) {
+        //                 return $response->SuccessResponse('', 200);
+        //             }
 
-                    return $response->ErrorResponse(array_key_exists('message', $newDeviceUpload) ? $newDeviceUpload['message'] : 'Upload Device - something went wrong in integration server!', 500);
-                }
+        //             return $response->ErrorResponse(array_key_exists('message', $newDeviceUpload) ? $newDeviceUpload['message'] : 'Upload Device - something went wrong in integration server!', 500);
+        //         }
 
-                return $response->ErrorResponse(array_key_exists('message', $newVehicleUpload) ? $newVehicleUpload['message'] : 'Upload Vehicle - something went wrong in integration server', 500);
-            } else {
-                $this->loginRetries++;
-                return $this->uploading();
-            }
-        } else return $response->ErrorResponse('Failed to login to the account of the customer', 500);
+        //         return $response->ErrorResponse(array_key_exists('message', $newVehicleUpload) ? $newVehicleUpload['message'] : 'Upload Vehicle - something went wrong in integration server', 500);
+        //     } else {
+        //         $this->loginRetries++;
+        //         return $this->uploading();
+        //     }
+        // } else return $response->ErrorResponse('Failed to login to the account of the customer', 500);
     }
 
     // Check if device already exist in the Device List
