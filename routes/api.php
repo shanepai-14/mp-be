@@ -71,7 +71,7 @@ Route::group([
     Route::post('/unregistered/export', [VehicleController::class, 'unregisteredExport'])->middleware('throttle:60,1');
     Route::put('/update/{id}', [VehicleController::class, 'update'])->middleware('throttle:60,1');
     Route::put('/massUpdate', [VehicleController::class, 'massUpdate'])->middleware('throttle:60,1');
-    Route::delete('/delete/{id}', [VehicleController::class, 'delete'])->middleware('throttle:60,1');
+    // Route::delete('/delete/{id}', [VehicleController::class, 'delete'])->middleware('throttle:60,1');
 });
 
 Route::group([

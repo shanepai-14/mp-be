@@ -498,44 +498,44 @@ class VehicleController extends Controller
         return $response->SuccessResponse('Vehicle is successfully updated!', $failed);
     }
 
-    /**
-     * @OA\Delete(
-     *     tags={"Vehicle"},
-     *     path="/vehicle/delete/{id}",
-     *     summary="Delete vehicle by vehicle id",
-     *     operationId="DeleteVehicle",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         in="path",
-     *         name="id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Vehicle is successfully deleted!",
-     *         @OA\JsonContent(ref="#/components/schemas/Vehicle")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Vehicle does not exist!"
-     *     ),
-     * )
-     */
-    public function delete($id)
-    {
-        $response = new ApiResponse();
-        $vehicle = Vehicle::find($id);
+    // /**
+    //  * @OA\Delete(
+    //  *     tags={"Vehicle"},
+    //  *     path="/vehicle/delete/{id}",
+    //  *     summary="Delete vehicle by vehicle id",
+    //  *     operationId="DeleteVehicle",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\Parameter(
+    //  *         in="path",
+    //  *         name="id",
+    //  *         required=true,
+    //  *         @OA\Schema(
+    //  *             type="integer"
+    //  *         )
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Vehicle is successfully deleted!",
+    //  *         @OA\JsonContent(ref="#/components/schemas/Vehicle")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=404,
+    //  *         description="Vehicle does not exist!"
+    //  *     ),
+    //  * )
+    //  */
+    // public function delete($id)
+    // {
+    //     $response = new ApiResponse();
+    //     $vehicle = Vehicle::find($id);
 
-        if ($vehicle) {
-            $vehicle->delete();
-            return $response->SuccessResponse('Vehicle is successfully deleted!', $vehicle);
-        }
+    //     if ($vehicle) {
+    //         $vehicle->delete();
+    //         return $response->SuccessResponse('Vehicle is successfully deleted!', $vehicle);
+    //     }
 
-        return $response->ErrorResponse('Vehicle does not exist!', 404);
-    }
+    //     return $response->ErrorResponse('Vehicle does not exist!', 404);
+    // }
 
     public function vehicleExport(Request $request)
     {
