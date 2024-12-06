@@ -1156,45 +1156,6 @@
                 ]
             }
         },
-        "/vendor/delete/{id}": {
-            "delete": {
-                "tags": [
-                    "Vendor"
-                ],
-                "summary": "Delete vendor by vendor id",
-                "operationId": "DeleteVendor",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Vendor is successfully deleted!",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Transporter"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Vendor does not exist!"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/user/list": {
             "post": {
                 "tags": [
