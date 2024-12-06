@@ -264,44 +264,44 @@ class CurrentCustomerController extends Controller
         return $response->ErrorResponse('Current customer Id does not matched!', 409);
     }
 
-    /**
-     * @OA\Delete(
-     *     tags={"Current"},
-     *     path="/current/delete/{id}",
-     *     summary="Delete Current by id",
-     *     operationId="DeleteCurrent",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         in="path",
-     *         name="id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Current customer is successfully deleted!",
-     *         @OA\JsonContent(ref="#/components/schemas/CurrentCustomer")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Current customer does not exist!"
-     *     ),
-     * )
-     */
-    public function delete($id)
-    {
-        $response = new ApiResponse();
-        $cust = CurrentCustomer::find($id);
+    // /**
+    //  * @OA\Delete(
+    //  *     tags={"Current"},
+    //  *     path="/current/delete/{id}",
+    //  *     summary="Delete Current by id",
+    //  *     operationId="DeleteCurrent",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\Parameter(
+    //  *         in="path",
+    //  *         name="id",
+    //  *         required=true,
+    //  *         @OA\Schema(
+    //  *             type="integer"
+    //  *         )
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Current customer is successfully deleted!",
+    //  *         @OA\JsonContent(ref="#/components/schemas/CurrentCustomer")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=404,
+    //  *         description="Current customer does not exist!"
+    //  *     ),
+    //  * )
+    //  */
+    // public function delete($id)
+    // {
+    //     $response = new ApiResponse();
+    //     $cust = CurrentCustomer::find($id);
 
-        if ($cust) {
-            $cust->delete();
-            return $response->SuccessResponse('Current customer is successfully deleted!', $cust);
-        }
+    //     if ($cust) {
+    //         $cust->delete();
+    //         return $response->SuccessResponse('Current customer is successfully deleted!', $cust);
+    //     }
 
-        return $response->ErrorResponse('Current customer does not exist!', 404);
-    }
+    //     return $response->ErrorResponse('Current customer does not exist!', 404);
+    // }
 
     private function hideFields($customer)
     {

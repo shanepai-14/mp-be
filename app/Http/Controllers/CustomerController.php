@@ -301,44 +301,44 @@ class CustomerController extends Controller
         return $response->ErrorResponse('Customer Id does not matched!', 409);
     }
 
-    /**
-     * @OA\Delete(
-     *     tags={"Customer"},
-     *     path="/customer/delete/{id}",
-     *     summary="Delete Customer by id",
-     *     operationId="DeleteCustomer",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         in="path",
-     *         name="id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Customer is successfully deleted!",
-     *         @OA\JsonContent(ref="#/components/schemas/Customer")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Customer does not exist!"
-     *     ),
-     * )
-     */
-    public function delete($id)
-    {
-        $response = new ApiResponse();
-        $customer = Customer::find($id);
+    // /**
+    //  * @OA\Delete(
+    //  *     tags={"Customer"},
+    //  *     path="/customer/delete/{id}",
+    //  *     summary="Delete Customer by id",
+    //  *     operationId="DeleteCustomer",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\Parameter(
+    //  *         in="path",
+    //  *         name="id",
+    //  *         required=true,
+    //  *         @OA\Schema(
+    //  *             type="integer"
+    //  *         )
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Customer is successfully deleted!",
+    //  *         @OA\JsonContent(ref="#/components/schemas/Customer")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=404,
+    //  *         description="Customer does not exist!"
+    //  *     ),
+    //  * )
+    //  */
+    // public function delete($id)
+    // {
+    //     $response = new ApiResponse();
+    //     $customer = Customer::find($id);
 
-        if ($customer) {
-            $customer->delete();
-            return $response->SuccessResponse('Customer is successfully deleted!', $customer);
-        }
+    //     if ($customer) {
+    //         $customer->delete();
+    //         return $response->SuccessResponse('Customer is successfully deleted!', $customer);
+    //     }
 
-        return $response->ErrorResponse('Customer does not exist!', 404);
-    }
+    //     return $response->ErrorResponse('Customer does not exist!', 404);
+    // }
 
     private function hideFields($customer)
     {

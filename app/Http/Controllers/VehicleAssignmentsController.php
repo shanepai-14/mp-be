@@ -602,44 +602,44 @@ class VehicleAssignmentsController extends Controller
         return $response->ErrorResponse('Vehicle Assignment Id does not matched!', 409);
     }
 
-    /**
-     * @OA\Delete(
-     *     tags={"Assignment"},
-     *     path="/assignment/delete/{id}",
-     *     summary="Delete Assignment by id",
-     *     operationId="DeleteAssignment",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         in="path",
-     *         name="id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Vehicle assignment is successfully deleted!",
-     *         @OA\JsonContent(ref="#/components/schemas/VehicleAssignment")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Vehicle assignment does not exist!"
-     *     ),
-     * )
-     */
-    public function delete($id)
-    {
-        $response = new ApiResponse();
-        $VA = VehicleAssignment::find($id);
+    // /**
+    //  * @OA\Delete(
+    //  *     tags={"Assignment"},
+    //  *     path="/assignment/delete/{id}",
+    //  *     summary="Delete Assignment by id",
+    //  *     operationId="DeleteAssignment",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\Parameter(
+    //  *         in="path",
+    //  *         name="id",
+    //  *         required=true,
+    //  *         @OA\Schema(
+    //  *             type="integer"
+    //  *         )
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Vehicle assignment is successfully deleted!",
+    //  *         @OA\JsonContent(ref="#/components/schemas/VehicleAssignment")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=404,
+    //  *         description="Vehicle assignment does not exist!"
+    //  *     ),
+    //  * )
+    //  */
+    // public function delete($id)
+    // {
+    //     $response = new ApiResponse();
+    //     $VA = VehicleAssignment::find($id);
 
-        if ($VA) {
-            $VA->delete();
-            return $response->SuccessResponse('Vehicle assignment is successfully deleted!', $VA);
-        }
+    //     if ($VA) {
+    //         $VA->delete();
+    //         return $response->SuccessResponse('Vehicle assignment is successfully deleted!', $VA);
+    //     }
 
-        return $response->ErrorResponse('Vehicle assignment does not exist!', 404);
-    }
+    //     return $response->ErrorResponse('Vehicle assignment does not exist!', 404);
+    // }
 
     /**
      * @OA\Put(

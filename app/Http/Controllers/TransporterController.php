@@ -370,42 +370,42 @@ class TransporterController extends Controller
         return $response->ErrorResponse('Vendor Id does not matched!', 400);
     }
 
-    /**
-     * @OA\Delete(
-     *     tags={"Vendor"},
-     *     path="/vendor/delete/{id}",
-     *     summary="Delete vendor by vendor id",
-     *     operationId="DeleteVendor",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         in="path",
-     *         name="id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Vendor is successfully deleted!",
-     *         @OA\JsonContent(ref="#/components/schemas/Transporter")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Vendor does not exist!"
-     *     ),
-     * )
-     */
-    public function delete($id)
-    {
-        $response = new ApiResponse();
-        $transporter = Transporter::find($id);
+    // /**
+    //  * @OA\Delete(
+    //  *     tags={"Vendor"},
+    //  *     path="/vendor/delete/{id}",
+    //  *     summary="Delete vendor by vendor id",
+    //  *     operationId="DeleteVendor",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\Parameter(
+    //  *         in="path",
+    //  *         name="id",
+    //  *         required=true,
+    //  *         @OA\Schema(
+    //  *             type="integer"
+    //  *         )
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Vendor is successfully deleted!",
+    //  *         @OA\JsonContent(ref="#/components/schemas/Transporter")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=404,
+    //  *         description="Vendor does not exist!"
+    //  *     ),
+    //  * )
+    //  */
+    // public function delete($id)
+    // {
+    //     $response = new ApiResponse();
+    //     $transporter = Transporter::find($id);
 
-        if ($transporter) {
-            $transporter->delete();
-            return $response->SuccessResponse('Vendor is successfully deleted!', $transporter);
-        }
+    //     if ($transporter) {
+    //         $transporter->delete();
+    //         return $response->SuccessResponse('Vendor is successfully deleted!', $transporter);
+    //     }
 
-        return $response->ErrorResponse('Vendor does not exist!', 404);
-    }
+    //     return $response->ErrorResponse('Vendor does not exist!', 404);
+    // }
 }

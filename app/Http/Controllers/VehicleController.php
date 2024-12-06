@@ -13,84 +13,84 @@ use Illuminate\Support\Facades\Auth;
 
 class VehicleController extends Controller
 {
-    /**
-     * @OA\Post(
-     *     tags={"Vehicle"},
-     *     path="/vehicle/create",
-     *     summary="Create vehicle",
-     *     operationId="CreateVehicle",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\RequestBody(
-     *         description="Vehicle Information",
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="application/json",
-     *             @OA\Schema(
-     *                  @OA\Property(
-     *                     property="device_id_plate_no",
-     *                     type="string"
-     *                 ),
-     *                  @OA\Property(
-     *                     property="vendor_id",
-     *                     type="integer"
-     *                 ),
-     *                 example={"device_id_plate_no": "ATH0001",
-     *                          "vendor_id": 1 }
-     *             )
-     *         )
-     *     ),
+    // /**
+    //  * @OA\Post(
+    //  *     tags={"Vehicle"},
+    //  *     path="/vehicle/create",
+    //  *     summary="Create vehicle",
+    //  *     operationId="CreateVehicle",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\RequestBody(
+    //  *         description="Vehicle Information",
+    //  *         required=true,
+    //  *         @OA\MediaType(
+    //  *             mediaType="application/json",
+    //  *             @OA\Schema(
+    //  *                  @OA\Property(
+    //  *                     property="device_id_plate_no",
+    //  *                     type="string"
+    //  *                 ),
+    //  *                  @OA\Property(
+    //  *                     property="vendor_id",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                 example={"device_id_plate_no": "ATH0001",
+    //  *                          "vendor_id": 1 }
+    //  *             )
+    //  *         )
+    //  *     ),
 
-     *     @OA\Response(
-     *         response=200,
-     *         description="Vehicle is successfully registered",
-     *         @OA\JsonContent(ref="#/components/schemas/Vehicle")
-     *     ),
-     *     @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
-     *      ),
-     *     @OA\Response(
-     *          response=403,
-     *          description="Forbidden",
-     *      ),
-     *     @OA\Response(
-     *          response=409,
-     *          description="Vehicle already exist!",
-     *      ),
-     *     @OA\Response(
-     *          response=500,
-     *          description="Internal Server Error",
-     *      ),
-     * )
-     */
-    public function create(Request $request)
-    {
-        $response = new ApiResponse();
-        $isVehicleExist = Vehicle::where('device_id_plate_no', $request->device_id_plate_no)->exists();
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Vehicle is successfully registered",
+    //  *         @OA\JsonContent(ref="#/components/schemas/Vehicle")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *          response=401,
+    //  *          description="Unauthenticated",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=403,
+    //  *          description="Forbidden",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=409,
+    //  *          description="Vehicle already exist!",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=500,
+    //  *          description="Internal Server Error",
+    //  *      ),
+    //  * )
+    //  */
+    // public function create(Request $request)
+    // {
+    //     $response = new ApiResponse();
+    //     $isVehicleExist = Vehicle::where('device_id_plate_no', $request->device_id_plate_no)->exists();
 
-        if ($isVehicleExist)
-            return $response->ErrorResponse('Vehicle already exist!', 409);
-        else {
-            $newVehicle = Vehicle::create([
-                'device_id_plate_no' => $request->device_id_plate_no,
-                'transporter_id' => $request->vendor_id,
-                // 'vehicle_status' => $request->vehicle_status,
-                'register_by_user_id' => Auth::user()->id
-                // 'driver_name' => $request->driver_name,
-                // 'contact_no' => $request->contact_no,
-                // 'mileage' => $request->mileage,
-            ]);
+    //     if ($isVehicleExist)
+    //         return $response->ErrorResponse('Vehicle already exist!', 409);
+    //     else {
+    //         $newVehicle = Vehicle::create([
+    //             'device_id_plate_no' => $request->device_id_plate_no,
+    //             'transporter_id' => $request->vendor_id,
+    //             // 'vehicle_status' => $request->vehicle_status,
+    //             'register_by_user_id' => Auth::user()->id
+    //             // 'driver_name' => $request->driver_name,
+    //             // 'contact_no' => $request->contact_no,
+    //             // 'mileage' => $request->mileage,
+    //         ]);
 
-            if ($newVehicle) {
-                $newVehicleRec = $this->vehicleById($newVehicle->id);
+    //         if ($newVehicle) {
+    //             $newVehicleRec = $this->vehicleById($newVehicle->id);
 
-                $responseData = ['vehicle' => $newVehicleRec];
-                return $response->SuccessResponse('Vehicle is successfully registered', $responseData);
-            }
+    //             $responseData = ['vehicle' => $newVehicleRec];
+    //             return $response->SuccessResponse('Vehicle is successfully registered', $responseData);
+    //         }
 
-            return $response->ErrorResponse('Server Error', 500);
-        }
-    }
+    //         return $response->ErrorResponse('Server Error', 500);
+    //     }
+    // }
 
     /**
      * @OA\Post(

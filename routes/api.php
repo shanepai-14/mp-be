@@ -54,7 +54,7 @@ Route::group([
     Route::get('/list', [TransporterController::class, 'list'])->middleware('throttle:200,1');;
     Route::get('/vendorById/{id}', [TransporterController::class, 'transporterById'])->middleware('throttle:60,1');
     Route::put('/update/{id}', [TransporterController::class, 'update'])->middleware('throttle:60,1');
-    Route::delete('/delete/{id}', [TransporterController::class, 'delete'])->middleware('throttle:60,1');
+    // Route::delete('/delete/{id}', [TransporterController::class, 'delete'])->middleware('throttle:60,1');
     Route::post('/create', [TransporterController::class, 'create'])->middleware('throttle:60,1');
 });
 
@@ -82,7 +82,7 @@ Route::group([
     Route::get('/customerById/{id}', [CustomerController::class, 'customerById'])->middleware('throttle:60,1');
     Route::post('/list', [CustomerController::class, 'list'])->middleware('throttle:200,1');;
     Route::put('/update/{id}', [CustomerController::class, 'update'])->middleware('throttle:60,1');
-    Route::delete('/delete/{id}', [CustomerController::class, 'delete'])->middleware('throttle:60,1');
+    // Route::delete('/delete/{id}', [CustomerController::class, 'delete'])->middleware('throttle:60,1');
 
     // For Customer-IP-Port
     Route::post('/ip-port/create', [CustomerIpPortController::class, 'create'])->middleware('throttle:60,1');
@@ -100,7 +100,7 @@ Route::group([
     Route::post('/list', [CurrentCustomerController::class, 'list'])->middleware('throttle:200,1');;
     Route::get('/currentCustById/{id}', [CurrentCustomerController::class, 'currentCustById'])->middleware('throttle:60,1');
     Route::put('/update/{id}', [CurrentCustomerController::class, 'update'])->middleware('throttle:60,1');
-    Route::delete('/delete/{id}', [CurrentCustomerController::class, 'delete'])->middleware('throttle:60,1');
+    // Route::delete('/delete/{id}', [CurrentCustomerController::class, 'delete'])->middleware('throttle:60,1');
 });
 
 Route::group([
@@ -112,7 +112,7 @@ Route::group([
     Route::get('/assignmentById/{id}', [VehicleAssignmentsController::class, 'assignmentById'])->middleware('throttle:60,1');
     Route::put('/update/{id}', [VehicleAssignmentsController::class, 'update'])->middleware('throttle:60,1');
     Route::put('/update-assign-customer/{id}', [VehicleAssignmentsController::class, 'updateAssignmentCustomer'])->middleware('throttle:60,1');
-    Route::delete('/delete/{id}', [VehicleAssignmentsController::class, 'delete'])->middleware('throttle:250,1');
+    // Route::delete('/delete/{id}', [VehicleAssignmentsController::class, 'delete'])->middleware('throttle:250,1');
     Route::put('/approve/{id}', [VehicleAssignmentsController::class, 'approve'])->middleware('throttle:250,1');
     Route::put('/reject/{id}', [VehicleAssignmentsController::class, 'reject'])->middleware('throttle:250,1');
 });
