@@ -2202,45 +2202,6 @@
                 ]
             }
         },
-        "/vehicle/delete/{id}": {
-            "delete": {
-                "tags": [
-                    "Vehicle"
-                ],
-                "summary": "Delete vehicle by vehicle id",
-                "operationId": "DeleteVehicle",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Vehicle is successfully deleted!",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Vehicle"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Vehicle does not exist!"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            }
-        },
         "/login": {
             "post": {
                 "tags": [
