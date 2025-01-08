@@ -287,11 +287,18 @@ class VehicleController extends Controller
     public function list(Request $request)
     {
         $vehicleReq = Vehicle::select();
-        if ($request->vendor_id)
-            $vehicleReq->where('transporter_id', $request->vendor_id);
-        // if ($request->vehicle_status)
-        //     $vehicleReq->where('vehicle_status', $request->vehicle_status);
-
+        $currUser = Auth::user();
+        if($currUser->user_role === 1){
+            if ($request->vendor_id)
+                $vehicleReq->where('transporter_id', $request->vendor_id);
+            // if ($request->vehicle_status)
+            //     $vehicleReq->where('vehicle_status', $request->vehicle_status);
+        }else if(isset($currUser->transporter_id)){
+            $vehicleReq->where('transporter_id', $currUser->transporter_id);
+        }else{
+            return $response->ErrorResponse('Vendor Id does not matched!', 409);
+        }
+        
         $data = $vehicleReq->with(['vendor', 'register_by', 'updated_by'])->get();
         foreach ($data as $rec) {
             $this->hideFields($rec);
