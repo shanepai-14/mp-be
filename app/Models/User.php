@@ -122,7 +122,8 @@ class User extends Authenticatable
         'transporter_id',
         'remember_token',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'vendor_key',
     ];
 
     /**

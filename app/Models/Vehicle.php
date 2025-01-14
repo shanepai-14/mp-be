@@ -118,7 +118,8 @@ class Vehicle extends Model
         // 'created_at',
         // 'updated_at',
         'transporter_id',
-        'deleted_at'
+        'deleted_at',
+        'vendor_key',
     ];
 
     public function getVendorIdAttribute(){
