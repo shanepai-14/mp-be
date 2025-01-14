@@ -64,6 +64,8 @@ class CurrentCustomerController extends Controller
      */
     public function create(Request $request)
     {
+        $response = new ApiResponse();
+        
         $customer_id = null;
         $currUser = Auth::user();
         if($currUser->user_role === 1){
@@ -76,7 +78,7 @@ class CurrentCustomerController extends Controller
             return $response->ErrorResponse('Customer Id does not matched!', 409);
         }
 
-        $response = new ApiResponse();
+        
         $isExist = CurrentCustomer::where('vehicle_assignment_id', $request->vehicle_assignment_id)
                         ->where('customer_id', $customer_id)->where('ipport_id', $request->ipport_id)->exists();
 
@@ -189,6 +191,7 @@ class CurrentCustomerController extends Controller
         }else if(isset($currUser->customer_id)){
             $req->where('current_customers.customer_id', $currUser->customer_id);
         }else{
+            $response = new ApiResponse();
             return $response->ErrorResponse('Customer Id does not matched!', 409);
         }
 

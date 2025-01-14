@@ -233,6 +233,7 @@ class VehicleAssignmentsController extends Controller
         }else if(isset($currUser->vendor_id)){
             $req->where('vehicles.transporter_id', $currUser->vendor_id);
         }else{
+            $response = new ApiResponse();
             return $response->ErrorResponse('Vendor Id does not matched!', 409);
         }
 
