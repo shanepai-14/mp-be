@@ -9,60 +9,60 @@ use Illuminate\Support\Facades\Auth;
 
 class CustomerIpPortController extends Controller
 {
-    /**
-     * @OA\Post(
-     *     tags={"Customer"},
-     *     path="/customer/ip-port/create",
-     *     summary="Create Customer IP and Port",
-     *     operationId="CreateCustomerIpPort",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\RequestBody(
-     *         description="Customer IP and Port Information",
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="application/json",
-     *             @OA\Schema(
-     *                  @OA\Property(
-     *                     property="customer_id",
-     *                     type="integer"
-     *                 ),
-     *                  @OA\Property(
-     *                     property="ip",
-     *                     type="string"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="port",
-     *                     type="integer"
-     *                 ),
-     *                 example={"customer_id": 1,
-     *                          "ip": "123.123.123.123","port": 123, }
-     *             )
-     *         )
-     *     ),
+    // /**
+    //  * @OA\Post(
+    //  *     tags={"Customer"},
+    //  *     path="/customer/ip-port/create",
+    //  *     summary="Create Customer IP and Port",
+    //  *     operationId="CreateCustomerIpPort",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\RequestBody(
+    //  *         description="Customer IP and Port Information",
+    //  *         required=true,
+    //  *         @OA\MediaType(
+    //  *             mediaType="application/json",
+    //  *             @OA\Schema(
+    //  *                  @OA\Property(
+    //  *                     property="customer_id",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                  @OA\Property(
+    //  *                     property="ip",
+    //  *                     type="string"
+    //  *                 ),
+    //  *                 @OA\Property(
+    //  *                     property="port",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                 example={"customer_id": 1,
+    //  *                          "ip": "123.123.123.123","port": 123, }
+    //  *             )
+    //  *         )
+    //  *     ),
 
-     *     @OA\Response(
-     *         response=200,
-     *         description="Customer IP and Port is successfully registered",
-     *         @OA\JsonContent(ref="#/components/schemas/CustomerIpPorts")
-     *     ),
-     *     @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
-     *      ),
-     *     @OA\Response(
-     *          response=403,
-     *          description="Forbidden",
-     *      ),
-     *     @OA\Response(
-     *          response=409,
-     *          description="Customer IP and Port already exist!",
-     *      ),
-     *     @OA\Response(
-     *          response=500,
-     *          description="Internal Server Error",
-     *      ),
-     * )
-     */
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Customer IP and Port is successfully registered",
+    //  *         @OA\JsonContent(ref="#/components/schemas/CustomerIpPorts")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *          response=401,
+    //  *          description="Unauthenticated",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=403,
+    //  *          description="Forbidden",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=409,
+    //  *          description="Customer IP and Port already exist!",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=500,
+    //  *          description="Internal Server Error",
+    //  *      ),
+    //  * )
+    //  */
     public function create(Request $request)
     {
         $response = new ApiResponse();
@@ -91,32 +91,32 @@ class CustomerIpPortController extends Controller
         }
     }
 
-     /**
-     * @OA\Get(
-     *     tags={"Customer"},
-     *     path="/customer/ip-port/ipPortById/{id}",
-     *     summary="Get Customer IP and Port by id",
-     *     operationId="GetCustomerIpPortById",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         in="path",
-     *         name="id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="ok",
-     *         @OA\JsonContent(ref="#/components/schemas/CustomerIpPorts")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Customer IP and Port not found"
-     *     ),
-     * )
-     */
+    //  /**
+    //  * @OA\Get(
+    //  *     tags={"Customer"},
+    //  *     path="/customer/ip-port/ipPortById/{id}",
+    //  *     summary="Get Customer IP and Port by id",
+    //  *     operationId="GetCustomerIpPortById",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\Parameter(
+    //  *         in="path",
+    //  *         name="id",
+    //  *         required=true,
+    //  *         @OA\Schema(
+    //  *             type="integer"
+    //  *         )
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="ok",
+    //  *         @OA\JsonContent(ref="#/components/schemas/CustomerIpPorts")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=404,
+    //  *         description="Customer IP and Port not found"
+    //  *     ),
+    //  * )
+    //  */
     public function ipPortById($id)
     {
         $customerIpPort = CustomerIpPorts::with(['customer'])->find($id);
@@ -129,45 +129,45 @@ class CustomerIpPortController extends Controller
         return $response->ErrorResponse('Customer not found!', 404);
     }
 
-     /**
-     * @OA\Post(
-     *     tags={"Customer"},
-     *     path="/customer/ip-port/list",
-     *     summary="Get list of Customer`s IP and Ports",
-     *     operationId="CustomerIpPortList",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\RequestBody(
-     *         description="Customer Id - NOTE: If customer_id object is omitted then all customers ip and port will be return.",
-     *         required=false,
-     *         @OA\MediaType(
-     *             mediaType="application/json",
-     *             @OA\Schema(
-     *                 @OA\Property(
-     *                     property="customer_id",
-     *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="vendor_id",
-     *                     type="integer"
-     *                 ),
-     *                 example={"customer_id": 0, "vendor_id": 0}
-     *             )
-     *         )
-     *     ),
-     * @OA\Response(
-     *         response=200,
-     *         description="ok"
-     *     ),
-     *      @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
-     *      ),
-     *      @OA\Response(
-     *          response=403,
-     *          description="Forbidden"
-     *      )
-     * )
-     */
+    //  /**
+    //  * @OA\Post(
+    //  *     tags={"Customer"},
+    //  *     path="/customer/ip-port/list",
+    //  *     summary="Get list of Customer`s IP and Ports",
+    //  *     operationId="CustomerIpPortList",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\RequestBody(
+    //  *         description="Customer Id - NOTE: If customer_id object is omitted then all customers ip and port will be return.",
+    //  *         required=false,
+    //  *         @OA\MediaType(
+    //  *             mediaType="application/json",
+    //  *             @OA\Schema(
+    //  *                 @OA\Property(
+    //  *                     property="customer_id",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                 @OA\Property(
+    //  *                     property="vendor_id",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                 example={"customer_id": 0, "vendor_id": 0}
+    //  *             )
+    //  *         )
+    //  *     ),
+    //  * @OA\Response(
+    //  *         response=200,
+    //  *         description="ok"
+    //  *     ),
+    //  *      @OA\Response(
+    //  *          response=401,
+    //  *          description="Unauthenticated",
+    //  *      ),
+    //  *      @OA\Response(
+    //  *          response=403,
+    //  *          description="Forbidden"
+    //  *      )
+    //  * )
+    //  */
     public function list(Request $request)
     {
         // $ipPorts = CustomerIpPorts::with(['customer'])->select();
@@ -184,64 +184,64 @@ class CustomerIpPortController extends Controller
         return $data;
     }
 
-     /**
-     * @OA\Put(
-     *     tags={"Customer"},
-     *     path="/customer/ip-port/update/{id}",
-     *     summary="Updated Customer IP and Ports",
-     *     description="Update Customer IP and Port information.",
-     *     operationId="UpdateCustomerIPPORT",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         in="path",
-     *         name="id",
-     *         required=true,
-     *         description="id to be updated",
-     *         @OA\Schema(
-     *             type="integer"
-     *         )
-     *     ),
-     *    @OA\RequestBody(
-     *         description="Updated Customer IP and Port object",
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="application/json",
-     *             @OA\Schema(
-     *                 @OA\Property(
-     *                     property="id",
-     *                     type="integer"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="customer_id",
-     *                     type="integer"
-     *                 ),
-     *                  @OA\Property(
-     *                     property="ip",
-     *                     type="string"
-     *                 ),
-     *                 @OA\Property(
-     *                     property="port",
-     *                     type="integer"
-     *                 ),
-     *                 example={"id": 0, "customer_id": 1,
-     *                          "ip": "123.123.123.123","port": 123, }
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Customer IP and Port is successfully updated!"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Customer IP and Port not found"
-     *     ),
-     *     @OA\Response(
-     *         response=409,
-     *         description="Customer Id does not matched!"
-     *     )
-     * )
-     */
+    //  /**
+    //  * @OA\Put(
+    //  *     tags={"Customer"},
+    //  *     path="/customer/ip-port/update/{id}",
+    //  *     summary="Updated Customer IP and Ports",
+    //  *     description="Update Customer IP and Port information.",
+    //  *     operationId="UpdateCustomerIPPORT",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\Parameter(
+    //  *         in="path",
+    //  *         name="id",
+    //  *         required=true,
+    //  *         description="id to be updated",
+    //  *         @OA\Schema(
+    //  *             type="integer"
+    //  *         )
+    //  *     ),
+    //  *    @OA\RequestBody(
+    //  *         description="Updated Customer IP and Port object",
+    //  *         required=true,
+    //  *         @OA\MediaType(
+    //  *             mediaType="application/json",
+    //  *             @OA\Schema(
+    //  *                 @OA\Property(
+    //  *                     property="id",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                 @OA\Property(
+    //  *                     property="customer_id",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                  @OA\Property(
+    //  *                     property="ip",
+    //  *                     type="string"
+    //  *                 ),
+    //  *                 @OA\Property(
+    //  *                     property="port",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                 example={"id": 0, "customer_id": 1,
+    //  *                          "ip": "123.123.123.123","port": 123, }
+    //  *             )
+    //  *         )
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=201,
+    //  *         description="Customer IP and Port is successfully updated!"
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=404,
+    //  *         description="Customer IP and Port not found"
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=409,
+    //  *         description="Customer Id does not matched!"
+    //  *     )
+    //  * )
+    //  */
     public function update($id, Request $request)
     {
         $response = new ApiResponse();
@@ -262,32 +262,32 @@ class CustomerIpPortController extends Controller
         return $response->ErrorResponse('Customer Id does not matched!', 409);
     }
 
-    /**
-     * @OA\Delete(
-     *     tags={"Customer"},
-     *     path="/customer/ip-port/delete/{id}",
-     *     summary="Delete Customer IP and Port by id",
-     *     operationId="DeleteCustomerIpPort",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\Parameter(
-     *         in="path",
-     *         name="id",
-     *         required=true,
-     *         @OA\Schema(
-     *             type="integer"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Customer IP and Port is successfully deleted!",
-     *         @OA\JsonContent(ref="#/components/schemas/CustomerIpPorts")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Customer IP and Port does not exist!"
-     *     ),
-     * )
-     */
+    // /**
+    //  * @OA\Delete(
+    //  *     tags={"Customer"},
+    //  *     path="/customer/ip-port/delete/{id}",
+    //  *     summary="Delete Customer IP and Port by id",
+    //  *     operationId="DeleteCustomerIpPort",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\Parameter(
+    //  *         in="path",
+    //  *         name="id",
+    //  *         required=true,
+    //  *         @OA\Schema(
+    //  *             type="integer"
+    //  *         )
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Customer IP and Port is successfully deleted!",
+    //  *         @OA\JsonContent(ref="#/components/schemas/CustomerIpPorts")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *         response=404,
+    //  *         description="Customer IP and Port does not exist!"
+    //  *     ),
+    //  * )
+    //  */
     public function delete($id)
     {
         $response = new ApiResponse();

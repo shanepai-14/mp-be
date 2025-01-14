@@ -13,56 +13,56 @@ use Illuminate\Support\Facades\Auth;
 
 class VehicleController extends Controller
 {
-    /**
-     * @OA\Post(
-     *     tags={"Vehicle"},
-     *     path="/vehicle/create",
-     *     summary="Create vehicle",
-     *     operationId="CreateVehicle",
-     *     security={{"bearerAuth": {}}},
-     *     @OA\RequestBody(
-     *         description="Vehicle Information",
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="application/json",
-     *             @OA\Schema(
-     *                  @OA\Property(
-     *                     property="device_id_plate_no",
-     *                     type="string"
-     *                 ),
-     *                  @OA\Property(
-     *                     property="vendor_id",
-     *                     type="integer"
-     *                 ),
-     *                 example={"device_id_plate_no": "ATH0001",
-     *                          "vendor_id": 1 }
-     *             )
-     *         )
-     *     ),
+    // /**
+    //  * @OA\Post(
+    //  *     tags={"Vehicle"},
+    //  *     path="/vehicle/create",
+    //  *     summary="Create vehicle",
+    //  *     operationId="CreateVehicle",
+    //  *     security={{"bearerAuth": {}}},
+    //  *     @OA\RequestBody(
+    //  *         description="Vehicle Information",
+    //  *         required=true,
+    //  *         @OA\MediaType(
+    //  *             mediaType="application/json",
+    //  *             @OA\Schema(
+    //  *                  @OA\Property(
+    //  *                     property="device_id_plate_no",
+    //  *                     type="string"
+    //  *                 ),
+    //  *                  @OA\Property(
+    //  *                     property="vendor_id",
+    //  *                     type="integer"
+    //  *                 ),
+    //  *                 example={"device_id_plate_no": "ATH0001",
+    //  *                          "vendor_id": 1 }
+    //  *             )
+    //  *         )
+    //  *     ),
 
-     *     @OA\Response(
-     *         response=200,
-     *         description="Vehicle is successfully registered",
-     *         @OA\JsonContent(ref="#/components/schemas/Vehicle")
-     *     ),
-     *     @OA\Response(
-     *          response=401,
-     *          description="Unauthenticated",
-     *      ),
-     *     @OA\Response(
-     *          response=403,
-     *          description="Forbidden",
-     *      ),
-     *     @OA\Response(
-     *          response=409,
-     *          description="Vehicle already exist!",
-     *      ),
-     *     @OA\Response(
-     *          response=500,
-     *          description="Internal Server Error",
-     *      ),
-     * )
-     */
+    //  *     @OA\Response(
+    //  *         response=200,
+    //  *         description="Vehicle is successfully registered",
+    //  *         @OA\JsonContent(ref="#/components/schemas/Vehicle")
+    //  *     ),
+    //  *     @OA\Response(
+    //  *          response=401,
+    //  *          description="Unauthenticated",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=403,
+    //  *          description="Forbidden",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=409,
+    //  *          description="Vehicle already exist!",
+    //  *      ),
+    //  *     @OA\Response(
+    //  *          response=500,
+    //  *          description="Internal Server Error",
+    //  *      ),
+    //  * )
+    //  */
     public function create(Request $request)
     {
         $response = new ApiResponse();
@@ -257,7 +257,7 @@ class VehicleController extends Controller
      *     operationId="VehicleList",
      *     security={{"bearerAuth": {}}},
      * @OA\RequestBody(
-     *         description="Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
+     *         description="Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.(For Admin Use Only)",
      *         required=false,
      *         @OA\MediaType(
      *             mediaType="application/json",
@@ -296,6 +296,7 @@ class VehicleController extends Controller
         }else if(isset($currUser->transporter_id)){
             $vehicleReq->where('transporter_id', $currUser->transporter_id);
         }else{
+            $response = new ApiResponse();
             return $response->ErrorResponse('Vendor Id does not matched!', 409);
         }
         

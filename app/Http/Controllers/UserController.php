@@ -32,7 +32,7 @@ class UserController extends Controller
      *     operationId="UserList",
      *     security={{"bearerAuth": {}}},
      * @OA\RequestBody(
-     *         description="Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.",
+     *         description="Vendor Id - NOTE: If vendor_id object is omitted then all users will be return.(For Admin Use Only)",
      *         required=false,
      *         @OA\MediaType(
      *             mediaType="application/json",
@@ -61,10 +61,19 @@ class UserController extends Controller
      */
     public function list(Request $request)
     {
-        if ($request->transporter_id)
-            return User::with(['vendor'])->where('transporter_id', $request->vendor_id)->get();
-
-        return User::with(['vendor'])->get();
+        $currUser = Auth::user();
+        if($currUser->user_role === 1){
+            if ($request->vendor_id){
+                return User::with(['vendor'])->where('transporter_id', $request->vendor_id)->get();
+            }else{
+                return User::with(['vendor'])->get();
+            }
+        }else if(isset($currUser->vendor_id)){
+            return User::with(['vendor'])->where('transporter_id', $currUser->vendor_id)->get();
+        }else{
+            $response = new ApiResponse();
+            return $response->ErrorResponse('Vendor Id does not matched!', 409);
+        }        
     }
 
     /**
