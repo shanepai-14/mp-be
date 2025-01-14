@@ -105,7 +105,7 @@ class Transporter extends Model
         'vendor_contact_no',
         'vendor_email',
         'vendor_code',
-        // 'vendor_key',
+        'vendor_key',
     ];
 
     protected $hidden = [
