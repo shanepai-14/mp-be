@@ -570,6 +570,9 @@ class VehicleController extends Controller
         if ($vehicle->transporter)
             $vehicle->transporter->makeHidden(['transporter_address', 'transporter_contact_no', 'transporter_key', 'transporter_email']);
 
+        if ($vehicle->vendor)
+            $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
+
         if ($vehicle->register_by)
             $vehicle->register_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
 

@@ -24,6 +24,23 @@ class UserController extends Controller
        return $this->register($request);
     }
 
+    private function hideFields($vehicle)
+    {
+        if ($vehicle->transporter)
+            $vehicle->transporter->makeHidden(['transporter_address', 'transporter_contact_no', 'transporter_key', 'transporter_email']);
+
+        if ($vehicle->vendor)
+            $vehicle->vendor->makeHidden(['vendor_address', 'vendor_contact_no', 'vendor_key', 'vendor_email']);
+
+        if ($vehicle->register_by)
+            $vehicle->register_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+
+        if ($vehicle->updated_by)
+            $vehicle->updated_by->makeHidden(['username_email', 'transporter_id', 'contact_no', 'user_role', 'email_verified_at', 'first_login']);
+
+        return $vehicle;
+    }
+
     /**
      * @OA\Post(
      *     path="/user/list",
@@ -64,16 +81,22 @@ class UserController extends Controller
         $currUser = Auth::user();
         if($currUser->user_role === 1){
             if ($request->vendor_id){
-                return User::with(['vendor'])->where('transporter_id', $request->vendor_id)->get();
+                $data = User::with(['vendor'])->where('transporter_id', $request->vendor_id)->get();
             }else{
-                return User::with(['vendor'])->get();
+                $data = User::with(['vendor'])->get();
             }
         }else if(isset($currUser->vendor_id)){
-            return User::with(['vendor'])->where('transporter_id', $currUser->vendor_id)->get();
+            $data = User::with(['vendor'])->where('transporter_id', $currUser->vendor_id)->get();
         }else{
             $response = new ApiResponse();
             return $response->ErrorResponse('Vendor Id does not matched!', 409);
         }        
+
+        foreach ($data as $rec) {
+            $this->hideFields($rec);
+        }
+
+        return $data;
     }
 
     /**
@@ -110,7 +133,7 @@ class UserController extends Controller
     {
         $user = User::with(['vendor'])->find($id);
 
-        if ($user) return $user;
+        if ($user) return $this->hideFields($user);
 
         $response = new ApiResponse();
         return $response->ErrorResponse('User not found!', 404);
