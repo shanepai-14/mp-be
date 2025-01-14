@@ -225,9 +225,16 @@ class VehicleAssignmentsController extends Controller
         if ($request->vehicle_status)
             $req->where('vehicle_assignments.vehicle_status', $request->vehicle_status);
 
-        if ($request->vendor_id)
-            $req->where('vehicles.transporter_id', $request->vendor_id);
 
+        $currUser = Auth::user();
+        if($currUser->user_role === 1){
+            if ($request->vendor_id)
+                $req->where('vehicles.transporter_id', $request->vendor_id);
+        }else if(isset($currUser->vendor_id)){
+            $req->where('vehicles.transporter_id', $currUser->vendor_id);
+        }else{
+            return $response->ErrorResponse('Vendor Id does not matched!', 409);
+        }
 
         // $data = $req->with(['vehicle', 'register_by', 'updated_by'])->get();
         $data = $req->get();

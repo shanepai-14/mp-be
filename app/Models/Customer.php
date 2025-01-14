@@ -115,7 +115,9 @@ class Customer extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
+        'customer_password',
+        'customer_api_key',
     ];
 
     protected function customerPassword(): Attribute

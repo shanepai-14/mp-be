@@ -64,9 +64,21 @@ class CurrentCustomerController extends Controller
      */
     public function create(Request $request)
     {
+        $customer_id = null;
+        $currUser = Auth::user();
+        if($currUser->user_role === 1){
+            if ($request->customer_id){
+                $customer_id = $request->customer_id;
+            }
+        }else if(isset($currUser->customer_id)){
+            $customer_id = $currUser->customer_id;
+        }else{
+            return $response->ErrorResponse('Customer Id does not matched!', 409);
+        }
+
         $response = new ApiResponse();
         $isExist = CurrentCustomer::where('vehicle_assignment_id', $request->vehicle_assignment_id)
-                        ->where('customer_id', $request->customer_id)->where('ipport_id', $request->ipport_id)->exists();
+                        ->where('customer_id', $customer_id)->where('ipport_id', $request->ipport_id)->exists();
 
         if ($isExist)
             return $response->ErrorResponse('Current Customer already exist!', 409);
@@ -74,7 +86,7 @@ class CurrentCustomerController extends Controller
         else {
             $newCC = CurrentCustomer::create([
                 'vehicle_assignment_id' => $request->vehicle_assignment_id,
-                'customer_id' => $request->customer_id,
+                'customer_id' => $customer_id,
                 'ipport_id' => $request->ipport_id,
                 'register_by_user_id' => Auth::user()->id
             ]);
@@ -168,9 +180,17 @@ class CurrentCustomerController extends Controller
         // $req = CurrentCustomer::select();
         $req = CurrentCustomer::join('customers', 'customers.id', 'current_customers.customer_id')
                 ->select('current_customers.*');
-
-        if ($request->customer_id)
-            $req->where('current_customers.customer_id', $request->customer_id);
+        
+        $currUser = Auth::user();
+        if($currUser->user_role === 1){
+            if ($request->customer_id){
+                $req->where('current_customers.customer_id', $request->customer_id);
+            }                
+        }else if(isset($currUser->customer_id)){
+            $req->where('current_customers.customer_id', $currUser->customer_id);
+        }else{
+            return $response->ErrorResponse('Customer Id does not matched!', 409);
+        }
 
         // $data = $req->with(['vehicleAssignment', 'customer', 'ipport', 'register_by', 'updated_by'])->get();
         $data = $req->get();

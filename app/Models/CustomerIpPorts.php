@@ -69,7 +69,8 @@ class CustomerIpPorts extends Model
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at'
+        'deleted_at',
+        'ip',
     ];
 
      public function customer(): BelongsTo
