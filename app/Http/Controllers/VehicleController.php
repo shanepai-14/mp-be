@@ -65,6 +65,15 @@ class VehicleController extends Controller
     //  */
     public function create(Request $request)
     {
+        $currUser = Auth::user();
+        if($currUser->user_role === 1){
+            if(!isset($request->vehicle_status)){
+                $request->vehicle_status = 4;
+            }
+        }else{
+            $request->vehicle_status = 4;
+        }
+
         $response = new ApiResponse();
         $isVehicleExist = Vehicle::where('device_id_plate_no', $request->device_id_plate_no)->exists();
 
@@ -144,9 +153,9 @@ class VehicleController extends Controller
      *                     )
      *                 ),
      *                 example={"device_id_plate_no": "ATH0001",
-     *                          "vendor_id": 1, "vehicle_status": 4,
+     *                          "vendor_id": 1,
      *                          "driver_name": "Juan Dela Cruz", "mileage": 0, "customer_code": "ICPL, ALNC",
-     *                          "customers": {{ "customer_id": 1, "ipport_id": 1 }} }
+     *                         }
      *             )
      *         )
      *     ),
@@ -175,6 +184,15 @@ class VehicleController extends Controller
      */
     public function createCompleteData(Request $request)
     {
+        $currUser = Auth::user();
+        if($currUser->user_role === 1){
+            if(!isset($request->vehicle_status)){
+                $request->vehicle_status = 4;
+            }
+        }else{
+            $request->vehicle_status = 4;
+        }
+
         $response = new ApiResponse();
         $vehicleCreate = $this->create($request);
         $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
