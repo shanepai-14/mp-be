@@ -86,6 +86,11 @@ class VehicleAssignmentsController extends Controller
             return $response->ErrorResponse('Vehicle assignment already exist!', 409);
 
         else {
+
+            if(!ctype_alnum($request->driver_name)){
+                $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+            }
+
             $newVA = VehicleAssignment::create([
                 'vehicle_id' => $request->vehicle_id,
                 'vehicle_status' => $request->vehicle_status,
@@ -323,6 +328,10 @@ class VehicleAssignmentsController extends Controller
                 // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
                 // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
 
+                if(!ctype_alnum($request->driver_name)){
+                    $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+                }
+
                 if ($request->vehicle_status === 1) {
 
                     // Get vehicle info
@@ -470,6 +479,10 @@ class VehicleAssignmentsController extends Controller
             if ($VA->mileage != $request->mileage) $isAssignmentChange = true;
             if ($customerCount === 0 && $VA->customer_code != $request->customer_code) $isAssignmentChange = true;
             if ($VA->vehicle_status !== 1 && $customerCount > 0) $isAssignmentChange = true;
+
+            if(!ctype_alnum($request->driver_name)){
+                $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+            }
 
             if ($isAssignmentChange) {
                 // if ipport_id is present in request body that means Operator/Admin is doing the update

@@ -65,16 +65,24 @@ class VehicleController extends Controller
     //  */
     public function create(Request $request)
     {
+        $response = new ApiResponse();
         $currUser = Auth::user();
         if($currUser->user_role === 1){
             if(!isset($request->vehicle_status)){
                 $request->vehicle_status = 4;
             }
+            if(!isset($request->vendor_id)){
+                $request->vendor_id = $currUser->vendor_id;
+            }
         }else{
             $request->vehicle_status = 4;
+            $request->vendor_id = $currUser->vendor_id;
         }
 
-        $response = new ApiResponse();
+        if(!ctype_alnum($request->device_id_plate_no)){
+            $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
+        }
+
         $isVehicleExist = Vehicle::where('device_id_plate_no', $request->device_id_plate_no)->exists();
 
         if ($isVehicleExist)
@@ -184,16 +192,27 @@ class VehicleController extends Controller
      */
     public function createCompleteData(Request $request)
     {
+        $response = new ApiResponse();
         $currUser = Auth::user();
         if($currUser->user_role === 1){
             if(!isset($request->vehicle_status)){
                 $request->vehicle_status = 4;
             }
+            if(!isset($request->vendor_id)){
+                $request->vendor_id = $currUser->vendor_id;
+            }
         }else{
             $request->vehicle_status = 4;
+            $request->vendor_id = $currUser->vendor_id;
         }
 
-        $response = new ApiResponse();
+        if(!ctype_alnum($request->device_id_plate_no)){
+            $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
+        }
+        if(!ctype_alnum($request->driver_name)){
+            $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+        }
+
         $vehicleCreate = $this->create($request);
         $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);
 
@@ -423,6 +442,10 @@ class VehicleController extends Controller
         if ($id == $request->id) {
             $vehicle = Vehicle::find($id);
 
+            if(!ctype_alnum($request->device_id_plate_no)){
+                $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
+            }
+
             if ($vehicle) {
                 $this->updateInfo($vehicle, $request->collect());
 
@@ -513,6 +536,9 @@ class VehicleController extends Controller
                 //         array_push($failed, $updateData);
 
                 // } else
+                if(!ctype_alnum($updateData->device_id_plate_no)){
+                    $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
+                }
                 $this->updateInfo($exist, $updateData);
             } else
                 array_push($failed, $updateData);
