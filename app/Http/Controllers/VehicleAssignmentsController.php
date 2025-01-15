@@ -88,7 +88,7 @@ class VehicleAssignmentsController extends Controller
         else {
 
             if(!ctype_alnum($request->driver_name)){
-                $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+                return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
             }
 
             $newVA = VehicleAssignment::create([
@@ -329,7 +329,7 @@ class VehicleAssignmentsController extends Controller
                 // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
 
                 if(!ctype_alnum($request->driver_name)){
-                    $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+                    return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
                 }
 
                 if ($request->vehicle_status === 1) {
@@ -481,7 +481,7 @@ class VehicleAssignmentsController extends Controller
             if ($VA->vehicle_status !== 1 && $customerCount > 0) $isAssignmentChange = true;
 
             if(!ctype_alnum($request->driver_name)){
-                $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+                return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
             }
 
             if ($isAssignmentChange) {

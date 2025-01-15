@@ -80,7 +80,7 @@ class VehicleController extends Controller
         }
 
         if(!ctype_alnum($request->device_id_plate_no)){
-            $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
+            return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
         }
 
         $isVehicleExist = Vehicle::where('device_id_plate_no', $request->device_id_plate_no)->exists();
@@ -207,10 +207,10 @@ class VehicleController extends Controller
         }
 
         if(!ctype_alnum($request->device_id_plate_no)){
-            $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
+            return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
         }
         if(!ctype_alnum($request->driver_name)){
-            $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+            return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
         }
 
         $vehicleCreate = $this->create($request);
@@ -443,7 +443,7 @@ class VehicleController extends Controller
             $vehicle = Vehicle::find($id);
 
             if(!ctype_alnum($request->device_id_plate_no)){
-                $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
+                return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
             }
 
             if ($vehicle) {
@@ -537,7 +537,7 @@ class VehicleController extends Controller
 
                 // } else
                 if(!ctype_alnum($updateData->device_id_plate_no)){
-                    $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
+                    return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
                 }
                 $this->updateInfo($exist, $updateData);
             } else
