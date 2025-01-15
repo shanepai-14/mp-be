@@ -87,7 +87,7 @@ class VehicleAssignmentsController extends Controller
 
         else {
 
-            if(!ctype_alnum($request->driver_name)){
+            if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
                 return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
             }
 
@@ -328,7 +328,7 @@ class VehicleAssignmentsController extends Controller
                 // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
                 // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
 
-                if(!ctype_alnum($request->driver_name)){
+                if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
                     return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
                 }
 
@@ -480,7 +480,7 @@ class VehicleAssignmentsController extends Controller
             if ($customerCount === 0 && $VA->customer_code != $request->customer_code) $isAssignmentChange = true;
             if ($VA->vehicle_status !== 1 && $customerCount > 0) $isAssignmentChange = true;
 
-            if(!ctype_alnum($request->driver_name)){
+            if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
                 return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
             }
 

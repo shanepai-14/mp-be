@@ -79,7 +79,7 @@ class VehicleController extends Controller
             $request->vendor_id = $currUser->vendor_id;
         }
 
-        if(!ctype_alnum($request->device_id_plate_no)){
+        if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->device_id_plate_no)){
             return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
         }
 
@@ -206,10 +206,10 @@ class VehicleController extends Controller
             $request->vendor_id = $currUser->vendor_id;
         }
 
-        if(!ctype_alnum($request->device_id_plate_no)){
+        if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->device_id_plate_no)){
             return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
         }
-        if(!ctype_alnum($request->driver_name)){
+        if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
             return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
         }
 
@@ -442,7 +442,7 @@ class VehicleController extends Controller
         if ($id == $request->id) {
             $vehicle = Vehicle::find($id);
 
-            if(!ctype_alnum($request->device_id_plate_no)){
+            if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->device_id_plate_no)){
                 return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
             }
 
@@ -536,7 +536,7 @@ class VehicleController extends Controller
                 //         array_push($failed, $updateData);
 
                 // } else
-                if(!ctype_alnum($updateData->device_id_plate_no)){
+                if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->device_id_plate_no)){
                     return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
                 }
                 $this->updateInfo($exist, $updateData);
