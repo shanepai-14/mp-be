@@ -92,8 +92,8 @@ class VehicleController extends Controller
                 'device_id_plate_no' => $request->device_id_plate_no,
                 'transporter_id' => $request->vendor_id,
                 // 'vehicle_status' => $request->vehicle_status,
-                'register_by_user_id' => Auth::user()->id
-                // 'driver_name' => $request->driver_name,
+                'register_by_user_id' => Auth::user()->id,
+                'driver_name' => $request->driver_name,
                 // 'contact_no' => $request->contact_no,
                 // 'mileage' => $request->mileage,
             ]);
@@ -209,7 +209,7 @@ class VehicleController extends Controller
         if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->device_id_plate_no)){
             return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
         }
-        if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
+        if(isset($request->driver_name) && !empty($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
             return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
         }
 
@@ -465,8 +465,8 @@ class VehicleController extends Controller
             'device_id_plate_no' => $request['device_id_plate_no'],
             'transporter_id' => $request['vendor_id'],
             // 'vehicle_status' => $request['vehicle_status'],
-            'updated_by_user_id' => Auth::user()->id
-            // 'driver_name' => $request['driver_name,
+            'updated_by_user_id' => Auth::user()->id,
+            'driver_name' => $request['driver_name'],
             // 'mileage' => $request['mileage'],
         ]);
     }
