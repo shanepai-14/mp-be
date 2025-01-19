@@ -94,8 +94,8 @@ class VehicleAssignmentsController extends Controller
             $newVA = VehicleAssignment::create([
                 'vehicle_id' => $request->vehicle_id,
                 'vehicle_status' => $request->vehicle_status,
-                //'driver_name' => $request->driver_name,
-                'driver_name' => "",
+                'driver_name' => $request->driver_name,
+                // 'driver_name' => "",
                 'mileage' => $request->mileage,
                 'customer_code' => $request->customer_code,
                 'register_by_user_id' => Auth::user()->id
