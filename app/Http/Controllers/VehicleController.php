@@ -209,7 +209,7 @@ class VehicleController extends Controller
         if(!preg_match('/^[a-z0-9 .\-]+$/i', $request->device_id_plate_no)){
             return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
         }
-        if(isset($request->driver_name) && !empty($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
+        if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
             return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
         }
 
