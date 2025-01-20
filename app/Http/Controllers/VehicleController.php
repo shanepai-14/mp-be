@@ -466,7 +466,7 @@ class VehicleController extends Controller
             'transporter_id' => $request['vendor_id'],
             // 'vehicle_status' => $request['vehicle_status'],
             'updated_by_user_id' => Auth::user()->id,
-            'driver_name' => $request['driver_name'],
+            // 'driver_name' => $request['driver_name'],
             // 'mileage' => $request['mileage'],
         ]);
     }
