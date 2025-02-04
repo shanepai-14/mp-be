@@ -461,14 +461,20 @@ class VehicleController extends Controller
 
     private function updateInfo($vehicle, $request)
     {
-        $vehicle->update([
-            'device_id_plate_no' => $request['device_id_plate_no'],
-            'transporter_id' => $request['vendor_id'],
-            // 'vehicle_status' => $request['vehicle_status'],
-            'updated_by_user_id' => Auth::user()->id,
-            // 'driver_name' => $request['driver_name'],
-            // 'mileage' => $request['mileage'],
-        ]);
+        $isVehicleExist = Vehicle::where('device_id_plate_no', $request['device_id_plate_no'])->where('id', '!=', $vehicle->id) ->exists();
+        
+        if ($isVehicleExist)
+            return $response->ErrorResponse('Vehicle '. $request['device_id_plate_no'] . ' already exist!', 409);
+        else {
+            $vehicle->update([
+                'device_id_plate_no' => $request['device_id_plate_no'],
+                'transporter_id' => $request['vendor_id'],
+                // 'vehicle_status' => $request['vehicle_status'],
+                'updated_by_user_id' => Auth::user()->id,
+                // 'driver_name' => $request['driver_name'],
+                // 'mileage' => $request['mileage'],
+            ]);
+        }
     }
 
     /**
