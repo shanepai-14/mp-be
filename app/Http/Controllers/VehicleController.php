@@ -447,6 +447,12 @@ class VehicleController extends Controller
             }
 
             if ($vehicle) {
+                $isVehicleExist = Vehicle::where('device_id_plate_no', $request->device_id_plate_no)->where('id', '!=', $vehicle->id) ->exists();
+                
+                if ($isVehicleExist){
+                    return $response->ErrorResponse('Vehicle '. $request->device_id_plate_no . ' already exist!', 409);
+                }
+
                 $this->updateInfo($vehicle, $request->collect());
 
                 $vehicleData = $this->vehicleById($vehicle->id);
@@ -461,21 +467,14 @@ class VehicleController extends Controller
 
     private function updateInfo($vehicle, $request)
     {
-        $response = new ApiResponse();
-        $isVehicleExist = Vehicle::where('device_id_plate_no', $request['device_id_plate_no'])->where('id', '!=', $vehicle->id) ->exists();
-        
-        if ($isVehicleExist)
-            return $response->ErrorResponse('Vehicle '. $request['device_id_plate_no'] . ' already exist!', 409);
-        else {
-            $vehicle->update([
-                'device_id_plate_no' => $request['device_id_plate_no'],
-                'transporter_id' => $request['vendor_id'],
-                // 'vehicle_status' => $request['vehicle_status'],
-                'updated_by_user_id' => Auth::user()->id,
-                // 'driver_name' => $request['driver_name'],
-                // 'mileage' => $request['mileage'],
-            ]);
-        }
+        $vehicle->update([
+            'device_id_plate_no' => $request['device_id_plate_no'],
+            'transporter_id' => $request['vendor_id'],
+            // 'vehicle_status' => $request['vehicle_status'],
+            'updated_by_user_id' => Auth::user()->id,
+            // 'driver_name' => $request['driver_name'],
+            // 'mileage' => $request['mileage'],
+        ]);
     }
 
     /**
@@ -543,12 +542,21 @@ class VehicleController extends Controller
                 //         array_push($failed, $updateData);
 
                 // } else
-                if(!preg_match('/^[a-z0-9.\-]+$/i', $request->device_id_plate_no)){
+                if(!preg_match('/^[a-z0-9.\-]+$/i', $updateData['device_id_plate_no'])){
                     return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
                 }
+
+                $isVehicleExist = Vehicle::where('device_id_plate_no', $exist->device_id_plate_no)->where('id', '!=', $updateData['id']) ->exists();
+                
+                if ($isVehicleExist){
+                    return $response->ErrorResponse('Vehicle '. $updateData['device_id_plate_no'] . ' already exist!', 409);
+                }
+
                 $this->updateInfo($exist, $updateData);
-            } else
+
+            } else{
                 array_push($failed, $updateData);
+            }                
         }
 
         if (count($failed) == count($datas))
