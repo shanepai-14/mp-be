@@ -461,6 +461,7 @@ class VehicleController extends Controller
 
     private function updateInfo($vehicle, $request)
     {
+        $response = new ApiResponse();
         $isVehicleExist = Vehicle::where('device_id_plate_no', $request['device_id_plate_no'])->where('id', '!=', $vehicle->id) ->exists();
         
         if ($isVehicleExist)
