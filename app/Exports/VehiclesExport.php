@@ -58,7 +58,7 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
         $query = $query->join('vehicle_assignments', 'vehicles.id', '=', 'vehicle_assignments.vehicle_id')
         ->join('current_customers', 'vehicle_assignments.id', '=', 'current_customers.vehicle_assignment_id')
         ->join('customers', 'current_customers.customer_id', '=', 'customers.id')
-        ->select('vehicles.*', 'vehicle_assignments.driver_name', 'vehicle_assignments.mileage', 'customers.customer_name', 'vehicle_assignments.vehicle_status');
+        ->select('vehicles.*', 'vehicle_assignments.driver_name', 'vehicle_assignments.transporter_code', 'vehicle_assignments.mileage', 'customers.customer_name', 'vehicle_assignments.vehicle_status');
 
         if ($this->vendor_id) {
             $query->where('transporter_id', '=', $this->vendor_id);
@@ -76,7 +76,8 @@ class VehiclesExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMap
         return [
             $vehicle->vendor->vendor_name,
             $vehicle->device_id_plate_no,
-            $vehicle->driver_name,
+            // $vehicle->driver_name,
+            $vehicle->transporter_code,
             // $vehicle->mileage,
             $this->_getVehicleStatusTxt($vehicle->vehicle_status),
             Date::dateTimeToExcel($vehicle->updated_at),

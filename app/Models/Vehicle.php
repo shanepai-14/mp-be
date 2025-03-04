@@ -104,7 +104,6 @@ class Vehicle extends Model
         'device_id_plate_no',
         'transporter_id',
         // 'vehicle_status',
-        // 'driver_name',
         // 'mileage',
         'register_by_user_id',
         'updated_by_user_id'

@@ -93,7 +93,7 @@ class VehicleController extends Controller
                 'transporter_id' => $request->vendor_id,
                 // 'vehicle_status' => $request->vehicle_status,
                 'register_by_user_id' => Auth::user()->id,
-                'driver_name' => $request->driver_name,
+                // 'driver_name' => $request->driver_name,
                 // 'contact_no' => $request->contact_no,
                 // 'mileage' => $request->mileage,
             ]);
@@ -209,9 +209,11 @@ class VehicleController extends Controller
         if(!preg_match('/^[a-z0-9.\-]+$/i', $request->device_id_plate_no)){
             return $response->ErrorResponse('Vehicle ID/Device ID/Plate no. contains non-alphanumerical character(s)', 400);
         }
-        if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
-            return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
-        }
+
+        // Remove driver name
+        // if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
+        //     return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+        // }
 
         $vehicleCreate = $this->create($request);
         $vehicleResponse = (json_decode(json_encode($vehicleCreate), true)['original']);

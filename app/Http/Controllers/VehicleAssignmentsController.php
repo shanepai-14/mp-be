@@ -33,10 +33,6 @@ class VehicleAssignmentsController extends Controller
      *                     property="vehicle_status",
      *                     type="integer"
      *                 ),
-     *                  @OA\Property(
-     *                     property="driver_name",
-     *                     type="string"
-     *                 ),
      *                 @OA\Property(
      *                     property="mileage",
      *                     description="",
@@ -48,7 +44,7 @@ class VehicleAssignmentsController extends Controller
      *                     type="string"
      *                 ),
      *                 example={"vehicle_id": 1, "vehicle_status": 4,
-     *                          "driver_name": "Juan Dela Cruz","mileage": 1825, "customer_code": "ICPL, Alliance" }
+     *                          "transporter_code": "Transporter 1","mileage": 1825, "customer_code": "ICPL, Alliance" }
      *             )
      *         )
      *     ),
@@ -80,22 +76,23 @@ class VehicleAssignmentsController extends Controller
     {
         $response = new ApiResponse();
         $isExist = VehicleAssignment::where('vehicle_id', $request->vehicle_id)->where('vehicle_status', $request->vehicle_status)
-            ->where('driver_name', $request->driver_name)->where('mileage', $request->mileage)->exists();
+            // ->where('driver_name', $request->driver_name)
+            ->where('mileage', $request->mileage)->exists();
 
         if ($isExist)
             return $response->ErrorResponse('Vehicle assignment already exist!', 409);
 
         else {
 
-            if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
-                return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
-            }
+            // if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
+            //     return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+            // }
 
             $newVA = VehicleAssignment::create([
                 'vehicle_id' => $request->vehicle_id,
                 'vehicle_status' => $request->vehicle_status,
-                'driver_name' => $request->driver_name,
-                // 'driver_name' => "",
+                // 'driver_name' => $request->driver_name,
+                'transporter_code' => $request->transporter_code,
                 'mileage' => $request->mileage,
                 'customer_code' => $request->customer_code,
                 'register_by_user_id' => Auth::user()->id
@@ -213,7 +210,8 @@ class VehicleAssignmentsController extends Controller
             'vehicle_assignments.id',
             'vehicle_assignments.vehicle_id',
             'vehicle_assignments.vehicle_status',
-            'vehicle_assignments.driver_name',
+            // 'vehicle_assignments.driver_name',
+            'vehicle_assignments.transporter_code',
             'vehicle_assignments.mileage',
             'vehicle_assignments.customer_code',
             'vehicle_assignments.created_at'
@@ -328,9 +326,10 @@ class VehicleAssignmentsController extends Controller
                 // Forwarding of DEVICE and VEHICLE info to WLOC-MP Integration Server
                 // - If vehicle_status == 1 (Approved), check if DEVICE and VEHICLE is already registered in WLOC-MP Integration Server
 
-                if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
-                    return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
-                }
+                // Remove driver_name
+                // if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
+                //     return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+                // }
 
                 if ($request->vehicle_status === 1) {
 
@@ -375,7 +374,6 @@ class VehicleAssignmentsController extends Controller
             'vehicle_id' => $request['vehicle_id'],
             'vehicle_status' => $request['vehicle_status'],
             //'driver_name' => $request['driver_name'],
-            'driver_name' => "",
             'mileage' => $request['mileage'],
             'customer_code' => $request->has('customer_code') ? $request['customer_code'] : $VA->customer_code,
             'updated_by_user_id' => Auth::user()->id
@@ -475,14 +473,15 @@ class VehicleAssignmentsController extends Controller
             $currCustomers = [];
 
             if ($VA->vehicle_id != $request->vehicle_id) $isAssignmentChange = true;
-            if ($VA->driver_name != $request->driver_name) $isAssignmentChange = true;
+            // if ($VA->driver_name != $request->driver_name) $isAssignmentChange = true;
             if ($VA->mileage != $request->mileage) $isAssignmentChange = true;
             if ($customerCount === 0 && $VA->customer_code != $request->customer_code) $isAssignmentChange = true;
             if ($VA->vehicle_status !== 1 && $customerCount > 0) $isAssignmentChange = true;
 
-            if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
-                return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
-            }
+            // remove driver name
+            // if(isset($request->driver_name) && !preg_match('/^[a-z0-9 .\-]+$/i', $request->driver_name)){
+            //     return $response->ErrorResponse('Driver name contains non-alphanumerical character(s)', 400);
+            // }
 
             if ($isAssignmentChange) {
                 // if ipport_id is present in request body that means Operator/Admin is doing the update
@@ -745,7 +744,7 @@ class VehicleAssignmentsController extends Controller
             $request['id'] = $VA->id;
             $request['vehicle_status'] = 1;
             $request['vehicle_id'] = $VA->vehicle_id;
-            $request['driver_name'] = $VA->driver_name;
+            // $request['driver_name'] = $VA->driver_name;
             $request['mileage'] = $VA->mileage;
             if (count($currCustomerCreated) > 0) {
                 $request['customer_code'] = join(", ", array_unique(array_map(function ($value) {
@@ -793,7 +792,7 @@ class VehicleAssignmentsController extends Controller
 
         if ($VA) {
             $request['vehicle_id'] = $VA->vehicle_id;
-            $request['driver_name'] = $VA->driver_name;
+            // $request['driver_name'] = $VA->driver_name;
             $request['mileage'] = $VA->mileage;
             $request['vehicle_status'] = 2;
             $assignmentReq = $this->update($id, $request);

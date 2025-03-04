@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @OA\Schema(
  *     title="VehicleAssignments",
  *     description="VehicleAssignments",
- *     required={"vehicle_id", "vehicle_status", "driver_name", "mileage"}
+ *     required={"vehicle_id", "vehicle_status", "mileage"}
  * )
  */
 class VehicleAssignment extends Model
@@ -68,6 +68,16 @@ class VehicleAssignment extends Model
      */
     private $driver_name;
 
+    /**
+     * @OA\Property(
+     *     description="Transporter Code",
+     * )
+     *
+     * @var string
+     */
+    private $transporter_code;
+
+
      /**
      * @OA\Property(
      *     format="int64",
@@ -102,6 +112,7 @@ class VehicleAssignment extends Model
         'vehicle_id',
         'vehicle_status',
         'driver_name',
+        'transporter_code',
         'mileage',
         'customer_code',
         'register_by_user_id',

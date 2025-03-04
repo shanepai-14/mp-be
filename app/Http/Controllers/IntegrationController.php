@@ -210,7 +210,7 @@ class IntegrationController extends Controller
                     "CompanyName" => $this->customer['customer_name'],
                     "Status" => 1,
                     "Mileage" => $this->vehicleAssignment['mileage'] ?? 0,
-                    "Driver" => $this->vehicleAssignment['driver_name'] ?? '',
+                    // "Driver" => $this->vehicleAssignment['driver_name'] ?? '',
                     "Division" => "*",
                     "Group" => "*",
                     "Remarks" => "",
