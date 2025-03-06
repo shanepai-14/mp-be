@@ -474,6 +474,7 @@ class VehicleAssignmentsController extends Controller
 
             if ($VA->vehicle_id != $request->vehicle_id) $isAssignmentChange = true;
             // if ($VA->driver_name != $request->driver_name) $isAssignmentChange = true;
+            if ($VA->transporter_code != $request->transporter_code) $isAssignmentChange = true;
             if ($VA->mileage != $request->mileage) $isAssignmentChange = true;
             if ($customerCount === 0 && $VA->customer_code != $request->customer_code) $isAssignmentChange = true;
             if ($VA->vehicle_status !== 1 && $customerCount > 0) $isAssignmentChange = true;
