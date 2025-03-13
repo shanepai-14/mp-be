@@ -128,17 +128,19 @@ return [
         ],
 
         'gpserrorlog' => [
-            'driver' => 'single',
+            'driver' => 'daily',
             'path' => storage_path('logs/gpserrorlogs.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'replace_placeholders' => true,
+            // 'replace_placeholders' => true,
+            'days' => 0,
         ],
 
         'gpssuccesslog' => [
-            'driver' => 'single',
+            'driver' => 'daily',
             'path' => storage_path('logs/gpssuccesslogs.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'replace_placeholders' => true,
+            // 'replace_placeholders' => true,
+            'days' => 0,
         ],
     ],
 
