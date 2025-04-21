@@ -58,9 +58,10 @@ return [
     'level' => 'info',
 ],
 'custom_log' => [
-    'driver' => 'single',
+    'driver' => 'daily',
     'path' => storage_path('logs/custom.log'),
     'level' => 'debug',
+    'days' => 0,
 ],
         'stack' => [
             'driver' => 'stack',
