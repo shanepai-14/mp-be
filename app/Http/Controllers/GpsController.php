@@ -114,9 +114,10 @@ class GpsController extends Controller
                             $transformedData = $vehicleAssignment->vehicle_status == 1 ? $this->dataTransformation($request) : null;
 
                             // Save GPS Data to MongoDB
-			    // Log::channel('custom_log')->info('Storing new request data', [$request]);
+			                Log::channel('custom_log')->info('Storing new request data', [$request]);
+                            
                             $data_payload = [
-				'Vendor_Key' => $request['CompanyKey'],
+				                'Vendor_Key' => $request['CompanyKey'],
                                 'Vehicle_ID' => $request['Vehicle_ID'],
                                 'Timestamp' => $request['Timestamp'],
                                 'GPS' => intval($request['GPS']),
