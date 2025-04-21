@@ -52,6 +52,16 @@ return [
     */
 
     'channels' => [
+'post_requests' => [
+    'driver' => 'single',
+    'path' => storage_path('logs/post_requests.log'),
+    'level' => 'info',
+],
+'custom_log' => [
+    'driver' => 'single',
+    'path' => storage_path('logs/custom.log'),
+    'level' => 'debug',
+],
         'stack' => [
             'driver' => 'stack',
             'channels' => ['single'],

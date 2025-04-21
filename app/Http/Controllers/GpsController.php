@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use OpenApi\Annotations as OA;
 
 class GpsController extends Controller
@@ -113,25 +114,32 @@ class GpsController extends Controller
                             $transformedData = $vehicleAssignment->vehicle_status == 1 ? $this->dataTransformation($request) : null;
 
                             // Save GPS Data to MongoDB
-                            Gps::create([
-                                'Vendor_Key' => $request['CompanyKey'],
+			    // Log::channel('custom_log')->info('Storing new request data', [$request]);
+                            $data_payload = [
+				'Vendor_Key' => $request['CompanyKey'],
                                 'Vehicle_ID' => $request['Vehicle_ID'],
                                 'Timestamp' => $request['Timestamp'],
-                                'GPS' => $request['GPS'],
-                                'Ignition' => $request['Ignition'],
+                                'GPS' => intval($request['GPS']),
+                                'Ignition' => intval($request['Ignition']),
                                 'Latitude' => $request['Latitude'],
                                 'Longitude' => $request['Longitude'],
                                 'Altitude' => $request['Altitude'],
                                 'Speed' => $request['Speed'],
                                 'Course' => $request['Course'],
                                 'Mileage' => $request['Mileage'],
-                                'Satellite_Count' => $request['Satellite_Count'],
+                                'Satellite_Count' => intval($request['Satellite_Count']),
                                 'ADC1' => $request['ADC1'],
                                 'ADC2' => $request['ADC2'],
                                 'Drum_Status' => $request['Drum_Status'],
                                 'RPM' => $request['RPM'],
                                 'Position' => $transformedData
-                            ]);
+			    ];
+			    try {
+			    Gps::create($data_payload);
+				} catch(\Exception $e) { // ug mgakabuang, uncomment para mag log
+					// Log::channel('custom_log')->info('Error data', [$data_payload, $e]);
+					// Log::channel('custom_log')->info('Error data', [$e]);
+				}
 
 
                             if ($vehicleAssignment->vehicle_status == 1) {
