@@ -142,7 +142,7 @@ return [
             'path' => storage_path('logs/gpserrorlogs.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             // 'replace_placeholders' => true,
-            'days' => 0,
+            'days' => 1,
         ],
 
         'gpssuccesslog' => [
@@ -150,7 +150,7 @@ return [
             'path' => storage_path('logs/gpssuccesslogs.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             // 'replace_placeholders' => true,
-            'days' => 0,
+            'days' => 1,
         ],
     ],
 
