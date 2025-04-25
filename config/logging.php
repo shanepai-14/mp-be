@@ -58,9 +58,10 @@ return [
     'level' => 'info',
 ],
 'custom_log' => [
-    'driver' => 'single',
+   'driver' => 'daily',
     'path' => storage_path('logs/custom.log'),
     'level' => 'debug',
+    'days' => 0,
 ],
         'stack' => [
             'driver' => 'stack',
@@ -142,7 +143,7 @@ return [
             'path' => storage_path('logs/gpserrorlogs.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             // 'replace_placeholders' => true,
-            'days' => 1,
+            'days' => 0,
         ],
 
         'gpssuccesslog' => [
@@ -150,7 +151,7 @@ return [
             'path' => storage_path('logs/gpssuccesslogs.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             // 'replace_placeholders' => true,
-            'days' => 1,
+            'days' => 0,
         ],
     ],
 
