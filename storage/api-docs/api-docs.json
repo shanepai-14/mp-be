@@ -253,6 +253,9 @@
                     "200": {
                         "description": "Success"
                     },
+                    "400": {
+                        "description": "Validation failed"
+                    },
                     "401": {
                         "description": "Unauthorized User"
                     },
