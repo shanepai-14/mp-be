@@ -374,7 +374,7 @@ class VehicleAssignmentsController extends Controller
             'vehicle_id' => $request['vehicle_id'],
             'vehicle_status' => $request['vehicle_status'],
             //'driver_name' => $request['driver_name'],
-            'transporter_code' => $request['transporter_code'],
+            'transporter_code' => $request['transporter_code'] ?? null,
             'mileage' => $request['mileage'],
             'customer_code' => $request->has('customer_code') ? $request['customer_code'] : $VA->customer_code,
             'updated_by_user_id' => Auth::user()->id
