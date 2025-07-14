@@ -6,7 +6,7 @@ use App\Models\ConnectionPoolStat;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 
-class PersistentSharedPoolService
+class ConnectionPoolService
 {
     private static array $config = [];
     private static string $processId = '';
