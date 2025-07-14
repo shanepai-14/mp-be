@@ -4,74 +4,46 @@ namespace App\Services;
 
 use App\Models\ConnectionPoolStat;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class ConnectionPoolService
 {
-    private static array $localConnections = [];
-    private static bool $initialized = false;
+    private static array $activeConnections = [];
     private static array $config = [];
     private static string $processId = '';
-    private static int $lastStatsLog = 0;
-
+    
     /**
-     * Initialize the connection pool service
+     * Initialize the service (lightweight)
      */
     public static function init(array $config = []): void
     {
-        if (self::$initialized) {
-            return;
-        }
-
         self::$config = array_merge([
-            'max_connections_per_pool' => 3,
-            'connection_timeout' => 300,
-            'idle_timeout' => 120,
-            'connect_timeout' => 5,
+            'max_connections_per_pool' => 2,  // Reduced since processes restart
+            'connection_timeout' => 180,      // 3 minutes
+            'idle_timeout' => 60,             // 1 minute
             'socket_timeout' => 3
         ], $config);
 
         self::$processId = (string) getmypid();
-        self::$initialized = true;
-
-        // Log initialization only once per minute per process
-        self::logProcessInit();
     }
 
     /**
-     * Log process initialization (throttled)
-     */
-    private static function logProcessInit(): void
-    {
-        $now = time();
-        if (($now - self::$lastStatsLog) < 60) {
-            return; // Skip if logged recently
-        }
-        
-        self::$lastStatsLog = $now;
-        
-        Log::channel('gps_pool')->info('Eloquent connection pool service initialized', [
-            'process_id' => self::$processId,
-            'config' => self::$config
-        ]);
-    }
-
-    /**
-     * Send GPS data through pooled connection
+     * Send GPS data with smart connection management
      */
     public static function sendGPSData(string $host, int $port, string $gpsData, string $vehicleId): array
     {
-        if (!self::$initialized) {
+        if (empty(self::$config)) {
             self::init();
         }
 
         $poolKey = "{$host}:{$port}";
         
-        // Try to reuse existing local connection
-        $connection = self::getLocalConnection($poolKey);
+        // Try to reuse existing connection from this request cycle
+        $connection = self::getActiveConnection($poolKey);
         
-        if (!$connection) {
+        if (!$connection || !self::isSocketAlive($connection['socket'])) {
             // Create new connection
-            $connection = self::createConnection($host, $port, $poolKey);
+            $connection = self::createFreshConnection($host, $port, $poolKey);
         }
         
         if (!$connection) {
@@ -84,13 +56,25 @@ class ConnectionPoolService
         }
 
         try {
-            $result = self::writeAndRead($connection, $gpsData, $vehicleId);
-            self::updateStats($poolKey, 'success', $result['reused'] ?? false);
-            return $result;
+            $result = self::sendAndReceive($connection, $gpsData, $vehicleId);
+            
+            // Keep connection alive for this request cycle
+            $connection['last_used'] = time();
+            $connection['use_count']++;
+            self::$activeConnections[$poolKey] = $connection;
+            
+            $reused = $connection['use_count'] > 1;
+            self::updateStats($poolKey, 'success', $reused);
+            
+            return array_merge($result, [
+                'reused' => $reused,
+                'connection_id' => $connection['id'],
+                'use_count' => $connection['use_count']
+            ]);
             
         } catch (\Exception $e) {
             // Remove failed connection
-            unset(self::$localConnections[$poolKey]);
+            self::closeConnection($poolKey);
             self::updateStats($poolKey, 'send_failed');
             
             return [
@@ -102,81 +86,17 @@ class ConnectionPoolService
     }
 
     /**
-     * Get local connection if available and alive
+     * Get active connection for this request
      */
-    private static function getLocalConnection(string $poolKey): ?array
+    private static function getActiveConnection(string $poolKey): ?array
     {
-        if (!isset(self::$localConnections[$poolKey])) {
-            return null;
-        }
-
-        $connection = self::$localConnections[$poolKey];
-        
-        if (self::isConnectionAlive($connection)) {
-            $connection['last_used'] = time();
-            $connection['use_count']++;
-            self::$localConnections[$poolKey] = $connection;
-            
-            // Occasionally log reuse
-            if (mt_rand(1, 100) === 1) {
-                Log::channel('gps_pool')->debug("Reusing connection for {$poolKey}", [
-                    'connection_id' => $connection['id'],
-                    'process_id' => self::$processId,
-                    'use_count' => $connection['use_count']
-                ]);
-            }
-            
-            return $connection;
-        }
-        
-        // Connection is dead, remove it
-        unset(self::$localConnections[$poolKey]);
-        return null;
+        return self::$activeConnections[$poolKey] ?? null;
     }
 
     /**
-     * Create new connection
+     * Create a fresh connection
      */
-    private static function createConnection(string $host, int $port, string $poolKey): ?array
-    {
-        $socket = self::createSocket($host, $port);
-        if (!$socket) {
-            return null;
-        }
-
-        $connection = [
-            'id' => uniqid(),
-            'socket' => $socket,
-            'host' => $host,
-            'port' => $port,
-            'pool_key' => $poolKey,
-            'created_at' => time(),
-            'last_used' => time(),
-            'use_count' => 1,
-            'process_id' => self::$processId
-        ];
-        
-        // Store locally for reuse
-        self::$localConnections[$poolKey] = $connection;
-        
-        // Update stats
-        self::updateStats($poolKey, 'created');
-        
-        // Reduced logging
-        if (mt_rand(1, 20) === 1) {
-            Log::channel('gps_pool')->info("Created new connection for {$poolKey}", [
-                'connection_id' => $connection['id'],
-                'process_id' => self::$processId
-            ]);
-        }
-        
-        return $connection;
-    }
-
-    /**
-     * Create socket connection
-     */
-    private static function createSocket(string $host, int $port)
+    private static function createFreshConnection(string $host, int $port, string $poolKey): ?array
     {
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         
@@ -184,7 +104,7 @@ class ConnectionPoolService
             return null;
         }
 
-        // Optimized socket options
+        // Optimized socket settings
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
         socket_set_option($socket, SOL_SOCKET, SO_KEEPALIVE, 1);
         socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, [
@@ -198,7 +118,27 @@ class ConnectionPoolService
         socket_set_option($socket, SOL_TCP, TCP_NODELAY, 1);
         
         if (@socket_connect($socket, $host, $port)) {
-            return $socket;
+            $connection = [
+                'id' => uniqid(),
+                'socket' => $socket,
+                'host' => $host,
+                'port' => $port,
+                'created_at' => time(),
+                'last_used' => time(),
+                'use_count' => 0
+            ];
+            
+            self::updateStats($poolKey, 'created');
+            
+            // Only log 1 in 50 creations to reduce noise
+            if (mt_rand(1, 50) === 1) {
+                Log::channel('gps_pool')->info("Created connection for {$poolKey}", [
+                    'connection_id' => $connection['id'],
+                    'process_id' => self::$processId
+                ]);
+            }
+            
+            return $connection;
         }
         
         socket_close($socket);
@@ -206,9 +146,9 @@ class ConnectionPoolService
     }
 
     /**
-     * Write GPS data and read response
+     * Send GPS data and receive response
      */
-    private static function writeAndRead(array $connection, string $gpsData, string $vehicleId): array
+    private static function sendAndReceive(array $connection, string $gpsData, string $vehicleId): array
     {
         $socket = $connection['socket'];
         $message = $gpsData . "\r";
@@ -223,13 +163,13 @@ class ConnectionPoolService
             throw new \Exception("No bytes written");
         }
 
-        // Quick non-blocking read attempt
+        // Quick non-blocking read
         socket_set_nonblock($socket);
         $response = '';
         $startTime = microtime(true);
         
-        while ((microtime(true) - $startTime) < 0.3) {
-            $data = socket_read($socket, 2048);
+        while ((microtime(true) - $startTime) < 0.2) { // 200ms timeout
+            $data = socket_read($socket, 1024);
             
             if ($data !== false && $data !== '') {
                 $response = $data;
@@ -244,7 +184,7 @@ class ConnectionPoolService
                 }
             }
             
-            usleep(2000); // 2ms
+            usleep(1000); // 1ms
         }
         
         socket_set_block($socket);
@@ -253,95 +193,107 @@ class ConnectionPoolService
             'success' => true,
             'response' => trim($response),
             'bytes_written' => $bytesWritten,
-            'vehicle_id' => $vehicleId,
-            'connection_id' => $connection['id'],
-            'reused' => $connection['use_count'] > 1
+            'vehicle_id' => $vehicleId
         ];
     }
 
     /**
-     * Check if connection is alive
+     * Check if socket is still alive
      */
-    private static function isConnectionAlive(array $connection): bool
+    private static function isSocketAlive($socket): bool
     {
-        $socket = $connection['socket'];
-        
         if (!is_resource($socket)) {
             return false;
         }
         
         $error = socket_get_option($socket, SOL_SOCKET, SO_ERROR);
-        if ($error !== 0) {
-            return false;
-        }
-        
-        $now = time();
-        if (($now - $connection['created_at']) > self::$config['connection_timeout']) {
-            return false;
-        }
-        
-        if (($now - $connection['last_used']) > self::$config['idle_timeout']) {
-            return false;
-        }
-        
-        return true;
+        return $error === 0;
     }
 
     /**
-     * Update stats using Eloquent model
+     * Close connection and cleanup
+     */
+    private static function closeConnection(string $poolKey): void
+    {
+        if (isset(self::$activeConnections[$poolKey])) {
+            $connection = self::$activeConnections[$poolKey];
+            if (is_resource($connection['socket'])) {
+                socket_close($connection['socket']);
+            }
+            unset(self::$activeConnections[$poolKey]);
+        }
+    }
+
+    /**
+     * Update statistics in database (optimized)
      */
     private static function updateStats(string $poolKey, string $action, bool $reused = false): void
     {
         try {
-            // Find or create stats record
-            $stat = ConnectionPoolStat::firstOrCreate(
-                [
-                    'pool_key' => $poolKey,
-                    'process_id' => self::$processId
-                ],
-                [
-                    'created' => 0,
-                    'success' => 0,
-                    'reused' => 0,
-                    'send_failed' => 0,
-                    'connection_failed' => 0,
+            // Use cache to reduce database hits
+            $cacheKey = "pool_stat_{$poolKey}_" . self::$processId;
+            $statId = Cache::get($cacheKey);
+            
+            if (!$statId) {
+                // Find or create stats record
+                $stat = ConnectionPoolStat::firstOrCreate(
+                    [
+                        'pool_key' => $poolKey,
+                        'process_id' => self::$processId
+                    ],
+                    [
+                        'created' => 0,
+                        'success' => 0,
+                        'reused' => 0,
+                        'send_failed' => 0,
+                        'connection_failed' => 0,
+                        'last_action' => $action,
+                        'last_action_time' => now()
+                    ]
+                );
+                
+                Cache::put($cacheKey, $stat->id, 300); // Cache for 5 minutes
+                $statId = $stat->id;
+            }
+            
+            // Batch update to reduce database calls
+            ConnectionPoolStat::where('id', $statId)->increment($action);
+            
+            if ($reused) {
+                ConnectionPoolStat::where('id', $statId)->increment('reused');
+            }
+            
+            // Update last action less frequently
+            if (mt_rand(1, 10) === 1) {
+                ConnectionPoolStat::where('id', $statId)->update([
                     'last_action' => $action,
                     'last_action_time' => now()
-                ]
-            );
-            
-            // Increment the appropriate counter
-            $stat->incrementStat($action);
-            
-            // Also increment reused counter if applicable
-            if ($reused) {
-                $stat->incrementStat('reused');
+                ]);
             }
             
         } catch (\Exception $e) {
-            // Ignore stats errors - don't break GPS functionality
-            Log::channel('gps_pool')->debug("Stats update failed: " . $e->getMessage());
+            // Ignore stats errors
         }
     }
 
     /**
-     * Get comprehensive stats using Eloquent
+     * Get statistics
      */
     public static function getStats(): array
     {
-        $localStats = [];
-        foreach (self::$localConnections as $poolKey => $connection) {
-            $localStats[$poolKey] = [
+        $localConnections = count(self::$activeConnections);
+        $connectionDetails = [];
+        
+        foreach (self::$activeConnections as $poolKey => $connection) {
+            $connectionDetails[$poolKey] = [
                 'connection_id' => $connection['id'],
-                'created_at' => $connection['created_at'],
-                'last_used' => $connection['last_used'],
                 'use_count' => $connection['use_count'],
-                'age_seconds' => time() - $connection['created_at']
+                'age_seconds' => time() - $connection['created_at'],
+                'last_used_seconds_ago' => time() - $connection['last_used']
             ];
         }
-        
+
         try {
-            // Get stats for this process
             $processStats = ConnectionPoolStat::where('process_id', self::$processId)->get()
                 ->keyBy('pool_key')
                 ->map(function ($stat) {
@@ -351,15 +303,12 @@ class ConnectionPoolService
                         'reused' => $stat->reused,
                         'send_failed' => $stat->send_failed,
                         'connection_failed' => $stat->connection_failed,
-                        'last_action' => $stat->last_action,
                         'reuse_ratio' => $stat->getReuseRatio(),
-                        'success_rate' => $stat->getSuccessRate(),
-                        'is_active' => $stat->isActiveProcess()
+                        'success_rate' => $stat->getSuccessRate()
                     ];
                 })
                 ->toArray();
             
-            // Get global stats for all pools
             $globalStats = ConnectionPoolStat::getAllPoolsStats();
             
         } catch (\Exception $e) {
@@ -369,94 +318,33 @@ class ConnectionPoolService
 
         return [
             'process_id' => self::$processId,
-            'local_connections' => count(self::$localConnections),
-            'local_details' => $localStats,
+            'active_connections' => $localConnections,
+            'connection_details' => $connectionDetails,
             'process_stats' => $processStats,
             'global_stats' => $globalStats,
-            'pool_type' => 'eloquent_mongodb'
+            'pool_type' => 'database_backed_per_request'
         ];
     }
 
     /**
-     * Cleanup old connections
+     * Cleanup (called automatically by PHP)
      */
     public static function cleanup(): array
     {
-        $removed = 0;
+        $closed = 0;
         
-        foreach (self::$localConnections as $poolKey => $connection) {
-            if (!self::isConnectionAlive($connection)) {
-                if (is_resource($connection['socket'])) {
-                    socket_close($connection['socket']);
-                }
-                unset(self::$localConnections[$poolKey]);
-                $removed++;
+        foreach (self::$activeConnections as $poolKey => $connection) {
+            if (is_resource($connection['socket'])) {
+                socket_close($connection['socket']);
+                $closed++;
             }
         }
-
+        
+        self::$activeConnections = [];
+        
         return [
             'process_id' => self::$processId,
-            'connections_removed' => $removed,
-            'remaining_connections' => count(self::$localConnections)
+            'connections_closed' => $closed
         ];
-    }
-
-    /**
-     * Shutdown all connections
-     */
-    public static function shutdown(): void
-    {
-        foreach (self::$localConnections as $connection) {
-            if (isset($connection['socket']) && is_resource($connection['socket'])) {
-                socket_close($connection['socket']);
-            }
-        }
-        
-        self::$localConnections = [];
-    }
-
-    /**
-     * Get analytics data for monitoring
-     */
-    public static function getAnalytics(): array
-    {
-        try {
-            $allStats = ConnectionPoolStat::getAllPoolsStats();
-            $activeProcesses = ConnectionPoolStat::where('updated_at', '>=', now()->subMinutes(5))->count();
-            
-            $totalSuccess = array_sum(array_column($allStats, 'total_success'));
-            $totalCreated = array_sum(array_column($allStats, 'total_created'));
-            $totalFailed = array_sum(array_column($allStats, 'total_send_failed')) + 
-                          array_sum(array_column($allStats, 'total_connection_failed'));
-            
-            return [
-                'overall_reuse_ratio' => $totalCreated > 0 ? round(array_sum(array_column($allStats, 'total_reused')) / $totalCreated, 2) : 0,
-                'overall_success_rate' => ($totalSuccess + $totalFailed) > 0 ? round(($totalSuccess / ($totalSuccess + $totalFailed)) * 100, 2) : 0,
-                'active_processes' => $activeProcesses,
-                'total_pools' => count($allStats),
-                'total_requests_processed' => $totalSuccess + $totalFailed,
-                'performance_grade' => self::calculatePerformanceGrade($allStats)
-            ];
-        } catch (\Exception $e) {
-            return ['error' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Calculate performance grade based on metrics
-     */
-    private static function calculatePerformanceGrade(array $stats): string
-    {
-        if (empty($stats)) {
-            return 'N/A';
-        }
-        
-        $avgReuseRatio = array_sum(array_column($stats, 'reuse_ratio')) / count($stats);
-        
-        if ($avgReuseRatio >= 5) return 'A+';
-        if ($avgReuseRatio >= 3) return 'A';
-        if ($avgReuseRatio >= 2) return 'B';
-        if ($avgReuseRatio >= 1) return 'C';
-        return 'D';
     }
 }
