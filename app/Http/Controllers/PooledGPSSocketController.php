@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\ConnectionPoolManager;
+use App\Services\SimpleConnectionPoolManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -10,11 +10,11 @@ class PooledGPSSocketController extends Controller
 {
     public function __construct()
     {
-        // Optimized settings for multiple PHP-FPM processes
-        ConnectionPoolManager::init([
-            'max_connections_per_pool' => 5,   // Reduced per process (5 × 14 processes = 70 total)
-            'connection_timeout' => 600,       // 10 minutes (longer for stability)
-            'idle_timeout' => 300,             // 5 minutes (longer for reuse)
+        // Simple configuration without Redis dependency
+        SimpleConnectionPoolManager::init([
+            'max_connections_per_pool' => 5,   // 5 per process (plenty for each PHP-FPM worker)
+            'connection_timeout' => 600,       // 10 minutes
+            'idle_timeout' => 300,             // 5 minutes  
             'connect_timeout' => 5,            // 5 seconds to connect
             'socket_timeout' => 3              // 3 seconds for read/write
         ]);
@@ -28,12 +28,12 @@ class PooledGPSSocketController extends Controller
         $host = $wl_ip ?: "20.195.56.146";
         $port = $wl_port ?: 2199;
         
-        // Use connection pool to send data with retry logic
-        $result = $this->sendDataWithRetry($host, $port, $gpsData, $vehicle_id, 2); // Reduced retries
+        // Use simple connection pool with retry logic
+        $result = $this->sendDataWithRetry($host, $port, $gpsData, $vehicle_id, 2);
         
         if ($result['success']) {
-            // Only log successful connections every 10th request to reduce log noise
-            if (mt_rand(1, 10) === 1) {
+            // Log successful connections occasionally to reduce noise
+            if (mt_rand(1, 20) === 1) {
                 Log::channel('gpssuccesslog')->info([
                     'vehicle' => $vehicle_id,
                     'date' => now()->toISOString(),
@@ -74,13 +74,13 @@ class PooledGPSSocketController extends Controller
             $attempt++;
             
             try {
-                $result = ConnectionPoolManager::sendData($host, $port, $data, $vehicleId);
+                $result = SimpleConnectionPoolManager::sendData($host, $port, $data, $vehicleId);
                 
                 if ($result['success']) {
                     $result['attempts'] = $attempt;
                     
-                    // Log connection reuse success (reduced frequency)
-                    if ($attempt === 1 && mt_rand(1, 20) === 1) {
+                    // Log successful reuse occasionally
+                    if ($attempt === 1 && mt_rand(1, 50) === 1) {
                         Log::channel('gps_pool')->debug("GPS data sent successfully", [
                             'vehicle' => $vehicleId,
                             'process_id' => getmypid(),
@@ -98,7 +98,6 @@ class PooledGPSSocketController extends Controller
                     strpos($lastError, 'unable to read from socket [104]') !== false) {
                     
                     if ($attempt < $maxRetries) {
-                        // Shorter wait for connection reset errors
                         usleep(100000 * $attempt); // 100ms, 200ms
                         continue;
                     }
@@ -126,17 +125,19 @@ class PooledGPSSocketController extends Controller
     }
 
     /**
-     * Get connection pool statistics with process info
+     * Get connection pool statistics (local only, no Redis)
      */
     public function getPoolStats(): array
     {
-        $stats = ConnectionPoolManager::getStats();
+        $stats = SimpleConnectionPoolManager::getStats();
         
         // Add summary information
         $stats['summary'] = [
             'current_process' => getmypid(),
-            'estimated_total_processes' => 14, // Based on your logs
-            'estimated_total_connections' => $stats['total_local_connections'] * 14,
+            'pool_type' => 'local_only',
+            'redis_required' => false,
+            'estimated_php_processes' => 14, // Based on your logs
+            'estimated_total_connections' => $stats['total_connections'] * 14,
             'connection_efficiency' => $this->calculateEfficiency($stats)
         ];
         
@@ -144,7 +145,7 @@ class PooledGPSSocketController extends Controller
     }
 
     /**
-     * Calculate connection efficiency with error handling
+     * Calculate connection efficiency (simplified for local stats)
      */
     private function calculateEfficiency(array $stats): array
     {
@@ -154,14 +155,14 @@ class PooledGPSSocketController extends Controller
             'status' => 'unknown'
         ];
         
-        if ($stats['total_local_connections'] > 0) {
-            $efficiency['local_utilization'] = round(($stats['total_local_connections'] / 5) * 100, 1);
+        if ($stats['total_connections'] > 0) {
+            $efficiency['local_utilization'] = round(($stats['total_connections'] / 5) * 100, 1);
         }
         
-        // Safely calculate reuse ratio
+        // Calculate reuse ratio from local stats only
         foreach ($stats['pools'] as $poolStats) {
-            $created = $poolStats['global_created'] ?? 0;
-            $reused = $poolStats['global_reused'] ?? 0;
+            $created = $poolStats['total_created'] ?? 0;
+            $reused = $poolStats['total_reused'] ?? 0;
             
             if ($created > 0) {
                 $efficiency['reuse_ratio'] = round($reused / $created, 2);
@@ -188,25 +189,27 @@ class PooledGPSSocketController extends Controller
      */
     public function cleanupPools(): array
     {
-        $result = ConnectionPoolManager::cleanup();
+        $result = SimpleConnectionPoolManager::cleanup();
         $result['cleanup_time'] = now()->toISOString();
+        $result['pool_type'] = 'local_only';
         return $result;
     }
 
     /**
-     * Health check for connection pools
+     * Health check for connection pools (no Redis dependency)
      */
     public function healthCheck(): array
     {
-        $stats = ConnectionPoolManager::getStats();
+        $stats = SimpleConnectionPoolManager::getStats();
         $efficiency = $this->calculateEfficiency($stats);
         
         $health = [
             'status' => 'healthy',
             'timestamp' => now()->toISOString(),
             'process_id' => getmypid(),
-            'local_pools' => $stats['local_pools'],
-            'total_local_connections' => $stats['total_local_connections'],
+            'pool_type' => 'local_only',
+            'total_pools' => $stats['total_pools'],
+            'total_connections' => $stats['total_connections'],
             'efficiency' => $efficiency,
             'warnings' => [],
             'recommendations' => []
@@ -214,8 +217,8 @@ class PooledGPSSocketController extends Controller
         
         // Check for potential issues
         foreach ($stats['pools'] as $poolKey => $poolStats) {
-            if ($poolStats['local_connections'] >= 4) { // Near max of 5
-                $health['warnings'][] = "Pool {$poolKey} is near capacity locally ({$poolStats['local_connections']}/5)";
+            if ($poolStats['total_connections'] >= 4) { // Near max of 5
+                $health['warnings'][] = "Pool {$poolKey} is near capacity locally ({$poolStats['total_connections']}/5)";
             }
         }
         
@@ -243,7 +246,7 @@ class PooledGPSSocketController extends Controller
         $testData = '$' . date('ymdHis') . ',1,0,0,0,0,0,0,0,0,10,0,0,TEST';
         $startTime = microtime(true);
         
-        $result = ConnectionPoolManager::sendData($host, $port, $testData, 'TEST_VEHICLE');
+        $result = SimpleConnectionPoolManager::sendData($host, $port, $testData, 'TEST_VEHICLE');
         
         $responseTime = round((microtime(true) - $startTime) * 1000, 2); // ms
         
@@ -254,7 +257,8 @@ class PooledGPSSocketController extends Controller
             'response_time_ms' => $responseTime,
             'error' => $result['error'] ?? null,
             'process_id' => getmypid(),
-            'connection_id' => $result['connection_id'] ?? null
+            'connection_id' => $result['connection_id'] ?? null,
+            'pool_type' => 'local_only'
         ];
     }
 }
