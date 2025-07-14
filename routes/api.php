@@ -117,6 +117,13 @@ Route::group([
     Route::put('/reject/{id}', [VehicleAssignmentsController::class, 'reject'])->middleware('throttle:250,1');
 });
 
+Route::group([
+    'middleware' => 'auth:api',
+    'prefix' => 'pool-stats'
+], function(){
+    Route::get('/', [PooledGPSSocketController::class, 'getPoolStats']);
+});
+
 //This will catch GET request to /api/register but  PUT,DELETE, OPTIONS etc. fails
 Route::fallback(function () {
     $response = new ApiResponse();

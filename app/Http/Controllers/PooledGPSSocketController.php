@@ -10,11 +10,11 @@ class PooledGPSSocketController extends Controller
 {
     public function __construct()
     {
-        // Initialize connection pool with optimized settings
+        // Optimized settings for multiple PHP-FPM processes
         ConnectionPoolManager::init([
-            'max_connections_per_pool' => 20,  // Increase for high volume
-            'connection_timeout' => 300,       // 5 minutes
-            'idle_timeout' => 120,             // 2 minutes (increased)
+            'max_connections_per_pool' => 5,   // Reduced per process (5 × 14 processes = 70 total)
+            'connection_timeout' => 600,       // 10 minutes (longer for stability)
+            'idle_timeout' => 300,             // 5 minutes (longer for reuse)
             'connect_timeout' => 5,            // 5 seconds to connect
             'socket_timeout' => 3              // 3 seconds for read/write
         ]);
@@ -29,19 +29,24 @@ class PooledGPSSocketController extends Controller
         $port = $wl_port ?: 2199;
         
         // Use connection pool to send data with retry logic
-        $result = $this->sendDataWithRetry($host, $port, $gpsData, $vehicle_id, 3);
+        $result = $this->sendDataWithRetry($host, $port, $gpsData, $vehicle_id, 2); // Reduced retries
         
         if ($result['success']) {
-            Log::channel('gpssuccesslog')->info([
-                'vehicle' => $vehicle_id,
-                'date' => now()->toISOString(),
-                'position' => preg_replace('/\s+/', '', $gpsData),
-                'response' => $result['response'] ?? '',
-                'connection_id' => $result['connection_id'] ?? 'unknown',
-                'bytes_written' => $result['bytes_written'] ?? 0,
-                'attempts' => $result['attempts'] ?? 1
-            ]);
+            // Only log successful connections every 10th request to reduce log noise
+            if (mt_rand(1, 10) === 1) {
+                Log::channel('gpssuccesslog')->info([
+                    'vehicle' => $vehicle_id,
+                    'date' => now()->toISOString(),
+                    'position' => preg_replace('/\s+/', '', $gpsData),
+                    'response' => $result['response'] ?? '',
+                    'connection_id' => $result['connection_id'] ?? 'unknown',
+                    'bytes_written' => $result['bytes_written'] ?? 0,
+                    'attempts' => $result['attempts'] ?? 1,
+                    'process_id' => getmypid()
+                ]);
+            }
         } else {
+            // Always log errors
             Log::channel('gpserrorlog')->error([
                 'vehicle' => $vehicle_id,
                 'date' => now()->toISOString(),
@@ -49,7 +54,8 @@ class PooledGPSSocketController extends Controller
                 'port' => $port,
                 'gps_data' => $gpsData,
                 'error' => $result['error'],
-                'attempts' => $result['attempts'] ?? 1
+                'attempts' => $result['attempts'] ?? 1,
+                'process_id' => getmypid()
             ]);
         }
         
@@ -59,7 +65,7 @@ class PooledGPSSocketController extends Controller
     /**
      * Send data with retry logic for connection reset errors
      */
-    private function sendDataWithRetry(string $host, int $port, string $data, string $vehicleId, int $maxRetries = 3): array
+    private function sendDataWithRetry(string $host, int $port, string $data, string $vehicleId, int $maxRetries = 2): array
     {
         $attempt = 0;
         $lastError = null;
@@ -71,8 +77,17 @@ class PooledGPSSocketController extends Controller
                 $result = ConnectionPoolManager::sendData($host, $port, $data, $vehicleId);
                 
                 if ($result['success']) {
-                    // Add attempt info to successful result
                     $result['attempts'] = $attempt;
+                    
+                    // Log connection reuse success (reduced frequency)
+                    if ($attempt === 1 && mt_rand(1, 20) === 1) {
+                        Log::channel('gps_pool')->debug("GPS data sent successfully", [
+                            'vehicle' => $vehicleId,
+                            'process_id' => getmypid(),
+                            'connection_reused' => isset($result['connection_id'])
+                        ]);
+                    }
+                    
                     return $result;
                 }
                 
@@ -83,40 +98,85 @@ class PooledGPSSocketController extends Controller
                     strpos($lastError, 'unable to read from socket [104]') !== false) {
                     
                     if ($attempt < $maxRetries) {
-                        // Wait before retry for connection reset errors
-                        usleep(200000 * $attempt); // Exponential backoff: 200ms, 400ms, 600ms
+                        // Shorter wait for connection reset errors
+                        usleep(100000 * $attempt); // 100ms, 200ms
                         continue;
                     }
                 }
                 
-                // For other errors, fail faster
                 break;
                 
             } catch (\Exception $e) {
                 $lastError = $e->getMessage();
                 
                 if ($attempt < $maxRetries) {
-                    usleep(100000 * $attempt); // Wait before retry
+                    usleep(50000 * $attempt);
                     continue;
                 }
             }
         }
 
-        // All retries failed
         return [
             'success' => false,
             'error' => "Failed after {$maxRetries} attempts. Last error: {$lastError}",
             'vehicle_id' => $vehicleId,
-            'attempts' => $attempt
+            'attempts' => $attempt,
+            'process_id' => getmypid()
         ];
     }
 
     /**
-     * Get connection pool statistics
+     * Get connection pool statistics with process info
      */
     public function getPoolStats(): array
     {
-        return ConnectionPoolManager::getStats();
+        $stats = ConnectionPoolManager::getStats();
+        
+        // Add summary information
+        $stats['summary'] = [
+            'current_process' => getmypid(),
+            'estimated_total_processes' => 14, // Based on your logs
+            'estimated_total_connections' => $stats['total_local_connections'] * 14,
+            'connection_efficiency' => $this->calculateEfficiency($stats)
+        ];
+        
+        return $stats;
+    }
+
+    /**
+     * Calculate connection efficiency
+     */
+    private function calculateEfficiency(array $stats): array
+    {
+        $efficiency = [
+            'local_utilization' => 0,
+            'reuse_ratio' => 0,
+            'status' => 'unknown'
+        ];
+        
+        if ($stats['total_local_connections'] > 0) {
+            $efficiency['local_utilization'] = round(($stats['total_local_connections'] / 5) * 100, 1);
+        }
+        
+        foreach ($stats['pools'] as $poolStats) {
+            if ($poolStats['global_created'] > 0) {
+                $efficiency['reuse_ratio'] = round($poolStats['global_reused'] / $poolStats['global_created'], 2);
+                break;
+            }
+        }
+        
+        // Determine status
+        if ($efficiency['reuse_ratio'] >= 5) {
+            $efficiency['status'] = 'excellent';
+        } elseif ($efficiency['reuse_ratio'] >= 2) {
+            $efficiency['status'] = 'good';
+        } elseif ($efficiency['reuse_ratio'] >= 1) {
+            $efficiency['status'] = 'fair';
+        } else {
+            $efficiency['status'] = 'poor';
+        }
+        
+        return $efficiency;
     }
 
     /**
@@ -124,7 +184,9 @@ class PooledGPSSocketController extends Controller
      */
     public function cleanupPools(): array
     {
-        return ConnectionPoolManager::cleanup();
+        $result = ConnectionPoolManager::cleanup();
+        $result['cleanup_time'] = now()->toISOString();
+        return $result;
     }
 
     /**
@@ -133,6 +195,7 @@ class PooledGPSSocketController extends Controller
     public function healthCheck(): array
     {
         $stats = ConnectionPoolManager::getStats();
+        $efficiency = $this->calculateEfficiency($stats);
         
         $health = [
             'status' => 'healthy',
@@ -140,24 +203,28 @@ class PooledGPSSocketController extends Controller
             'process_id' => getmypid(),
             'local_pools' => $stats['local_pools'],
             'total_local_connections' => $stats['total_local_connections'],
-            'warnings' => []
+            'efficiency' => $efficiency,
+            'warnings' => [],
+            'recommendations' => []
         ];
         
         // Check for potential issues
         foreach ($stats['pools'] as $poolKey => $poolStats) {
-            if ($poolStats['local_connections'] >= 15) { // Near max of 20
-                $health['warnings'][] = "Pool {$poolKey} is near capacity locally";
-            }
-            
-            $reuseRatio = $poolStats['global_created'] > 0 ? 
-                round($poolStats['global_reused'] / $poolStats['global_created'], 2) : 0;
-                
-            if ($reuseRatio < 2) {
-                $health['warnings'][] = "Pool {$poolKey} has low reuse ratio: {$reuseRatio}";
+            if ($poolStats['local_connections'] >= 4) { // Near max of 5
+                $health['warnings'][] = "Pool {$poolKey} is near capacity locally ({$poolStats['local_connections']}/5)";
             }
         }
         
-        if (!empty($health['warnings'])) {
+        // Performance recommendations
+        if ($efficiency['reuse_ratio'] < 1) {
+            $health['recommendations'][] = "Low connection reuse - consider increasing idle_timeout";
+        }
+        
+        if ($efficiency['local_utilization'] > 80) {
+            $health['recommendations'][] = "High local utilization - consider increasing max_connections_per_pool";
+        }
+        
+        if (!empty($health['warnings']) || !empty($health['recommendations'])) {
             $health['status'] = 'warning';
         }
         
@@ -170,15 +237,20 @@ class PooledGPSSocketController extends Controller
     public function testConnection(string $host, int $port): array
     {
         $testData = '$' . date('ymdHis') . ',1,0,0,0,0,0,0,0,0,10,0,0,TEST';
+        $startTime = microtime(true);
         
         $result = ConnectionPoolManager::sendData($host, $port, $testData, 'TEST_VEHICLE');
+        
+        $responseTime = round((microtime(true) - $startTime) * 1000, 2); // ms
         
         return [
             'host' => $host,
             'port' => $port,
             'success' => $result['success'],
-            'response_time' => microtime(true),
-            'error' => $result['error'] ?? null
+            'response_time_ms' => $responseTime,
+            'error' => $result['error'] ?? null,
+            'process_id' => getmypid(),
+            'connection_id' => $result['connection_id'] ?? null
         ];
     }
 }
