@@ -14,9 +14,9 @@ class PooledGPSSocketController extends Controller
         ConnectionPoolManager::init([
             'max_connections_per_pool' => 20,  // Increase for high volume
             'connection_timeout' => 300,       // 5 minutes
-            'idle_timeout' => 60,              // 1 minute
-            'connect_timeout' => 3,            // 3 seconds to connect
-            'socket_timeout' => 2              // 2 seconds for read/write
+            'idle_timeout' => 120,             // 2 minutes (increased)
+            'connect_timeout' => 5,            // 5 seconds to connect
+            'socket_timeout' => 3              // 3 seconds for read/write
         ]);
     }
 
@@ -137,20 +137,23 @@ class PooledGPSSocketController extends Controller
         $health = [
             'status' => 'healthy',
             'timestamp' => now()->toISOString(),
-            'pools' => $stats['total_pools'],
-            'total_connections' => $stats['total_connections'],
-            'active_connections' => $stats['total_active'],
+            'process_id' => getmypid(),
+            'local_pools' => $stats['local_pools'],
+            'total_local_connections' => $stats['total_local_connections'],
             'warnings' => []
         ];
         
         // Check for potential issues
         foreach ($stats['pools'] as $poolKey => $poolStats) {
-            if ($poolStats['active_connections'] >= $poolStats['total_connections'] * 0.9) {
-                $health['warnings'][] = "Pool {$poolKey} is near capacity";
+            if ($poolStats['local_connections'] >= 15) { // Near max of 20
+                $health['warnings'][] = "Pool {$poolKey} is near capacity locally";
             }
             
-            if ($poolStats['reuse_ratio'] < 2) {
-                $health['warnings'][] = "Pool {$poolKey} has low reuse ratio: {$poolStats['reuse_ratio']}";
+            $reuseRatio = $poolStats['global_created'] > 0 ? 
+                round($poolStats['global_reused'] / $poolStats['global_created'], 2) : 0;
+                
+            if ($reuseRatio < 2) {
+                $health['warnings'][] = "Pool {$poolKey} has low reuse ratio: {$reuseRatio}";
             }
         }
         
