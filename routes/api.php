@@ -11,6 +11,7 @@ use App\Http\Controllers\GpsController;
 use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\TransporterController;
 use App\Http\Controllers\VehicleAssignmentsController;
+use App\Http\Controllers\PooledGPSSocketController;
 use App\Http\Response\ApiResponse;
 
 /*
@@ -117,11 +118,17 @@ Route::group([
     Route::put('/reject/{id}', [VehicleAssignmentsController::class, 'reject'])->middleware('throttle:250,1');
 });
 
-Route::group([
-    'middleware' => 'auth:api',
-    'prefix' => 'pool-stats'
-], function(){
-    Route::get('/', [PooledGPSSocketController::class, 'getPoolStats']);
+Route::prefix('gps/pool')->group(function () {
+    // Statistics and monitoring
+    Route::get('stats', [PooledGPSSocketController::class, 'getPoolStats']);
+    Route::get('analytics', [PooledGPSSocketController::class, 'getAnalytics']);
+    Route::get('global-stats', [PooledGPSSocketController::class, 'getGlobalStats']);
+    Route::get('health', [PooledGPSSocketController::class, 'healthCheck']);
+    
+    // Management operations
+    Route::post('cleanup', [PooledGPSSocketController::class, 'cleanupPools']);
+    Route::post('test', [PooledGPSSocketController::class, 'testConnection']);
+    Route::delete('stats/cleanup', [PooledGPSSocketController::class, 'cleanupStats']);
 });
 
 //This will catch GET request to /api/register but  PUT,DELETE, OPTIONS etc. fails

@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\PooledGPSSocketController;
 use App\Http\Response\ApiResponse;
 use App\Models\CurrentCustomer;
 use App\Models\Gps;
 use App\Models\Vehicle;
 use App\Models\Transporter;
 use App\Models\VehicleAssignment;
+use App\Services\ConnectionPoolService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
@@ -200,7 +200,7 @@ class GpsController extends Controller
     }
 
     /**
-     * Forward GPS data to WLocate using connection pool
+     * Forward GPS data to WLocate using connection pool service
      */
     private function forwardToWLocate(Request $request, VehicleAssignment $vehicleAssignment): void
     {
@@ -211,14 +211,23 @@ class GpsController extends Controller
         if ($currentCustomer && $currentCustomer->ipport) {
             $transformedData = $this->dataTransformation($request->all());
             
-            // Use pooled connection for GPS forwarding
-            $socketCtrl = new PooledGPSSocketController();
-            $socketCtrl->submitFormattedGPS(
-                $transformedData,
+            // Use service instead of controller
+            $result = ConnectionPoolService::sendGPSData(
                 $currentCustomer->ipport->ip,
                 $currentCustomer->ipport->port,
+                $transformedData,
                 $request->Vehicle_ID
             );
+            
+            // Log any forwarding failures
+            if (!$result['success']) {
+                Log::channel('custom_log')->warning('GPS forwarding failed', [
+                    'vehicle' => $request->Vehicle_ID,
+                    'error' => $result['error'],
+                    'ip' => $currentCustomer->ipport->ip,
+                    'port' => $currentCustomer->ipport->port
+                ]);
+            }
         }
     }
 
