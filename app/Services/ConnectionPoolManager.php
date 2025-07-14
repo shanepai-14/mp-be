@@ -8,26 +8,40 @@ class ConnectionPoolManager
 {
     private static array $pools = [];
     private static int $maxConnectionsPerPool = 10;
-    private static int $connectionTimeout = 60; // seconds
-    private static int $idleTimeout = 30; // seconds
+    private static int $connectionTimeout = 300; // Increased to 5 minutes
+    private static int $idleTimeout = 120; // Increased to 2 minutes
     private static array $config = [];
+    private static bool $initialized = false;
+    private static int $lastCleanup = 0;
 
     /**
      * Initialize the connection pool with configuration
      */
     public static function init(array $config = []): void
     {
+        if (self::$initialized) {
+            return; // Prevent multiple initializations
+        }
+
         self::$config = array_merge([
             'max_connections_per_pool' => 10,
-            'connection_timeout' => 60,
-            'idle_timeout' => 30,
+            'connection_timeout' => 300,
+            'idle_timeout' => 120,
             'connect_timeout' => 5,
-            'socket_timeout' => 2
+            'socket_timeout' => 3
         ], $config);
 
         self::$maxConnectionsPerPool = self::$config['max_connections_per_pool'];
         self::$connectionTimeout = self::$config['connection_timeout'];
         self::$idleTimeout = self::$config['idle_timeout'];
+        self::$lastCleanup = time();
+        self::$initialized = true;
+
+        Log::channel('gps_pool')->info('Connection pool initialized', [
+            'max_connections_per_pool' => self::$maxConnectionsPerPool,
+            'connection_timeout' => self::$connectionTimeout,
+            'idle_timeout' => self::$idleTimeout
+        ]);
     }
 
     /**
@@ -35,6 +49,10 @@ class ConnectionPoolManager
      */
     public static function getConnection(string $host, int $port): ?array
     {
+        if (!self::$initialized) {
+            self::init(); // Auto-initialize if not done
+        }
+
         $poolKey = self::getPoolKey($host, $port);
         
         // Initialize pool if it doesn't exist
@@ -47,12 +65,20 @@ class ConnectionPoolManager
                 'stats' => [
                     'total_created' => 0,
                     'total_reused' => 0,
-                    'active_count' => 0
+                    'active_count' => 0,
+                    'failed_connections' => 0
                 ]
             ];
         }
 
         $pool = &self::$pools[$poolKey];
+        
+        // Throttled cleanup - only every 60 seconds per pool
+        $now = time();
+        if (($now - self::$lastCleanup) > 60) {
+            self::gentleCleanup($poolKey);
+            self::$lastCleanup = $now;
+        }
         
         // Try to get an available connection from the pool
         $connection = self::getAvailableConnection($pool);
@@ -62,6 +88,10 @@ class ConnectionPoolManager
             $connection['last_used'] = time();
             $connection['in_use'] = true;
             
+            Log::channel('gps_pool')->debug("Reusing connection for {$poolKey}", [
+                'connection_id' => $connection['id'],
+                'pool_size' => count($pool['connections'])
+            ]);
             
             return $connection;
         }
@@ -77,14 +107,29 @@ class ConnectionPoolManager
                 $connection['last_used'] = time();
                 $connection['in_use'] = true;
                 $connection['use_count'] = 0;
+                $connection['validated_at'] = time();
                 
                 $pool['connections'][] = $connection;
                 $pool['stats']['total_created']++;
                 $pool['stats']['active_count']++;
                 
+                Log::channel('gps_pool')->info("Created new connection for {$poolKey}", [
+                    'connection_id' => $connection['id'],
+                    'pool_size' => count($pool['connections'])
+                ]);
+                
                 return $connection;
+            } else {
+                $pool['stats']['failed_connections']++;
+                Log::channel('gps_pool')->warning("Failed to create connection for {$poolKey}");
             }
         }
+        
+        Log::channel('gps_pool')->warning("No available connections for {$poolKey}", [
+            'pool_size' => count($pool['connections']),
+            'max_size' => self::$maxConnectionsPerPool,
+            'failed_connections' => $pool['stats']['failed_connections']
+        ]);
         
         return null;
     }
@@ -108,6 +153,8 @@ class ConnectionPoolManager
                 $poolConnection['last_used'] = time();
                 $poolConnection['use_count']++;
                 $pool['stats']['active_count'] = max(0, $pool['stats']['active_count'] - 1);
+                
+                Log::channel('gps_pool')->debug("Returned connection {$connection['id']} to pool {$poolKey}");
                 break;
             }
         }
@@ -134,14 +181,36 @@ class ConnectionPoolManager
             return $result;
             
         } catch (\Exception $e) {
-            // Connection failed, remove it from pool
-            self::removeConnection($connection);
+            // Mark connection as failed but don't remove immediately
+            self::markConnectionAsFailed($connection);
+            self::returnConnection($connection);
             
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
                 'vehicle_id' => $vehicleId
             ];
+        }
+    }
+
+    /**
+     * Mark connection as failed (for gentle cleanup later)
+     */
+    private static function markConnectionAsFailed(array $connection): void
+    {
+        if (!isset($connection['pool_key']) || !isset(self::$pools[$connection['pool_key']])) {
+            return;
+        }
+
+        $poolKey = $connection['pool_key'];
+        $pool = &self::$pools[$poolKey];
+
+        foreach ($pool['connections'] as &$poolConnection) {
+            if ($poolConnection['id'] === $connection['id']) {
+                $poolConnection['failed_at'] = time();
+                $poolConnection['failure_count'] = ($poolConnection['failure_count'] ?? 0) + 1;
+                break;
+            }
         }
     }
 
@@ -164,16 +233,35 @@ class ConnectionPoolManager
             throw new \Exception("No bytes written to socket");
         }
 
-        // Read response (with timeout)
-        $response = socket_read($socket, 2048);
+        // Read response (with timeout) - make this optional
+        $response = '';
+        $startTime = microtime(true);
         
-        if ($response === false) {
-            $error = socket_strerror(socket_last_error($socket));
-            if (socket_last_error($socket) !== SOCKET_EAGAIN) {
-                throw new \Exception("Failed to read response: " . $error);
+        // Set non-blocking mode for reading
+        socket_set_nonblock($socket);
+        
+        // Try to read response for up to 1 second
+        while ((microtime(true) - $startTime) < 1.0) {
+            $response = socket_read($socket, 2048);
+            
+            if ($response !== false && $response !== '') {
+                break;
             }
-            $response = ''; // Timeout is acceptable
+            
+            if ($response === false) {
+                $error = socket_last_error($socket);
+                if ($error !== SOCKET_EAGAIN && $error !== SOCKET_EWOULDBLOCK) {
+                    // Real error occurred
+                    socket_set_block($socket);
+                    throw new \Exception("Failed to read response: " . socket_strerror($error));
+                }
+            }
+            
+            usleep(10000); // Wait 10ms before trying again
         }
+        
+        // Set back to blocking mode
+        socket_set_block($socket);
 
         return [
             'success' => true,
@@ -190,7 +278,7 @@ class ConnectionPoolManager
     private static function getAvailableConnection(array &$pool): ?array
     {
         foreach ($pool['connections'] as &$connection) {
-            if (!$connection['in_use'] && self::isConnectionAlive($connection)) {
+            if (!$connection['in_use'] && self::isConnectionHealthy($connection)) {
                 return $connection;
             }
         }
@@ -199,19 +287,22 @@ class ConnectionPoolManager
     }
 
     /**
-     * Create a new TCP connection
+     * Create a new TCP connection with better error handling
      */
     private static function createNewConnection(string $host, int $port): ?array
     {
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         
         if ($socket === false) {
+            Log::channel('gps_pool')->error("Failed to create socket: " . socket_strerror(socket_last_error()));
             return null;
         }
 
         // Set socket options for optimal performance
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
         socket_set_option($socket, SOL_SOCKET, SO_KEEPALIVE, 1);
+        
+        // More generous timeouts
         socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, [
             "sec" => self::$config['socket_timeout'], 
             "usec" => 0
@@ -224,8 +315,10 @@ class ConnectionPoolManager
         // Set TCP_NODELAY to reduce latency
         socket_set_option($socket, SOL_TCP, TCP_NODELAY, 1);
         
-        // Connect to server
-        if (socket_connect($socket, $host, $port)) {
+        // Try to connect
+        if (@socket_connect($socket, $host, $port)) {
+            Log::channel('gps_pool')->debug("Successfully connected to {$host}:{$port}");
+            
             return [
                 'socket' => $socket,
                 'host' => $host,
@@ -233,18 +326,28 @@ class ConnectionPoolManager
             ];
         }
         
+        $error = socket_last_error($socket);
         socket_close($socket);
+        
+        Log::channel('gps_pool')->warning("Failed to connect to {$host}:{$port}: " . 
+            socket_strerror($error) . " [{$error}]");
+        
         return null;
     }
 
     /**
-     * Check if connection is still alive
+     * Check if connection is healthy (less aggressive)
      */
-    private static function isConnectionAlive(array $connection): bool
+    private static function isConnectionHealthy(array $connection): bool
     {
         $socket = $connection['socket'];
         
         if (!is_resource($socket)) {
+            return false;
+        }
+        
+        // Check if connection has too many recent failures
+        if (isset($connection['failure_count']) && $connection['failure_count'] > 3) {
             return false;
         }
         
@@ -254,13 +357,12 @@ class ConnectionPoolManager
             return false;
         }
         
-        // Check if connection is too old
+        // More generous timeouts
         $now = time();
         if (($now - $connection['created_at']) > self::$connectionTimeout) {
             return false;
         }
         
-        // Check if connection has been idle too long
         if (isset($connection['last_used']) && 
             ($now - $connection['last_used']) > self::$idleTimeout) {
             return false;
@@ -270,33 +372,43 @@ class ConnectionPoolManager
     }
 
     /**
-     * Remove a connection from the pool
+     * Gentle cleanup - only remove clearly dead connections
      */
-    private static function removeConnection(array $connection): void
+    private static function gentleCleanup(string $poolKey): void
     {
-        if (!isset($connection['pool_key']) || !isset(self::$pools[$connection['pool_key']])) {
+        if (!isset(self::$pools[$poolKey])) {
             return;
         }
 
-        $poolKey = $connection['pool_key'];
         $pool = &self::$pools[$poolKey];
-
-        // Close socket if it's still a resource
-        if (isset($connection['socket']) && is_resource($connection['socket'])) {
-            socket_close($connection['socket']);
-        }
-
-        // Remove from pool
-        $pool['connections'] = array_filter($pool['connections'], function($conn) use ($connection) {
-            return $conn['id'] !== $connection['id'];
+        $initialCount = count($pool['connections']);
+        $removed = 0;
+        
+        $pool['connections'] = array_filter($pool['connections'], function($connection) use (&$removed) {
+            // Only remove connections that are clearly dead
+            if (!self::isConnectionHealthy($connection)) {
+                if (isset($connection['socket']) && is_resource($connection['socket'])) {
+                    socket_close($connection['socket']);
+                }
+                $removed++;
+                return false;
+            }
+            return true;
         });
         
         // Reindex array
         $pool['connections'] = array_values($pool['connections']);
+        
+        if ($removed > 0) {
+            Log::channel('gps_pool')->info("Gentle cleanup for pool {$poolKey}: removed {$removed} connections", [
+                'before' => $initialCount,
+                'after' => count($pool['connections'])
+            ]);
+        }
     }
 
     /**
-     * Clean up old and dead connections
+     * Clean up old and dead connections (less aggressive)
      */
     public static function cleanup(): array
     {
@@ -306,23 +418,12 @@ class ConnectionPoolManager
             'total_pools' => count(self::$pools)
         ];
 
-        foreach (self::$pools as $poolKey => &$pool) {
+        foreach (self::$pools as $poolKey => $pool) {
             $initialCount = count($pool['connections']);
+            self::gentleCleanup($poolKey);
+            $finalCount = count(self::$pools[$poolKey]['connections']);
             
-            $pool['connections'] = array_filter($pool['connections'], function($connection) {
-                if (!self::isConnectionAlive($connection)) {
-                    if (isset($connection['socket']) && is_resource($connection['socket'])) {
-                        socket_close($connection['socket']);
-                    }
-                    return false;
-                }
-                return true;
-            });
-            
-            // Reindex array
-            $pool['connections'] = array_values($pool['connections']);
-            $removed = $initialCount - count($pool['connections']);
-            
+            $removed = $initialCount - $finalCount;
             if ($removed > 0) {
                 $stats['pools_cleaned']++;
                 $stats['connections_removed'] += $removed;
@@ -352,6 +453,7 @@ class ConnectionPoolManager
                 'idle_connections' => count($pool['connections']) - $activeCount,
                 'total_created' => $pool['stats']['total_created'],
                 'total_reused' => $pool['stats']['total_reused'],
+                'failed_connections' => $pool['stats']['failed_connections'],
                 'reuse_ratio' => $pool['stats']['total_created'] > 0 ? 
                     round($pool['stats']['total_reused'] / $pool['stats']['total_created'], 2) : 0
             ];
@@ -381,6 +483,7 @@ class ConnectionPoolManager
         }
         
         self::$pools = [];
+        Log::channel('gps_pool')->info("Connection pool manager shutdown complete");
     }
 
     /**
