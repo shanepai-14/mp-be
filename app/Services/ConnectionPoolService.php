@@ -10,23 +10,21 @@ class ConnectionPoolService
 {
     private static array $config = [];
     private static string $processId = '';
+    private static array $localConnections = []; // Store actual socket resources locally
     
-    /**
-     * Initialize the service
-     */
     public static function init(array $config = []): void
     {
         self::$config = array_merge([
-            'max_connections_per_pool' => 5,
-            'connection_timeout' => 300,      // 5 minutes
-            'idle_timeout' => 120,            // 2 minutes
+            'max_connections_per_pool' => 3,
+            'connection_timeout' => 300,
+            'idle_timeout' => 60,  // Reduced to 1 minute
             'socket_timeout' => 3,
-            'connection_check_interval' => 10 // Check every 10 seconds
+            'max_reuse_count' => 100 // Limit how many times a connection can be reused
         ], $config);
 
         self::$processId = (string) getmypid();
     }
-
+    
     /**
      * Send GPS data with persistent connection management
      */
