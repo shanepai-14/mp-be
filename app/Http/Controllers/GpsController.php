@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\PooledGPSSocketController;
 use App\Http\Response\ApiResponse;
 use App\Models\CurrentCustomer;
 use App\Models\Gps;

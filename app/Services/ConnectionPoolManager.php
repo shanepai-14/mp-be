@@ -62,10 +62,6 @@ class ConnectionPoolManager
             $connection['last_used'] = time();
             $connection['in_use'] = true;
             
-            Log::channel('gps_pool')->debug("Reused connection for {$poolKey}", [
-                'pool_size' => count($pool['connections']),
-                'active' => $pool['stats']['active_count']
-            ]);
             
             return $connection;
         }
@@ -86,19 +82,9 @@ class ConnectionPoolManager
                 $pool['stats']['total_created']++;
                 $pool['stats']['active_count']++;
                 
-                Log::channel('gps_pool')->info("Created new connection for {$poolKey}", [
-                    'connection_id' => $connection['id'],
-                    'pool_size' => count($pool['connections'])
-                ]);
-                
                 return $connection;
             }
         }
-        
-        Log::channel('gps_pool')->warning("No available connections for {$poolKey}", [
-            'pool_size' => count($pool['connections']),
-            'max_size' => self::$maxConnectionsPerPool
-        ]);
         
         return null;
     }
@@ -122,8 +108,6 @@ class ConnectionPoolManager
                 $poolConnection['last_used'] = time();
                 $poolConnection['use_count']++;
                 $pool['stats']['active_count'] = max(0, $pool['stats']['active_count'] - 1);
-                
-                Log::channel('gps_pool')->debug("Returned connection {$connection['id']} to pool {$poolKey}");
                 break;
             }
         }
@@ -222,7 +206,6 @@ class ConnectionPoolManager
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         
         if ($socket === false) {
-            Log::channel('gps_pool')->error("Failed to create socket: " . socket_strerror(socket_last_error()));
             return null;
         }
 
@@ -241,38 +224,17 @@ class ConnectionPoolManager
         // Set TCP_NODELAY to reduce latency
         socket_set_option($socket, SOL_TCP, TCP_NODELAY, 1);
         
-        // Non-blocking connect with timeout
-        socket_set_nonblock($socket);
-        $result = socket_connect($socket, $host, $port);
-        
-        if ($result === false && socket_last_error($socket) !== SOCKET_EINPROGRESS) {
-            socket_close($socket);
-            Log::channel('gps_pool')->error("Failed to connect to {$host}:{$port}: " . 
-                socket_strerror(socket_last_error($socket)));
-            return null;
+        // Connect to server
+        if (socket_connect($socket, $host, $port)) {
+            return [
+                'socket' => $socket,
+                'host' => $host,
+                'port' => $port
+            ];
         }
         
-        // Wait for connection to establish
-        $write = [$socket];
-        $read = null;
-        $except = [$socket];
-        
-        $selectResult = socket_select($read, $write, $except, self::$config['connect_timeout']);
-        
-        if ($selectResult === false || $selectResult === 0 || !empty($except)) {
-            socket_close($socket);
-            Log::channel('gps_pool')->error("Connection timeout or error for {$host}:{$port}");
-            return null;
-        }
-        
-        // Set back to blocking mode
-        socket_set_block($socket);
-        
-        return [
-            'socket' => $socket,
-            'host' => $host,
-            'port' => $port
-        ];
+        socket_close($socket);
+        return null;
     }
 
     /**
@@ -331,8 +293,6 @@ class ConnectionPoolManager
         
         // Reindex array
         $pool['connections'] = array_values($pool['connections']);
-        
-        Log::channel('gps_pool')->info("Removed connection {$connection['id']} from pool {$poolKey}");
     }
 
     /**
@@ -366,8 +326,6 @@ class ConnectionPoolManager
             if ($removed > 0) {
                 $stats['pools_cleaned']++;
                 $stats['connections_removed'] += $removed;
-                
-                Log::channel('gps_pool')->info("Cleaned pool {$poolKey}: removed {$removed} connections");
             }
         }
 
@@ -423,7 +381,6 @@ class ConnectionPoolManager
         }
         
         self::$pools = [];
-        Log::channel('gps_pool')->info("Connection pool manager shutdown complete");
     }
 
     /**

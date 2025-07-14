@@ -207,8 +207,10 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\ConnectionPoolServiceProvider::class,
         Jenssegers\Mongodb\MongodbServiceProvider::class,
-         Maatwebsite\Excel\ExcelServiceProvider::class
+         Maatwebsite\Excel\ExcelServiceProvider::class,
+         
     ],
 
     /*

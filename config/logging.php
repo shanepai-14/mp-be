@@ -153,6 +153,12 @@ return [
             // 'replace_placeholders' => true,
             'days' => 0,
         ],
+        'gps_pool' => [
+        'driver' => 'daily',
+        'path' => storage_path('logs/gps_pool.log'),
+        'level' => 'debug',
+        'days' => 14,
+    ],
     ],
 
 ];

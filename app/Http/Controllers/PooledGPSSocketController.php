@@ -28,17 +28,18 @@ class PooledGPSSocketController extends Controller
         $host = $wl_ip ?: "20.195.56.146";
         $port = $wl_port ?: 2199;
         
-        // Use connection pool to send data
-        $result = ConnectionPoolManager::sendData($host, $port, $gpsData, $vehicle_id);
+        // Use connection pool to send data with retry logic
+        $result = $this->sendDataWithRetry($host, $port, $gpsData, $vehicle_id, 3);
         
         if ($result['success']) {
             Log::channel('gpssuccesslog')->info([
                 'vehicle' => $vehicle_id,
                 'date' => now()->toISOString(),
                 'position' => preg_replace('/\s+/', '', $gpsData),
-                'response' => $result['response'],
-                'connection_id' => $result['connection_id'],
-                'bytes_written' => $result['bytes_written']
+                'response' => $result['response'] ?? '',
+                'connection_id' => $result['connection_id'] ?? 'unknown',
+                'bytes_written' => $result['bytes_written'] ?? 0,
+                'attempts' => $result['attempts'] ?? 1
             ]);
         } else {
             Log::channel('gpserrorlog')->error([
@@ -47,14 +48,68 @@ class PooledGPSSocketController extends Controller
                 'host' => $host,
                 'port' => $port,
                 'gps_data' => $gpsData,
-                'error' => $result['error']
+                'error' => $result['error'],
+                'attempts' => $result['attempts'] ?? 1
             ]);
         }
         
         return $result;
     }
 
+    /**
+     * Send data with retry logic for connection reset errors
+     */
+    private function sendDataWithRetry(string $host, int $port, string $data, string $vehicleId, int $maxRetries = 3): array
+    {
+        $attempt = 0;
+        $lastError = null;
 
+        while ($attempt < $maxRetries) {
+            $attempt++;
+            
+            try {
+                $result = ConnectionPoolManager::sendData($host, $port, $data, $vehicleId);
+                
+                if ($result['success']) {
+                    // Add attempt info to successful result
+                    $result['attempts'] = $attempt;
+                    return $result;
+                }
+                
+                $lastError = $result['error'];
+                
+                // Check if this is a recoverable error
+                if (strpos($lastError, 'Connection reset by peer') !== false || 
+                    strpos($lastError, 'unable to read from socket [104]') !== false) {
+                    
+                    if ($attempt < $maxRetries) {
+                        // Wait before retry for connection reset errors
+                        usleep(200000 * $attempt); // Exponential backoff: 200ms, 400ms, 600ms
+                        continue;
+                    }
+                }
+                
+                // For other errors, fail faster
+                break;
+                
+            } catch (\Exception $e) {
+                $lastError = $e->getMessage();
+                
+                if ($attempt < $maxRetries) {
+                    usleep(100000 * $attempt); // Wait before retry
+                    continue;
+                }
+            }
+        }
+
+        // All retries failed
+        return [
+            'success' => false,
+            'error' => "Failed after {$maxRetries} attempts. Last error: {$lastError}",
+            'vehicle_id' => $vehicleId,
+            'attempts' => $attempt
+        ];
+    }
 
     /**
      * Get connection pool statistics
