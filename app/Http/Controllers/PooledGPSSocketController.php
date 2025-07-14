@@ -144,7 +144,7 @@ class PooledGPSSocketController extends Controller
     }
 
     /**
-     * Calculate connection efficiency
+     * Calculate connection efficiency with error handling
      */
     private function calculateEfficiency(array $stats): array
     {
@@ -158,9 +158,13 @@ class PooledGPSSocketController extends Controller
             $efficiency['local_utilization'] = round(($stats['total_local_connections'] / 5) * 100, 1);
         }
         
+        // Safely calculate reuse ratio
         foreach ($stats['pools'] as $poolStats) {
-            if ($poolStats['global_created'] > 0) {
-                $efficiency['reuse_ratio'] = round($poolStats['global_reused'] / $poolStats['global_created'], 2);
+            $created = $poolStats['global_created'] ?? 0;
+            $reused = $poolStats['global_reused'] ?? 0;
+            
+            if ($created > 0) {
+                $efficiency['reuse_ratio'] = round($reused / $created, 2);
                 break;
             }
         }
