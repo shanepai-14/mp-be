@@ -219,13 +219,34 @@ class GpsController extends Controller
                 $request->Vehicle_ID
             );
             
-            // Log any forwarding failures
-            if (!$result['success']) {
-                Log::channel('custom_log')->warning('GPS forwarding failed', [
+            // Log results based on success/failure
+            if ($result['success']) {
+         
+                    Log::channel('gpssuccesslog')->info([
+                        'vehicle' => $request->Vehicle_ID,
+                        'date' => now()->toISOString(),
+                        'position' => preg_replace('/\s+/', '', $transformedData),
+                        'response' => $result['response'] ?? '',
+                        'connection_id' => $result['connection_id'] ?? 'unknown',
+                        'bytes_written' => $result['bytes_written'] ?? 0,
+                        'attempts' => $result['attempts'] ?? 1,
+                        'connection_reused' => $result['reused'] ?? false,
+                        'process_id' => getmypid(),
+                        'ip' => $currentCustomer->ipport->ip,
+                        'port' => $currentCustomer->ipport->port
+                    ]);
+                
+            } else {
+                // Always log GPS forwarding failures
+                Log::channel('gpserrorlog')->error([
                     'vehicle' => $request->Vehicle_ID,
+                    'date' => now()->toISOString(),
+                    'host' => $currentCustomer->ipport->ip,
+                    'port' => $currentCustomer->ipport->port,
+                    'gps_data' => $transformedData,
                     'error' => $result['error'],
-                    'ip' => $currentCustomer->ipport->ip,
-                    'port' => $currentCustomer->ipport->port
+                    'attempts' => $result['attempts'] ?? 1,
+                    'process_id' => getmypid()
                 ]);
             }
         }
