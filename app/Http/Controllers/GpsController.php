@@ -208,47 +208,112 @@ class GpsController extends Controller
             ->where('vehicle_assignment_id', $vehicleAssignment->id)
             ->first();
 
-        if ($currentCustomer && $currentCustomer->ipport) {
-            $transformedData = $this->dataTransformation($request->all());
-            
-            // Use service instead of controller
-            $result = ConnectionPoolService::sendGPSData(
-                $currentCustomer->ipport->ip,
-                $currentCustomer->ipport->port,
-                $transformedData,
-                $request->Vehicle_ID
-            );
-            
-            // Log results based on success/failure
-            if ($result['success']) {
-         
-                    Log::channel('gpssuccesslog')->info([
-                        'vehicle' => $request->Vehicle_ID,
-                        'date' => now()->toISOString(),
-                        'position' => preg_replace('/\s+/', '', $transformedData),
-                        'response' => $result['response'] ?? '',
-                        'connection_id' => $result['connection_id'] ?? 'unknown',
-                        'bytes_written' => $result['bytes_written'] ?? 0,
-                        'attempts' => $result['attempts'] ?? 1,
-                        'connection_reused' => $result['reused'] ?? false,
-                        'process_id' => getmypid(),
-                        'ip' => $currentCustomer->ipport->ip,
-                        'port' => $currentCustomer->ipport->port
-                    ]);
-                
+        if (!$currentCustomer || !$currentCustomer->ipport) {
+            return;
+        }
+
+        $circuitKey = "circuit_breaker_{$currentCustomer->ipport->ip}_{$currentCustomer->ipport->port}";
+        
+        // Check circuit breaker state
+        $circuitState = Cache::get($circuitKey, ['state' => 'closed', 'failures' => 0, 'last_failure' => 0]);
+        
+        // Circuit is open (too many failures)
+        if ($circuitState['state'] === 'open') {
+            // Check if we should try again (half-open)
+            if (time() - $circuitState['last_failure'] > 60) { // 1 minute cooldown
+                Cache::put($circuitKey, array_merge($circuitState, ['state' => 'half-open']), 300);
             } else {
-                // Always log GPS forwarding failures
-                Log::channel('gpserrorlog')->error([
+                // Skip forwarding, circuit is still open
+                Log::channel('gps_pool')->info("Circuit breaker OPEN - skipping GPS forward", [
                     'vehicle' => $request->Vehicle_ID,
-                    'date' => now()->toISOString(),
-                    'host' => $currentCustomer->ipport->ip,
+                    'ip' => $currentCustomer->ipport->ip,
                     'port' => $currentCustomer->ipport->port,
-                    'gps_data' => $transformedData,
-                    'error' => $result['error'],
-                    'attempts' => $result['attempts'] ?? 1,
-                    'process_id' => getmypid()
+                    'failures' => $circuitState['failures']
+                ]);
+                return;
+            }
+        }
+
+        $transformedData = $this->dataTransformation($request->all());
+        
+        // Try to send GPS data
+        $result = ConnectionPoolService::sendGPSData(
+            $currentCustomer->ipport->ip,
+            $currentCustomer->ipport->port,
+            $transformedData,
+            $request->Vehicle_ID
+        );
+        
+        // Update circuit breaker based on result
+        if ($result['success']) {
+            // Success - reset circuit breaker
+            if ($circuitState['state'] !== 'closed') {
+                Cache::put($circuitKey, ['state' => 'closed', 'failures' => 0, 'last_failure' => 0], 300);
+                
+                Log::channel('gps_pool')->info("Circuit breaker RESET to CLOSED", [
+                    'vehicle' => $request->Vehicle_ID,
+                    'ip' => $currentCustomer->ipport->ip,
+                    'port' => $currentCustomer->ipport->port
                 ]);
             }
+            
+            // Log success with additional context
+            Log::channel('gpssuccesslog')->info([
+                'vehicle' => $request->Vehicle_ID,
+                'date' => now()->toISOString(),
+                'position' => preg_replace('/\s+/', '', $transformedData),
+                'response' => $result['response'] ?? '',
+                'connection_id' => $result['connection_id'] ?? 'unknown',
+                'bytes_written' => $result['bytes_written'] ?? 0,
+                'attempts' => $result['attempts'] ?? 1,
+                'connection_reused' => $result['reused'] ?? false,
+                'process_id' => getmypid(),
+                'ip' => $currentCustomer->ipport->ip,
+                'port' => $currentCustomer->ipport->port,
+                'duration_ms' => $result['duration_ms'] ?? 0,
+                'emergency_mode' => $result['emergency_mode'] ?? false,
+                'direct_connection' => $result['direct_connection'] ?? false
+            ]);
+            
+        } else {
+            // Failure - update circuit breaker
+            $newFailures = $circuitState['failures'] + 1;
+            $newState = $circuitState['state'];
+            
+            // Open circuit if too many failures
+            if ($newFailures >= 5 && $circuitState['state'] !== 'open') {
+                $newState = 'open';
+                
+                Log::channel('gps_pool')->critical("Circuit breaker OPENED", [
+                    'vehicle' => $request->Vehicle_ID,
+                    'ip' => $currentCustomer->ipport->ip,
+                    'port' => $currentCustomer->ipport->port,
+                    'failures' => $newFailures
+                ]);
+            }
+            
+            Cache::put($circuitKey, [
+                'state' => $newState,
+                'failures' => $newFailures,
+                'last_failure' => time()
+            ], 300);
+            
+            // Log failure with additional context
+            Log::channel('gpserrorlog')->error([
+                'vehicle' => $request->Vehicle_ID,
+                'date' => now()->toISOString(),
+                'host' => $currentCustomer->ipport->ip,
+                'port' => $currentCustomer->ipport->port,
+                'gps_data' => $transformedData,
+                'error' => $result['error'],
+                'attempts' => $result['attempts'] ?? 1,
+                'process_id' => getmypid(),
+                'duration_ms' => $result['duration_ms'] ?? 0,
+                'emergency_mode' => $result['emergency_mode'] ?? false,
+                'consecutive_failures' => $result['consecutive_failures'] ?? 0,
+                'circuit_state' => $newState,
+                'circuit_failures' => $newFailures
+            ]);
         }
     }
 
