@@ -2,17 +2,17 @@
 
 namespace App\Services;
 
-use App\Models\ConnectionPoolStat;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Redis\Connections\Connection;
 
 class ConnectionPoolService
 {
     private static array $config = [];
     private static string $processId = '';
     private static array $localConnections = []; // Process-local connections only
-    private static ?Redis $redis = null;
+    private static ?Connection $redis = null;
     
     // Redis keys for shared pool management
     private const POOL_KEY_PREFIX = 'gps_pool:';
