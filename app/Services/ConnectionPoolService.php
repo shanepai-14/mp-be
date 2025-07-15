@@ -415,35 +415,6 @@ class ConnectionPoolService
         }
     }
 
-    // Keep all existing methods like getLocalConnection, forceCreateConnection, 
-    // sendAndReceive, etc. but optimize them for performance
-    
-    /**
-     * Simplified local connection storage
-     */
-    private static function storeLocalConnection(string $poolKey, array $connection): void
-    {
-        if (isset($connection['direct']) && $connection['direct']) {
-            return; // Don't store direct connections
-        }
-        
-        if (!isset(self::$localConnections[$poolKey])) {
-            self::$localConnections[$poolKey] = [];
-        }
-
-        // Limit and clean local connections
-        if (count(self::$localConnections[$poolKey]) >= 1) {
-            foreach (self::$localConnections[$poolKey] as $connId => $oldConn) {
-                if (is_resource($oldConn['socket'])) {
-                    socket_close($oldConn['socket']);
-                }
-            }
-            self::$localConnections[$poolKey] = [];
-        }
-
-        self::$localConnections[$poolKey][$connection['id']] = $connection;
-    }
-
     /**
      * Get local connection (same process reuse)
      */
@@ -461,7 +432,7 @@ class ConnectionPoolService
                 
                 self::$localConnections[$poolKey][$connId] = $connection;
                 
-                Log::channel('gps_pool')->info("REUSED LOCAL connection {$connId}", [
+                Log::channel('gps_pool')->debug("REUSED LOCAL connection {$connId}", [
                     'process_id' => self::$processId,
                     'use_count' => $connection['use_count']
                 ]);
@@ -480,105 +451,22 @@ class ConnectionPoolService
     }
 
     /**
-     * Claim shared connection with proper distributed locking
+     * Force create connection bypassing pool management
      */
-    private static function claimSharedConnectionWithLock(string $poolKey): ?array
+    private static function forceCreateConnection(string $host, int $port, string $poolKey): ?array
     {
-        $globalLockKey = "global_pool_lock_{$poolKey}";
-        $lockValue = self::$processId . '_' . time();
-        
-        // Try to acquire global pool lock
-        if (!Cache::add($globalLockKey, $lockValue, self::$config['lock_timeout'])) {
-            // Lock failed, but let's still try to find available connections
-            usleep(rand(1000, 5000)); // Random backoff
-        }
-        
-        try {
-            $sharedConnections = self::getSharedConnections($poolKey);
-            
-            foreach ($sharedConnections as $connId => $connData) {
-                // Skip if connection is in use or expired
-                if ($connData['in_use'] || self::isSharedConnectionExpired($connData)) {
-                    continue;
-                }
-                
-                // Try to atomically claim this specific connection
-                if (self::atomicClaimConnection($poolKey, $connId)) {
-                    // Successfully claimed, now create socket
-                    $socket = self::createNewSocket($connData['host'], $connData['port']);
-                    
-                    if ($socket) {
-                        $connection = [
-                            'id' => $connId,
-                            'socket' => $socket,
-                            'host' => $connData['host'],
-                            'port' => $connData['port'],
-                            'created_at' => $connData['created_at'],
-                            'last_used' => time(),
-                            'use_count' => $connData['use_count'] + 1,
-                            'reused' => true,
-                            'claimed_from_shared' => true
-                        ];
-                        
-                        Log::channel('gps_pool')->info("REUSED SHARED connection {$connId}", [
-                            'process_id' => self::$processId,
-                            'original_owner' => $connData['process_id'],
-                            'use_count' => $connection['use_count']
-                        ]);
-                        
-                        return $connection;
-                    } else {
-                        // Failed to create socket, release claim and remove from pool
-                        self::removeSharedConnection($poolKey, $connId);
-                    }
-                }
-            }
-        } finally {
-            // Release global lock if we own it
-            $currentLock = Cache::get($globalLockKey);
-            if ($currentLock === $lockValue) {
-                Cache::forget($globalLockKey);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Create new connection with pool size management
-     */
-    private static function createManagedConnection(string $host, int $port, string $poolKey): ?array
-    {
-        // Check if we should create new connection based on pool state
-        $sharedConnections = self::getSharedConnections($poolKey);
-        $totalConnections = count($sharedConnections);
-        $busyConnections = count(array_filter($sharedConnections, fn($c) => $c['in_use']));
-        
-        // If pool is near capacity and mostly busy, wait a bit and retry
-        if ($totalConnections >= self::$config['max_connections_per_pool']) {
-            $busyRatio = $totalConnections > 0 ? $busyConnections / $totalConnections : 0;
-            
-            if ($busyRatio > self::$config['create_new_threshold']) {
-                // Wait briefly and try to claim again
-                usleep(rand(10000, 50000)); // 10-50ms
-                return self::claimSharedConnectionWithLock($poolKey);
-            }
-            
-            // Remove oldest connection to make room
-            $oldestKey = array_key_first($sharedConnections);
-            if ($oldestKey) {
-                self::removeSharedConnection($poolKey, $oldestKey);
-            }
-        }
-
-        // Create new socket
-        $socket = self::createNewSocket($host, $port);
+        $socket = self::createDirectSocket($host, $port);
         if (!$socket) {
             return null;
         }
 
-        $connId = 'conn_' . uniqid('', true);
-        $connection = [
+        $connId = 'force_conn_' . uniqid('', true);
+        
+        Log::channel('gps_pool')->info("FORCE created connection {$connId} for {$poolKey}", [
+            'process_id' => self::$processId
+        ]);
+        
+        return [
             'id' => $connId,
             'socket' => $socket,
             'host' => $host,
@@ -586,49 +474,9 @@ class ConnectionPoolService
             'created_at' => time(),
             'last_used' => time(),
             'use_count' => 1,
-            'reused' => false
+            'reused' => false,
+            'force_created' => true
         ];
-
-        // Store in shared pool
-        self::storeSharedConnection($poolKey, $connId, [
-            'created_at' => $connection['created_at'],
-            'host' => $host,
-            'port' => $port,
-            'process_id' => self::$processId,
-            'last_used' => time(),
-            'use_count' => 1,
-            'in_use' => true // Mark as in use initially
-        ]);
-
-        self::updateStats($poolKey, 'created');
-        
-        Log::channel('gps_pool')->info("Created NEW connection {$connId} for {$poolKey}", [
-            'process_id' => self::$processId,
-            'total_pool_size' => $totalConnections + 1
-        ]);
-
-        return $connection;
-    }
-
-    /**
-     * Release connection back to shared pool
-     */
-    private static function releaseConnectionProper(string $poolKey, array $connection): void
-    {
-        if (isset($connection['claimed_from_shared']) && $connection['claimed_from_shared']) {
-            // This was claimed from shared pool, release it back
-            $connections = self::getSharedConnections($poolKey);
-            
-            if (isset($connections[$connection['id']])) {
-                $connections[$connection['id']]['in_use'] = false;
-                $connections[$connection['id']]['last_used'] = time();
-                $connections[$connection['id']]['use_count'] = $connection['use_count'];
-                unset($connections[$connection['id']]['claimed_by']);
-                unset($connections[$connection['id']]['claimed_at']);
-                
-                Cache::put("shared_connections_{$poolKey}", $connections, self::$config['connection_timeout']);
-            }
-        }
     }
 
     /**
@@ -662,142 +510,6 @@ class ConnectionPoolService
     }
 
     /**
-     * Check if shared connection data is expired
-     */
-    private static function isSharedConnectionExpired(array $connData): bool
-    {
-        $age = time() - $connData['created_at'];
-        $idleTime = time() - $connData['last_used'];
-        
-        return $age > self::$config['connection_timeout'] || 
-               $idleTime > self::$config['idle_timeout'];
-    }
-
-    /**
-     * Atomic operation to claim a specific connection
-     */
-    private static function atomicClaimConnection(string $poolKey, string $connId): bool
-    {
-        $lockKey = "claim_lock_{$poolKey}_{$connId}";
-        
-        if (Cache::add($lockKey, self::$processId, 2)) {
-            try {
-                $connections = self::getSharedConnections($poolKey);
-                
-                if (isset($connections[$connId]) && !$connections[$connId]['in_use']) {
-                    $connections[$connId]['in_use'] = true;
-                    $connections[$connId]['claimed_by'] = self::$processId;
-                    $connections[$connId]['claimed_at'] = time();
-                    
-                    Cache::put("shared_connections_{$poolKey}", $connections, self::$config['connection_timeout']);
-                    return true;
-                }
-            } finally {
-                Cache::forget($lockKey);
-            }
-        }
-        
-        return false;
-    }
-
-    /**
-     * Clean up failed connection
-     */
-    private static function cleanupFailedConnection(string $poolKey, array $connection): void
-    {
-        // Remove from local storage
-        if (isset(self::$localConnections[$poolKey][$connection['id']])) {
-            unset(self::$localConnections[$poolKey][$connection['id']]);
-        }
-
-        // Remove from shared storage
-        self::removeSharedConnection($poolKey, $connection['id']);
-
-        // Close socket
-        if (is_resource($connection['socket'])) {
-            socket_close($connection['socket']);
-        }
-    }
-
-    // Keep all your existing helper methods: getSharedConnections, storeSharedConnection, 
-    // removeSharedConnection, createNewSocket, validateConnection, sendAndReceive, updateStats, etc.
-    
-    /**
-     * Get shared connections from cache/storage
-     */
-    private static function getSharedConnections(string $poolKey): array
-    {
-        try {
-            return Cache::get("shared_connections_{$poolKey}", []);
-        } catch (\Exception $e) {
-            return [];
-        }
-    }
-
-    /**
-     * Store connection in shared storage
-     */
-    private static function storeSharedConnection(string $poolKey, string $connId, array $connData): void
-    {
-        try {
-            $connections = self::getSharedConnections($poolKey);
-            $connections[$connId] = array_merge($connData, [
-                'last_used' => time(),
-                'in_use' => false
-            ]);
-            
-            Cache::put("shared_connections_{$poolKey}", $connections, self::$config['connection_timeout']);
-        } catch (\Exception $e) {
-            // Ignore cache errors
-        }
-    }
-
-    /**
-     * Remove connection from shared storage
-     */
-    private static function removeSharedConnection(string $poolKey, string $connId): void
-    {
-        try {
-            $connections = self::getSharedConnections($poolKey);
-            unset($connections[$connId]);
-            Cache::put("shared_connections_{$poolKey}", $connections, self::$config['connection_timeout']);
-        } catch (\Exception $e) {
-            // Ignore cache errors
-        }
-    }
-
-    /**
-     * Create new socket connection
-     */
-    private static function createNewSocket(string $host, int $port)
-    {
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        
-        if ($socket === false) {
-            return null;
-        }
-
-        socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
-        socket_set_option($socket, SOL_SOCKET, SO_KEEPALIVE, 1);
-        socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, [
-            "sec" => self::$config['socket_timeout'], 
-            "usec" => 0
-        ]);
-        socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, [
-            "sec" => self::$config['socket_timeout'], 
-            "usec" => 0
-        ]);
-        socket_set_option($socket, SOL_TCP, TCP_NODELAY, 1);
-        
-        if (@socket_connect($socket, $host, $port)) {
-            return $socket;
-        }
-        
-        socket_close($socket);
-        return null;
-    }
-
-    /**
      * Send GPS data and receive response
      */
     private static function sendAndReceive(array $connection, string $gpsData, string $vehicleId): array
@@ -815,12 +527,13 @@ class ConnectionPoolService
             throw new \Exception("No bytes written");
         }
 
-        // Quick non-blocking read
+        // Quick non-blocking read with shorter timeout
         socket_set_nonblock($socket);
         $response = '';
         $startTime = microtime(true);
+        $timeout = 0.1; // Reduced timeout to 100ms
         
-        while ((microtime(true) - $startTime) < 0.2) {
+        while ((microtime(true) - $startTime) < $timeout) {
             $data = socket_read($socket, 1024);
             
             if ($data !== false && $data !== '') {
@@ -836,7 +549,7 @@ class ConnectionPoolService
                 }
             }
             
-            usleep(1000);
+            usleep(1000); // 1ms sleep
         }
         
         socket_set_block($socket);
@@ -847,6 +560,49 @@ class ConnectionPoolService
             'bytes_written' => $bytesWritten,
             'vehicle_id' => $vehicleId
         ];
+    }
+
+    /**
+     * Release connection back to shared pool
+     */
+    private static function releaseConnectionProper(string $poolKey, array $connection): void
+    {
+        if (isset($connection['claimed_from_shared']) && $connection['claimed_from_shared']) {
+            try {
+                $connections = self::getSharedConnectionsQuick($poolKey);
+                
+                if (isset($connections[$connection['id']])) {
+                    $connections[$connection['id']]['in_use'] = false;
+                    $connections[$connection['id']]['last_used'] = time();
+                    $connections[$connection['id']]['use_count'] = $connection['use_count'];
+                    unset($connections[$connection['id']]['claimed_by']);
+                    unset($connections[$connection['id']]['claimed_at']);
+                    
+                    Cache::put("shared_connections_{$poolKey}", $connections, 60);
+                }
+            } catch (\Exception $e) {
+                // Ignore release errors
+            }
+        }
+    }
+
+    /**
+     * Clean up failed connection
+     */
+    private static function cleanupFailedConnection(string $poolKey, array $connection): void
+    {
+        // Remove from local storage
+        if (isset(self::$localConnections[$poolKey][$connection['id']])) {
+            unset(self::$localConnections[$poolKey][$connection['id']]);
+        }
+
+        // Remove from shared storage
+        self::removeSharedConnectionQuick($poolKey, $connection['id']);
+
+        // Close socket
+        if (is_resource($connection['socket'])) {
+            socket_close($connection['socket']);
+        }
     }
 
     /**
@@ -883,7 +639,154 @@ class ConnectionPoolService
             ]);
             
         } catch (\Exception $e) {
-            // Ignore stats errors
+            // Ignore stats errors to prevent cascading failures
         }
+    }
+    
+    /**
+     * Simplified local connection storage
+     */
+    private static function storeLocalConnection(string $poolKey, array $connection): void
+    {
+        if (isset($connection['direct']) && $connection['direct']) {
+            return; // Don't store direct connections
+        }
+        
+        if (!isset(self::$localConnections[$poolKey])) {
+            self::$localConnections[$poolKey] = [];
+        }
+
+        // Limit and clean local connections
+        if (count(self::$localConnections[$poolKey]) >= 1) {
+            foreach (self::$localConnections[$poolKey] as $connId => $oldConn) {
+                if (is_resource($oldConn['socket'])) {
+                    socket_close($oldConn['socket']);
+                }
+            }
+            self::$localConnections[$poolKey] = [];
+        }
+
+        self::$localConnections[$poolKey][$connection['id']] = $connection;
+    }
+
+    /**
+     * Simplified local connection storage
+     */
+    private static function storeLocalConnection(string $poolKey, array $connection): void
+    {
+        if (isset($connection['direct']) && $connection['direct']) {
+            return; // Don't store direct connections
+        }
+        
+        if (!isset(self::$localConnections[$poolKey])) {
+            self::$localConnections[$poolKey] = [];
+        }
+
+        // Limit and clean local connections
+        if (count(self::$localConnections[$poolKey]) >= 1) {
+            foreach (self::$localConnections[$poolKey] as $connId => $oldConn) {
+                if (is_resource($oldConn['socket'])) {
+                    socket_close($oldConn['socket']);
+                }
+            }
+            self::$localConnections[$poolKey] = [];
+        }
+
+        self::$localConnections[$poolKey][$connection['id']] = $connection;
+    }
+
+    /**
+     * Health check method for monitoring
+     */
+    public static function healthCheck(string $host, int $port): array
+    {
+        return [
+            'server_available' => self::isTargetServerAvailable($host, $port),
+            'cache_accessible' => self::testCacheAccess(),
+            'local_connections' => count(self::$localConnections),
+            'process_id' => self::$processId,
+            'emergency_mode' => self::$emergencyMode,
+            'consecutive_failures' => self::$consecutiveFailures
+        ];
+    }
+
+    /**
+     * Test cache accessibility
+     */
+    private static function testCacheAccess(): bool
+    {
+        try {
+            $testKey = 'cache_test_' . self::$processId;
+            Cache::put($testKey, 'test', 1);
+            $result = Cache::get($testKey);
+            Cache::forget($testKey);
+            return $result === 'test';
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if target server is available
+     */
+    private static function isTargetServerAvailable(string $host, int $port): bool
+    {
+        $connection = @fsockopen($host, $port, $errno, $errstr, 1);
+        if ($connection) {
+            fclose($connection);
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get connection statistics for monitoring
+     */
+    public static function getStats(): array
+    {
+        return [
+            'process_id' => self::$processId,
+            'emergency_mode' => self::$emergencyMode,
+            'consecutive_failures' => self::$consecutiveFailures,
+            'local_connections_count' => array_sum(array_map('count', self::$localConnections)),
+            'config' => self::$config
+        ];
+    }
+
+    /**
+     * Reset emergency mode (for manual recovery)
+     */
+    public static function resetEmergencyMode(): void
+    {
+        self::$emergencyMode = false;
+        self::$consecutiveFailures = 0;
+        
+        $emergencyKey = "emergency_mode_" . self::$processId;
+        Cache::forget($emergencyKey);
+        
+        Log::channel('gps_pool')->info("Emergency mode manually reset", [
+            'process_id' => self::$processId
+        ]);
+    }
+
+    /**
+     * Clean up all local connections (for shutdown/restart)
+     */
+    public static function cleanup(): void
+    {
+        foreach (self::$localConnections as $poolKey => $connections) {
+            foreach ($connections as $connection) {
+                if (is_resource($connection['socket'])) {
+                    socket_close($connection['socket']);
+                }
+            }
+        }
+        
+        self::$localConnections = [];
+        
+        Log::channel('gps_pool')->info("Connection pool cleanup completed", [
+            'process_id' => self::$processId
+        ]);
     }
 }
