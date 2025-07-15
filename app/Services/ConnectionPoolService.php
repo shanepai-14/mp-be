@@ -5,38 +5,57 @@ namespace App\Services;
 use App\Models\ConnectionPoolStat;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Collection;
 
 class ConnectionPoolService
 {
-
     private static array $config = [];
     private static string $processId = '';
+    private static array $connectionPools = []; // Store connection pools by server
+    private static array $poolStats = []; // Track pool statistics
     
     public static function init(array $config = []): void
     {
         self::$config = array_merge([
-            'socket_timeout' => 2,                  // Short timeout for speed
-            'max_retry_attempts' => 3,              // Fewer retries since reuse doesn't work
-            'retry_delay_ms' => 10,  
-            'read_timeout_ms' => 100000,               // Very fast retries
-            'connection_cache_seconds' => 5,        // Cache server availability
+            'socket_timeout' => 5,
+            'read_timeout_ms' => 100000,
+            'max_retry_attempts' => 3,
+            'retry_delay_ms' => 50,
+            'connection_cache_seconds' => 30,
+            // Connection pooling settings
+            'pool_size' => 5,                    // Max connections per server
+            'pool_idle_timeout' => 300,          // 5 minutes idle timeout
+            'pool_max_lifetime' => 3600,         // 1 hour max connection lifetime
+            'batch_size' => 20,                  // Optimal batch size for pooling
+            'batch_delay_ms' => 50,              // Delay between messages in batch
+            'pool_cleanup_interval' => 60,       // Cleanup every minute
         ], $config);
 
         self::$processId = (string) getmypid();
+        
+        // Initialize pools array
+        self::$connectionPools = [];
+        self::$poolStats = [];
+        
+        Log::channel('gps_pool')->info("ConnectionPoolService initialized with pooling enabled", [
+            'process_id' => self::$processId,
+            'config' => self::$config
+        ]);
     }
 
+    /**
+     * Send single GPS message (will use pooling when possible)
+     */
     public static function sendGPSData(string $host, int $port, string $gpsData, string $vehicleId): array
     {
         if (empty(self::$config)) {
             self::init();
         }
 
-        $attempts = 0;
-        $lastError = '';
         $startTime = microtime(true);
         $serverKey = "{$host}:{$port}";
         
-        // Quick server availability check (cached)
+        // Quick server availability check
         if (!self::isServerAvailableCached($serverKey, $host, $port)) {
             return [
                 'success' => false,
@@ -44,51 +63,442 @@ class ConnectionPoolService
                 'vehicle_id' => $vehicleId,
                 'process_id' => self::$processId,
                 'attempts' => 0,
-                'duration_ms' => 0
+                'duration_ms' => 0,
+                'connection_reused' => false
             ];
         }
+
+        // Try to get connection from pool
+        $connection = self::getPooledConnection($serverKey, $host, $port);
+        
+        if (!$connection) {
+            // Fallback to single-use connection
+            return self::sendDataDirectConnection($host, $port, $gpsData, $vehicleId);
+        }
+
+        $attempts = 0;
+        $lastError = '';
         
         while ($attempts < self::$config['max_retry_attempts']) {
             $attempts++;
             
             try {
-                // Create fresh connection for each request (server closes after each use)
-                $result = self::sendDataDirectConnection($host, $port, $gpsData, $vehicleId);
+                // Check if pooled connection is still alive
+                if (!self::isSocketAlive($connection['socket'])) {
+                    self::removeFromPool($serverKey, $connection['id']);
+                    throw new \Exception('Pooled connection died');
+                }
+
+                $result = self::sendDataToSocket(
+                    $connection['socket'], 
+                    $gpsData, 
+                    $vehicleId
+                );
+
+                // Update connection stats
+                $connection['last_used'] = time();
+                $connection['message_count']++;
                 
+                // Return connection to pool if still alive
+                if ($result['socket_alive_after']) {
+                    self::returnToPool($serverKey, $connection);
+                } else {
+                    self::removeFromPool($serverKey, $connection['id']);
+                }
+
                 return array_merge($result, [
                     'process_id' => self::$processId,
                     'attempts' => $attempts,
                     'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
-                    'connection_reused' => false, // Always false since server closes connections
-                    'server_closes_connections' => true
+                    'connection_reused' => true,
+                    'connection_id' => $connection['id'],
+                    'pool_stats' => self::getPoolStats($serverKey)
                 ]);
-                
+
             } catch (\Exception $e) {
                 $lastError = $e->getMessage();
+                self::removeFromPool($serverKey, $connection['id']);
                 
                 if ($attempts < self::$config['max_retry_attempts']) {
+                    // Try to get another connection from pool
+                    $connection = self::getPooledConnection($serverKey, $host, $port);
+                    if (!$connection) {
+                        // No more pooled connections, fallback to direct
+                        return self::sendDataDirectConnection($host, $port, $gpsData, $vehicleId);
+                    }
                     usleep(self::$config['retry_delay_ms'] * 1000);
                     continue;
                 }
             }
         }
-        
+
         return [
             'success' => false,
             'error' => $lastError,
             'vehicle_id' => $vehicleId,
             'process_id' => self::$processId,
             'attempts' => $attempts,
-            'duration_ms' => round((microtime(true) - $startTime) * 1000, 2)
+            'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
+            'connection_reused' => false
         ];
     }
 
     /**
-     * Send GPS data with single-use connection (optimized for speed)
+     * Send batch of GPS messages using connection pooling (RECOMMENDED)
+     */
+    public static function sendGPSDataBatch(string $host, int $port, array $messages): array
+    {
+        if (empty(self::$config)) {
+            self::init();
+        }
+
+        $startTime = microtime(true);
+        $serverKey = "{$host}:{$port}";
+        $results = [];
+        $totalMessages = count($messages);
+
+        // Quick server availability check
+        if (!self::isServerAvailableCached($serverKey, $host, $port)) {
+            return [
+                'success' => false,
+                'error' => 'GPS server unavailable',
+                'total_messages' => $totalMessages,
+                'processed_messages' => 0,
+                'successful_messages' => 0,
+                'results' => []
+            ];
+        }
+
+        // Process messages in optimal batches
+        $batches = array_chunk($messages, self::$config['batch_size']);
+        $processedCount = 0;
+        $successCount = 0;
+
+        foreach ($batches as $batchIndex => $batch) {
+            $batchResult = self::processBatch($serverKey, $host, $port, $batch);
+            
+            foreach ($batchResult['results'] as $index => $result) {
+                $results[$processedCount] = $result;
+                $processedCount++;
+                if ($result['success']) {
+                    $successCount++;
+                }
+            }
+
+            // Small delay between batches to avoid overwhelming server
+            if ($batchIndex < count($batches) - 1) {
+                usleep(10000); // 10ms between batches
+            }
+        }
+
+        return [
+            'success' => $successCount > 0,
+            'total_messages' => $totalMessages,
+            'processed_messages' => $processedCount,
+            'successful_messages' => $successCount,
+            'failed_messages' => $totalMessages - $successCount,
+            'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
+            'avg_time_per_message_ms' => $processedCount > 0 ? 
+                round(((microtime(true) - $startTime) * 1000) / $processedCount, 2) : 0,
+            'batches_processed' => count($batches),
+            'connection_pooling_used' => true,
+            'pool_stats' => self::getPoolStats($serverKey),
+            'results' => $results
+        ];
+    }
+
+    /**
+     * Process a batch of messages using pooled connection
+     */
+    private static function processBatch(string $serverKey, string $host, int $port, array $batch): array
+    {
+        $connection = self::getPooledConnection($serverKey, $host, $port);
+        $results = [];
+        
+        if (!$connection) {
+            // Fallback to multiple single connections
+            foreach ($batch as $index => $messageData) {
+                try {
+                    $result = self::sendDataDirectConnection($host, $port, $messageData['gps_data'], $messageData['vehicle_id']);
+                    $results[$index] = $result;
+                } catch (\Exception $e) {
+                    $results[$index] = [
+                        'success' => false,
+                        'error' => $e->getMessage(),
+                        'vehicle_id' => $messageData['vehicle_id'],
+                        'connection_reused' => false
+                    ];
+                }
+            }
+            return ['results' => $results];
+        }
+
+        try {
+            foreach ($batch as $index => $messageData) {
+                // Add delay between messages
+                if ($index > 0) {
+                    usleep(self::$config['batch_delay_ms'] * 1000);
+                }
+
+                // Check connection health
+                if (!self::isSocketAlive($connection['socket'])) {
+                    self::removeFromPool($serverKey, $connection['id']);
+                    throw new \Exception('Connection died during batch processing');
+                }
+
+                try {
+                    $result = self::sendDataToSocket(
+                        $connection['socket'], 
+                        $messageData['gps_data'], 
+                        $messageData['vehicle_id']
+                    );
+                    
+                    $results[$index] = array_merge($result, [
+                        'connection_reused' => true,
+                        'connection_id' => $connection['id']
+                    ]);
+                    
+                    $connection['last_used'] = time();
+                    $connection['message_count']++;
+                    
+                    // If socket died, stop processing this batch
+                    if (!$result['socket_alive_after']) {
+                        self::removeFromPool($serverKey, $connection['id']);
+                        break;
+                    }
+                    
+                } catch (\Exception $e) {
+                    $results[$index] = [
+                        'success' => false,
+                        'error' => $e->getMessage(),
+                        'vehicle_id' => $messageData['vehicle_id'],
+                        'connection_reused' => false
+                    ];
+                    break;
+                }
+            }
+            
+            // Return healthy connection to pool
+            if (isset($connection['socket']) && self::isSocketAlive($connection['socket'])) {
+                self::returnToPool($serverKey, $connection);
+            }
+            
+        } catch (\Exception $e) {
+            // Connection failed, remove from pool
+            self::removeFromPool($serverKey, $connection['id']);
+            
+            // Process remaining messages with direct connections
+            $remainingMessages = array_slice($batch, count($results));
+            foreach ($remainingMessages as $index => $messageData) {
+                try {
+                    $result = self::sendDataDirectConnection($host, $port, $messageData['gps_data'], $messageData['vehicle_id']);
+                    $results[count($results)] = $result;
+                } catch (\Exception $e) {
+                    $results[count($results)] = [
+                        'success' => false,
+                        'error' => $e->getMessage(),
+                        'vehicle_id' => $messageData['vehicle_id'],
+                        'connection_reused' => false
+                    ];
+                }
+            }
+        }
+
+        return ['results' => $results];
+    }
+
+    /**
+     * Get connection from pool or create new one
+     */
+    private static function getPooledConnection(string $serverKey, string $host, int $port): ?array
+    {
+        self::cleanupExpiredConnections($serverKey);
+        
+        if (!isset(self::$connectionPools[$serverKey])) {
+            self::$connectionPools[$serverKey] = [];
+        }
+
+        $pool = &self::$connectionPools[$serverKey];
+        
+        // Try to get existing connection
+        foreach ($pool as $index => $connection) {
+            if (!$connection['in_use'] && self::isSocketAlive($connection['socket'])) {
+                $pool[$index]['in_use'] = true;
+                $pool[$index]['last_used'] = time();
+                
+                Log::channel('gps_pool')->debug("Reusing pooled connection", [
+                    'server_key' => $serverKey,
+                    'connection_id' => $connection['id'],
+                    'message_count' => $connection['message_count']
+                ]);
+                
+                return $pool[$index];
+            }
+        }
+
+        // Create new connection if pool not full
+        if (count($pool) < self::$config['pool_size']) {
+            $socket = self::createFastSocket($host, $port);
+            if ($socket) {
+                $connectionId = uniqid('pool_');
+                $newConnection = [
+                    'id' => $connectionId,
+                    'socket' => $socket,
+                    'created_at' => time(),
+                    'last_used' => time(),
+                    'message_count' => 0,
+                    'in_use' => true,
+                    'host' => $host,
+                    'port' => $port
+                ];
+                
+                $pool[] = $newConnection;
+                
+                Log::channel('gps_pool')->info("Created new pooled connection", [
+                    'server_key' => $serverKey,
+                    'connection_id' => $connectionId,
+                    'pool_size' => count($pool)
+                ]);
+                
+                return $newConnection;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Return connection to pool
+     */
+    private static function returnToPool(string $serverKey, array $connection): void
+    {
+        if (!isset(self::$connectionPools[$serverKey])) {
+            return;
+        }
+
+        foreach (self::$connectionPools[$serverKey] as &$poolConnection) {
+            if ($poolConnection['id'] === $connection['id']) {
+                $poolConnection['in_use'] = false;
+                $poolConnection['last_used'] = $connection['last_used'];
+                $poolConnection['message_count'] = $connection['message_count'];
+                break;
+            }
+        }
+    }
+
+    /**
+     * Remove connection from pool
+     */
+    private static function removeFromPool(string $serverKey, string $connectionId): void
+    {
+        if (!isset(self::$connectionPools[$serverKey])) {
+            return;
+        }
+
+        foreach (self::$connectionPools[$serverKey] as $index => $connection) {
+            if ($connection['id'] === $connectionId) {
+                if (isset($connection['socket'])) {
+                    socket_close($connection['socket']);
+                }
+                unset(self::$connectionPools[$serverKey][$index]);
+                
+                Log::channel('gps_pool')->debug("Removed connection from pool", [
+                    'server_key' => $serverKey,
+                    'connection_id' => $connectionId
+                ]);
+                break;
+            }
+        }
+        
+        // Reindex array
+        self::$connectionPools[$serverKey] = array_values(self::$connectionPools[$serverKey]);
+    }
+
+    /**
+     * Clean up expired connections
+     */
+    private static function cleanupExpiredConnections(string $serverKey): void
+    {
+        if (!isset(self::$connectionPools[$serverKey])) {
+            return;
+        }
+
+        $now = time();
+        $pool = &self::$connectionPools[$serverKey];
+        
+        foreach ($pool as $index => $connection) {
+            $shouldRemove = false;
+            
+            // Check if connection is too old
+            if ($now - $connection['created_at'] > self::$config['pool_max_lifetime']) {
+                $shouldRemove = true;
+            }
+            
+            // Check if connection has been idle too long
+            if ($now - $connection['last_used'] > self::$config['pool_idle_timeout']) {
+                $shouldRemove = true;
+            }
+            
+            // Check if connection is dead
+            if (!self::isSocketAlive($connection['socket'])) {
+                $shouldRemove = true;
+            }
+            
+            if ($shouldRemove) {
+                if (isset($connection['socket'])) {
+                    socket_close($connection['socket']);
+                }
+                unset($pool[$index]);
+                
+                Log::channel('gps_pool')->debug("Cleaned up expired connection", [
+                    'server_key' => $serverKey,
+                    'connection_id' => $connection['id']
+                ]);
+            }
+        }
+        
+        // Reindex array
+        self::$connectionPools[$serverKey] = array_values(self::$connectionPools[$serverKey]);
+    }
+
+    /**
+     * Get pool statistics
+     */
+    private static function getPoolStats(string $serverKey): array
+    {
+        if (!isset(self::$connectionPools[$serverKey])) {
+            return [
+                'total_connections' => 0,
+                'active_connections' => 0,
+                'idle_connections' => 0
+            ];
+        }
+
+        $pool = self::$connectionPools[$serverKey];
+        $activeCount = 0;
+        $totalMessages = 0;
+
+        foreach ($pool as $connection) {
+            if ($connection['in_use']) {
+                $activeCount++;
+            }
+            $totalMessages += $connection['message_count'];
+        }
+
+        return [
+            'total_connections' => count($pool),
+            'active_connections' => $activeCount,
+            'idle_connections' => count($pool) - $activeCount,
+            'total_messages_processed' => $totalMessages,
+            'pool_efficiency' => count($pool) > 0 ? round($totalMessages / count($pool), 2) : 0
+        ];
+    }
+
+    /**
+     * Fallback to single-use connection
      */
     private static function sendDataDirectConnection(string $host, int $port, string $gpsData, string $vehicleId): array
     {
-        // Create optimized socket for single use
         $socket = self::createFastSocket($host, $port);
         
         if (!$socket) {
@@ -96,7 +506,6 @@ class ConnectionPoolService
         }
 
         try {
-            // Send data
             $message = $gpsData . "\r";
             $bytesWritten = socket_write($socket, $message, strlen($message));
             
@@ -108,7 +517,6 @@ class ConnectionPoolService
                 throw new \Exception('No bytes written to socket');
             }
 
-            // Quick response read
             $response = self::readResponseFast($socket);
             
             return [
@@ -116,78 +524,18 @@ class ConnectionPoolService
                 'response' => $response,
                 'bytes_written' => $bytesWritten,
                 'vehicle_id' => $vehicleId,
-                'connection_id' => 'single_use_' . uniqid()
+                'connection_id' => 'single_use_' . uniqid(),
+                'connection_reused' => false
             ];
             
         } finally {
-            // Always close socket (server closes it anyway)
             socket_close($socket);
         }
     }
 
-    public static function sendDataWithPooling(string $host, int $port, array $messages, int $delayMs = 0): array
-    {
-        $socket = self::createFastSocket($host, $port);
-        $results = [];
-        
-        if (!$socket) {
-            throw new \Exception('Failed to create socket connection');
-        }
-        
-        try {
-            foreach ($messages as $index => $messageData) {
-                // Add delay before each message (except the first one)
-                if ($index > 0 && $delayMs > 0) {
-                    usleep($delayMs * 1000); // Convert ms to microseconds
-                }
-                
-                // Check if socket is still alive before each message
-                if (!self::isSocketAlive($socket)) {
-                    $results[$index] = [
-                        'success' => false,
-                        'error' => 'Socket connection lost',
-                        'vehicle_id' => $messageData['vehicle_id'] ?? null
-                    ];
-                    break;
-                }
-                
-                try {
-                    $result = self::sendDataToSocket(
-                        $socket, 
-                        $messageData['gps_data'], 
-                        $messageData['vehicle_id']
-                    );
-                    $results[$index] = $result;
-                    
-                    // If socket died after this message, stop processing
-                    if (!$result['socket_alive_after']) {
-                        $results[$index]['note'] = 'Server closed connection after this message';
-                        break;
-                    }
-                    
-                } catch (\Exception $e) {
-                    $results[$index] = [
-                        'success' => false,
-                        'error' => $e->getMessage(),
-                        'vehicle_id' => $messageData['vehicle_id'] ?? null
-                    ];
-                    break;
-                }
-            }
-        } finally {
-            socket_close($socket);
-        }
-        
-        return [
-            'total_messages' => count($messages),
-            'processed_messages' => count($results),
-            'successful_messages' => count(array_filter($results, fn($r) => $r['success'] ?? false)),
-            'delay_between_messages_ms' => $delayMs,
-            'results' => $results
-        ];
-    }
-
-
+    /**
+     * Send data to existing socket
+     */
     private static function sendDataToSocket($socket, string $gpsData, string $vehicleId): array
     {
         if (!$socket) {
@@ -216,9 +564,8 @@ class ConnectionPoolService
         ];
     }
 
-
     /**
-     * Create socket optimized for single-use with GPS server
+     * Create optimized socket
      */
     private static function createFastSocket(string $host, int $port)
     {
@@ -228,7 +575,6 @@ class ConnectionPoolService
             return null;
         }
 
-        // Minimal options for speed - no keep-alive since server closes anyway
         socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
         socket_set_option($socket, SOL_TCP, TCP_NODELAY, 1);
         socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, [
@@ -240,7 +586,6 @@ class ConnectionPoolService
             "usec" => 0
         ]);
 
-        // Fast blocking connect (simpler than non-blocking for single use)
         if (!socket_connect($socket, $host, $port)) {
             socket_close($socket);
             return null;
@@ -250,18 +595,15 @@ class ConnectionPoolService
     }
 
     /**
-     * Fast response reading optimized for GPS protocol
+     * Fast response reading
      */
     private static function readResponseFast($socket): string
     {
         $response = '';
-        
-        // GPS servers typically respond very quickly
         $read = [$socket];
         $write = $except = [];
         
-        // Wait up to 100ms for response
-        $selectResult = socket_select($read, $write, $except, 0, 100000);
+        $selectResult = socket_select($read, $write, $except, 0, self::$config['read_timeout_ms']);
         
         if ($selectResult > 0 && in_array($socket, $read)) {
             $data = socket_read($socket, 1024);
@@ -271,6 +613,24 @@ class ConnectionPoolService
         }
         
         return $response;
+    }
+
+    /**
+     * Check if socket is alive
+     */
+    private static function isSocketAlive($socket): bool
+    {
+        if (!$socket) return false;
+        
+        $read = $except = [];
+        $write = [$socket];
+        
+        $result = socket_select($read, $write, $except, 0, 1000);
+        
+        if ($result === false) return false;
+        if ($result === 0) return true;
+        
+        return in_array($socket, $write);
     }
 
     /**
@@ -295,389 +655,88 @@ class ConnectionPoolService
     }
 
     /**
-     * Health check for monitoring
+     * Get comprehensive statistics
+     */
+    public static function getStats(): array
+    {
+        $totalConnections = 0;
+        $totalMessages = 0;
+        $serverStats = [];
+
+        foreach (self::$connectionPools as $serverKey => $pool) {
+            $stats = self::getPoolStats($serverKey);
+            $totalConnections += $stats['total_connections'];
+            $totalMessages += $stats['total_messages_processed'];
+            $serverStats[$serverKey] = $stats;
+        }
+
+        return [
+            'process_id' => self::$processId,
+            'connection_strategy' => 'connection_pooling_enabled',
+            'server_behavior' => 'supports_persistent_connections',
+            'total_pools' => count(self::$connectionPools),
+            'total_connections' => $totalConnections,
+            'total_messages_processed' => $totalMessages,
+            'server_stats' => $serverStats,
+            'config' => self::$config
+        ];
+    }
+
+    /**
+     * Health check
      */
     public static function healthCheck(string $host, int $port): array
     {
         $startTime = microtime(true);
-        $available = self::isServerAvailableCached("{$host}:{$port}", $host, $port);
+        $serverKey = "{$host}:{$port}";
+        
+        $available = self::isServerAvailableCached($serverKey, $host, $port);
         $checkTime = microtime(true) - $startTime;
         
         return [
             'server_available' => $available,
             'check_time_ms' => round($checkTime * 1000, 2),
             'process_id' => self::$processId,
-            'server_type' => 'single_use_connections',
-            'connection_reuse_possible' => false
+            'server_type' => 'pooled_connections',
+            'connection_reuse_possible' => true,
+            'pool_stats' => self::getPoolStats($serverKey)
         ];
     }
 
     /**
-     * Get current statistics
-     */
-    public static function getStats(): array
-    {
-        return [
-            'process_id' => self::$processId,
-            'connection_strategy' => 'single_use_optimized',
-            'server_behavior' => 'closes_connections_after_each_message',
-            'config' => self::$config
-        ];
-    }
-
-    /**
-     * Test GPS server behavior
-     */
-public static function testGPSServerBehavior(string $host = '10.21.14.8', int $port = 1403): array
-{
-    $results = [];
-
-    // Test multiple rapid connections
-    for ($i = 1; $i <= 3; $i++) {
-        $startTime = microtime(true);
-
-        try {
-            $testData = '$test' . $i . ',1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST' . $i;
-            $result = self::sendDataDirectConnection($host, $port, $testData, "TEST{$i}");
-
-            $results["test_{$i}"] = [
-                'success' => $result['success'],
-                'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
-                'bytes_written' => $result['bytes_written'],
-                'response_length' => strlen($result['response']),
-                'response' => $result['response'],
-                'connection_closed_after_response' => $result['connection_closed'] ?? null
-            ];
-
-        } catch (\Exception $e) {
-            $results["test_{$i}"] = [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'duration_ms' => round((microtime(true) - $startTime) * 1000, 2)
-            ];
-        }
-
-        // Small delay between tests
-        usleep(10000); // 10ms
-    }
-
-    // Auto conclusion based on connection_closed_after_response
-    $allClosed = collect($results)->every(fn($r) => $r['success'] && ($r['connection_closed_after_response'] ?? false));
-    $conclusion = $allClosed
-        ? 'GPS server closes connections after each message - connection reuse not possible'
-        : 'GPS server keeps connections open - connection reuse might be possible';
-
-    return [
-        'server_behavior' => 'tested_rapid_connections',
-        'total_tests' => 3,
-        'results' => $results,
-        'conclusion' => $conclusion
-    ];
-}
-
-    /**
-     * No cleanup needed since we don't store connections
+     * Cleanup all connections
      */
     public static function cleanup(): void
     {
-        // Nothing to clean up - we don't store connections
-        Log::channel('gps_pool')->info("No cleanup needed - single-use connection strategy", [
+        foreach (self::$connectionPools as $serverKey => $pool) {
+            foreach ($pool as $connection) {
+                if (isset($connection['socket'])) {
+                    socket_close($connection['socket']);
+                }
+            }
+        }
+        
+        self::$connectionPools = [];
+        
+        Log::channel('gps_pool')->info("Connection pool cleanup completed", [
             'process_id' => self::$processId
         ]);
     }
 
-  public static function testConnectionReuse(string $host = '10.21.14.8', int $port = 1403): array
+    /**
+     * Force cleanup of specific server pool
+     */
+    public static function cleanupServer(string $host, int $port): void
     {
-        $results = [];
-        $socket = null;
+        $serverKey = "{$host}:{$port}";
         
-        try {
-            // Create one socket for all tests
-            $socket = self::createFastSocket($host, $port);
-            if (!$socket) {
-                throw new \Exception('Failed to create initial socket');
-            }
-            
-            $results['socket_created'] = true;
-            
-            // Test multiple messages on same socket
-            for ($i = 1; $i <= 5; $i++) {
-                $startTime = microtime(true);
-                
-                try {
-                    $testData = '$test' . $i . ',1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST' . $i;
-                    
-                    // Check if socket is still alive before sending
-                    $isAlive = self::isSocketAlive($socket);
-                    
-                    if (!$isAlive) {
-                        $results["test_{$i}"] = [
-                            'success' => false,
-                            'error' => 'Socket died before test',
-                            'socket_alive_before' => false
-                        ];
-                        break;
-                    }
-                    
-                    // Send message
-                    $message = $testData . "\r";
-                    $bytesWritten = socket_write($socket, $message, strlen($message));
-                    
-                    if ($bytesWritten === false) {
-                        throw new \Exception('Write failed: ' . socket_strerror(socket_last_error($socket)));
-                    }
-                    
-                    // Read response
-                    $response = self::readResponseFast($socket);
-                    
-                    // Check if socket is still alive after response
-                    $isAliveAfter = self::isSocketAlive($socket);
-                    
-                    $results["test_{$i}"] = [
-                        'success' => true,
-                        'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
-                        'bytes_written' => $bytesWritten,
-                        'response' => $response,
-                        'socket_alive_before' => true,
-                        'socket_alive_after' => $isAliveAfter
-                    ];
-                    
-                    // If socket died, no point continuing
-                    if (!$isAliveAfter) {
-                        $results["test_{$i}"]['note'] = 'Server closed connection after this message';
-                        break;
-                    }
-                    
-                    // Small delay between messages
-                    usleep(10000); // 10ms
-                    
-                } catch (\Exception $e) {
-                    $results["test_{$i}"] = [
-                        'success' => false,
-                        'error' => $e->getMessage(),
-                        'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
-                        'socket_alive_before' => $isAlive ?? false
-                    ];
-                    break;
+        if (isset(self::$connectionPools[$serverKey])) {
+            foreach (self::$connectionPools[$serverKey] as $connection) {
+                if (isset($connection['socket'])) {
+                    socket_close($connection['socket']);
                 }
             }
-            
-        } finally {
-            if ($socket) {
-                socket_close($socket);
-            }
+            unset(self::$connectionPools[$serverKey]);
         }
-        
-        return self::analyzeReuseResults($results);
     }
-    
-    /**
-     * Compare single connection vs multiple connections performance
-     */
-    public static function testConnectionPoolingBenefit(string $host = '10.21.14.8', int $port = 1403, int $delayMs = 0): array
-    {
-        // Prepare test messages
-        $messages = [
-            ['gps_data' => '$test1,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST1', 'vehicle_id' => 'TEST1'],
-            ['gps_data' => '$test2,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST2', 'vehicle_id' => 'TEST2'],
-            ['gps_data' => '$test3,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST3', 'vehicle_id' => 'TEST3'],
-            ['gps_data' => '$test4,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST4', 'vehicle_id' => 'TEST4'],
-            ['gps_data' => '$test5,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST5', 'vehicle_id' => 'TEST5']
-        ];
-
-        $messages2 = [
-            ['gps_data' => '$test11,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST11', 'vehicle_id' => 'TEST11'],
-            ['gps_data' => '$test22,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST22', 'vehicle_id' => 'TEST22'],
-            ['gps_data' => '$test33,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST33', 'vehicle_id' => 'TEST33'],
-            ['gps_data' => '$test44,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST44', 'vehicle_id' => 'TEST44'],
-            ['gps_data' => '$test55,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST55', 'vehicle_id' => 'TEST55']
-        ];
-        
-        // Test 1: Multiple connections (current approach)
-        $multiStart = microtime(true);
-        $multiConnResults = [];
-        
-        foreach ($messages as $index => $messageData) {
-            try {
-
-                    if ($index > 0 && $delayMs > 0) {
-                usleep($delayMs * 1000);
-            }
-
-                $result = self::sendDataDirectConnection(
-                    $host, 
-                    $port, 
-                    $messageData['gps_data'], 
-                    $messageData['vehicle_id']
-                );
-                $multiConnResults[$index] = $result;
-            } catch (\Exception $e) {
-                $multiConnResults[$index] = [
-                    'success' => false, 
-                    'error' => $e->getMessage(),
-                    'vehicle_id' => $messageData['vehicle_id']
-                ];
-            }
-        }
-        $multiTotalTime = microtime(true) - $multiStart;
-        
-        // Test 2: Single connection with pooling
-        $singleStart = microtime(true);
-        $singleConnResult = [];
-        
-        try {
-            $singleConnResult = self::sendDataWithPooling($host, $port, $messages2 , $delayMs);
-        } catch (\Exception $e) {
-            $singleConnResult = [
-                'total_messages' => count($messages),
-                'processed_messages' => 0,
-                'successful_messages' => 0,
-                'results' => [],
-                'error' => $e->getMessage()
-            ];
-        }
-        
-        $singleTotalTime = microtime(true) - $singleStart;
-        
-        // Calculate performance metrics
-        $multiSuccessful = count(array_filter($multiConnResults, fn($r) => $r['success'] ?? false));
-        $singleSuccessful = $singleConnResult['successful_messages'] ?? 0;
-        
-        $performanceImprovement = 'N/A';
-        if ($singleTotalTime > 0 && $multiTotalTime > 0) {
-            $improvement = (($multiTotalTime - $singleTotalTime) / $multiTotalTime) * 100;
-            $performanceImprovement = round($improvement, 1) . '%';
-        }
-        
-        return [
-            'test_config' => [
-                'host' => $host,
-                'port' => $port,
-                'total_messages' => count($messages)
-            ],
-            'multiple_connections' => [
-                'approach' => 'New socket for each message',
-                'total_time_ms' => round($multiTotalTime * 1000, 2),
-                'successful_messages' => $multiSuccessful,
-                'failed_messages' => count($messages) - $multiSuccessful,
-                'avg_time_per_message_ms' => round(($multiTotalTime * 1000) / count($messages), 2),
-                'results' => $multiConnResults
-            ],
-            'single_connection' => [
-                'approach' => 'Reuse single socket for all messages',
-                'total_time_ms' => round($singleTotalTime * 1000, 2),
-                'successful_messages' => $singleSuccessful,
-                'failed_messages' => count($messages) - $singleSuccessful,
-                'processed_messages' => $singleConnResult['processed_messages'] ?? 0,
-                'avg_time_per_message_ms' => $singleSuccessful > 0 ? 
-                    round(($singleTotalTime * 1000) / $singleSuccessful, 2) : 'N/A',
-                'results' => $singleConnResult['results'] ?? [],
-                'error' => $singleConnResult['error'] ?? null
-            ],
-            'performance_comparison' => [
-                'time_improvement' => $performanceImprovement,
-                'connection_reuse_viable' => $singleSuccessful > 1,
-                'recommendation' => self::generatePoolingRecommendation(
-                    $multiTotalTime, 
-                    $singleTotalTime, 
-                    $multiSuccessful, 
-                    $singleSuccessful,
-                    $singleConnResult['processed_messages'] ?? 0
-                )
-            ]
-        ];
-    }
-
-       private static function generatePoolingRecommendation(
-        float $multiTime, 
-        float $singleTime, 
-        int $multiSuccessful, 
-        int $singleSuccessful,
-        int $singleProcessed
-    ): string {
-        // If single connection failed to process any messages
-        if ($singleSuccessful === 0) {
-            return 'Connection pooling not viable - server immediately closes connections';
-        }
-        
-        // If single connection processed only 1 message
-        if ($singleProcessed === 1) {
-            return 'Connection pooling not beneficial - server closes connection after first message';
-        }
-        
-        // If single connection processed multiple messages successfully
-        if ($singleSuccessful > 1) {
-            $timeImprovement = (($multiTime - $singleTime) / $multiTime) * 100;
-            
-            if ($timeImprovement > 20) {
-                return 'Connection pooling highly recommended - significant performance improvement (' . round($timeImprovement, 1) . '%)';
-            } elseif ($timeImprovement > 5) {
-                return 'Connection pooling recommended - moderate performance improvement (' . round($timeImprovement, 1) . '%)';
-            } else {
-                return 'Connection pooling viable but minimal performance benefit (' . round($timeImprovement, 1) . '%)';
-            }
-        }
-        
-        return 'Connection pooling assessment inconclusive - manual testing recommended';
-    }
-    
-    /**
-     * Check if socket is still alive and writable
-     */
-    private static function isSocketAlive($socket): bool
-    {
-        if (!$socket) return false;
-        
-        // Use socket_select to check if socket is writable
-        $read = $except = [];
-        $write = [$socket];
-        
-        $result = socket_select($read, $write, $except, 0, 1000); // 1ms timeout
-        
-        if ($result === false) return false;
-        if ($result === 0) return true; // Timeout means socket is probably fine
-        
-        // If socket is in write array, it's writable
-        return in_array($socket, $write);
-    }
-    
-    /**
-     * Analyze connection reuse test results
-     */
-    private static function analyzeReuseResults(array $results): array
-    {
-        $successfulTests = array_filter($results, fn($key) => strpos($key, 'test_') === 0 && $results[$key]['success'] === true, ARRAY_FILTER_USE_KEY);
-        $testCount = count($successfulTests);
-        
-        $canReuse = false;
-        $maxReusable = 0;
-        
-        if ($testCount > 1) {
-            // Check how many consecutive successful reuses
-            for ($i = 1; $i <= 5; $i++) {
-                if (isset($results["test_{$i}"]) && $results["test_{$i}"]['success']) {
-                    $maxReusable = $i;
-                    if ($i > 1) $canReuse = true;
-                } else {
-                    break;
-                }
-            }
-        }
-        
-        return [
-            'connection_reuse_possible' => $canReuse,
-            'max_reusable_messages' => $maxReusable,
-            'total_successful_tests' => $testCount,
-            'detailed_results' => $results,
-            'recommendation' => $canReuse ? 
-                'Connection pooling recommended - can reuse connections' : 
-                'Connection pooling not beneficial - server closes after each message'
-        ];
-    }
-    
-
-    
-
-    
- 
 }
