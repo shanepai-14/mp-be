@@ -65,7 +65,23 @@ class ConnectionPoolService
                 
                 // Success - clean up and return
                 self::releaseConnectionQuick($poolKey, $connection);
-                self::storeLocalConnectionQuick($poolKey, $connection);
+                
+                // IMPORTANT: Only store if connection is still valid after use
+                if (is_resource($connection['socket'])) {
+                    self::storeLocalConnectionQuick($poolKey, $connection);
+                    
+                    Log::channel('gps_pool')->debug("Connection stored after successful use", [
+                        'connection_id' => $connection['id'],
+                        'pool_key' => $poolKey,
+                        'process_id' => self::$processId
+                    ]);
+                } else {
+                    Log::channel('gps_pool')->debug("Connection NOT stored - socket was closed", [
+                        'connection_id' => $connection['id'],
+                        'pool_key' => $poolKey,
+                        'process_id' => self::$processId
+                    ]);
+                }
                 self::updateStatsQuick($poolKey, 'success', $connection['reused']);
                 
                 return array_merge($result, [
@@ -153,7 +169,8 @@ class ConnectionPoolService
         if (!isset(self::$localConnections[$poolKey])) {
             Log::channel('gps_pool')->debug("No local connections exist for pool", [
                 'pool_key' => $poolKey,
-                'process_id' => self::$processId
+                'process_id' => self::$processId,
+                'total_pools' => count(self::$localConnections)
             ]);
             return null;
         }
@@ -162,10 +179,21 @@ class ConnectionPoolService
         Log::channel('gps_pool')->debug("Checking local connections", [
             'pool_key' => $poolKey,
             'connection_count' => $connectionCount,
-            'process_id' => self::$processId
+            'process_id' => self::$processId,
+            'connection_ids' => array_keys(self::$localConnections[$poolKey])
         ]);
 
         foreach (self::$localConnections[$poolKey] as $connId => $connection) {
+            Log::channel('gps_pool')->debug("Validating connection", [
+                'connection_id' => $connId,
+                'socket_resource' => is_resource($connection['socket']),
+                'created_at' => $connection['created_at'],
+                'last_used' => $connection['last_used'],
+                'age' => time() - $connection['created_at'],
+                'idle_time' => time() - $connection['last_used'],
+                'process_id' => self::$processId
+            ]);
+            
             if (self::isConnectionValidQuick($connection)) {
                 $connection['reused'] = true;
                 $connection['use_count'] = ($connection['use_count'] ?? 0) + 1;
@@ -196,7 +224,7 @@ class ConnectionPoolService
             }
         }
 
-        Log::channel('gps_pool')->debug("No valid local connections found", [
+        Log::channel('gps_pool')->debug("No valid local connections found after validation", [
             'pool_key' => $poolKey,
             'process_id' => self::$processId
         ]);
@@ -443,10 +471,21 @@ class ConnectionPoolService
     }
 
     /**
-     * Quick connection release
+     * Keep connections alive - don't close after use for force-created connections
      */
     private static function releaseConnectionQuick(string $poolKey, array $connection): void
     {
+        // For force-created connections, keep socket open for reuse
+        if (isset($connection['force_created']) && $connection['force_created']) {
+            Log::channel('gps_pool')->debug("Keeping force-created connection open for reuse", [
+                'connection_id' => $connection['id'],
+                'pool_key' => $poolKey,
+                'process_id' => self::$processId
+            ]);
+            return; // Don't release/close force-created connections
+        }
+        
+        // Only release shared pool connections
         if (isset($connection['claimed_from_shared']) && $connection['claimed_from_shared']) {
             try {
                 $connections = self::getCachedConnectionsQuick($poolKey);
@@ -457,9 +496,19 @@ class ConnectionPoolService
                     unset($connections[$connection['id']]['claimed_by']);
                     
                     Cache::put("shared_connections_{$poolKey}", $connections, 30);
+                    
+                    Log::channel('gps_pool')->debug("Released shared connection back to pool", [
+                        'connection_id' => $connection['id'],
+                        'pool_key' => $poolKey,
+                        'process_id' => self::$processId
+                    ]);
                 }
             } catch (\Exception $e) {
-                // Ignore release errors
+                Log::channel('gps_pool')->warning("Failed to release shared connection", [
+                    'connection_id' => $connection['id'],
+                    'error' => $e->getMessage(),
+                    'process_id' => self::$processId
+                ]);
             }
         }
     }
@@ -568,15 +617,64 @@ class ConnectionPoolService
     }
 
     /**
-     * Get current statistics
+     * Get current statistics with detailed connection info
      */
     public static function getStats(): array
     {
+        $connectionDetails = [];
+        foreach (self::$localConnections as $poolKey => $connections) {
+            $connectionDetails[$poolKey] = [];
+            foreach ($connections as $connId => $connection) {
+                $connectionDetails[$poolKey][$connId] = [
+                    'id' => $connection['id'],
+                    'created_at' => $connection['created_at'],
+                    'last_used' => $connection['last_used'],
+                    'use_count' => $connection['use_count'] ?? 0,
+                    'age' => time() - $connection['created_at'],
+                    'idle_time' => time() - $connection['last_used'],
+                    'socket_valid' => is_resource($connection['socket']),
+                    'force_created' => $connection['force_created'] ?? false
+                ];
+            }
+        }
+        
         return [
             'process_id' => self::$processId,
             'local_connections_count' => array_sum(array_map('count', self::$localConnections)),
+            'connection_details' => $connectionDetails,
             'config' => self::$config
         ];
+    }
+
+    /**
+     * Debug method to check why connections are being lost
+     */
+    public static function debugConnectionPool(string $poolKey = '10.21.14.8:1403'): array
+    {
+        $result = [
+            'process_id' => self::$processId,
+            'pool_key' => $poolKey,
+            'pool_exists' => isset(self::$localConnections[$poolKey]),
+            'connection_count' => isset(self::$localConnections[$poolKey]) ? count(self::$localConnections[$poolKey]) : 0,
+            'connections' => []
+        ];
+        
+        if (isset(self::$localConnections[$poolKey])) {
+            foreach (self::$localConnections[$poolKey] as $connId => $connection) {
+                $result['connections'][$connId] = [
+                    'socket_resource' => is_resource($connection['socket']),
+                    'created_at' => $connection['created_at'],
+                    'last_used' => $connection['last_used'],
+                    'age' => time() - $connection['created_at'],
+                    'idle_time' => time() - $connection['last_used'],
+                    'use_count' => $connection['use_count'] ?? 0,
+                    'force_created' => $connection['force_created'] ?? false,
+                    'is_valid' => self::isConnectionValidQuick($connection)
+                ];
+            }
+        }
+        
+        return $result;
     }
 
     /**
