@@ -22,9 +22,10 @@ class ConnectionPoolService
             'lock_timeout' => 1,                    // Very short locks
             'max_retry_attempts' => 4,              // More attempts
             'retry_delay_ms' => 25,                 // Faster retries
-            'local_connection_limit' => 3,          // More local connections
-            'force_create_after_attempts' => 2,     // Force create sooner
+            'local_connection_limit' => 10,         // Much more local connections for reuse
+            'force_create_after_attempts' => 4,     // Try reuse longer before force create
             'aggressive_mode' => true,              // Always try to create connections
+            'always_store_connections' => true,     // Store all connections for reuse
         ], $config);
 
         self::$processId = (string) getmypid();
@@ -106,48 +107,79 @@ class ConnectionPoolService
     }
 
     /**
-     * Aggressive connection strategy - try everything quickly
+     * Aggressive connection strategy - prioritize reuse first
      */
     private static function getConnectionAggressive(string $poolKey, string $host, int $port, int $attempt): ?array
     {
-        // Attempt 1: Local connection (fastest)
-        if ($attempt === 1) {
-            $connection = self::getLocalConnectionQuick($poolKey);
-            if ($connection) return $connection;
+        // ALWAYS try local connection first (all attempts)
+        $connection = self::getLocalConnectionQuick($poolKey);
+        if ($connection) {
+            Log::channel('gps_pool')->debug("REUSED LOCAL connection on attempt {$attempt}", [
+                'connection_id' => $connection['id'],
+                'use_count' => $connection['use_count'],
+                'process_id' => self::$processId
+            ]);
+            return $connection;
         }
         
-        // Attempt 2: Try force create (bypass shared pool complexity)
-        if ($attempt >= self::$config['force_create_after_attempts']) {
-            $connection = self::forceCreateConnectionOptimized($host, $port, $poolKey);
-            if ($connection) return $connection;
-        }
-        
-        // Attempt 3-4: Try shared pool with minimal locking
+        // Attempts 1-3: Try shared pool
         if ($attempt <= 3) {
             $connection = self::getSharedConnectionMinimal($poolKey, $host, $port);
-            if ($connection) return $connection;
+            if ($connection) {
+                Log::channel('gps_pool')->debug("REUSED SHARED connection on attempt {$attempt}", [
+                    'connection_id' => $connection['id'],
+                    'process_id' => self::$processId
+                ]);
+                return $connection;
+            }
         }
         
-        // Final attempt: Always force create
-        return self::forceCreateConnectionOptimized($host, $port, $poolKey);
+        // Final attempts: Force create but STORE for reuse
+        $connection = self::forceCreateConnectionOptimized($host, $port, $poolKey);
+        if ($connection) {
+            Log::channel('gps_pool')->info("CREATED NEW connection on attempt {$attempt}", [
+                'connection_id' => $connection['id'],
+                'process_id' => self::$processId
+            ]);
+        }
+        return $connection;
     }
 
     /**
-     * Quick local connection retrieval
+     * Enhanced local connection retrieval with debugging
      */
     private static function getLocalConnectionQuick(string $poolKey): ?array
     {
         if (!isset(self::$localConnections[$poolKey])) {
+            Log::channel('gps_pool')->debug("No local connections exist for pool", [
+                'pool_key' => $poolKey,
+                'process_id' => self::$processId
+            ]);
             return null;
         }
+
+        $connectionCount = count(self::$localConnections[$poolKey]);
+        Log::channel('gps_pool')->debug("Checking local connections", [
+            'pool_key' => $poolKey,
+            'connection_count' => $connectionCount,
+            'process_id' => self::$processId
+        ]);
 
         foreach (self::$localConnections[$poolKey] as $connId => $connection) {
             if (self::isConnectionValidQuick($connection)) {
                 $connection['reused'] = true;
-                $connection['use_count']++;
+                $connection['use_count'] = ($connection['use_count'] ?? 0) + 1;
                 $connection['last_used'] = time();
                 
                 self::$localConnections[$poolKey][$connId] = $connection;
+                
+                Log::channel('gps_pool')->info("SUCCESS: REUSED LOCAL connection", [
+                    'connection_id' => $connId,
+                    'use_count' => $connection['use_count'],
+                    'pool_key' => $poolKey,
+                    'process_id' => self::$processId
+                ]);
+                
                 return $connection;
             } else {
                 // Remove invalid connection
@@ -155,8 +187,19 @@ class ConnectionPoolService
                     socket_close($connection['socket']);
                 }
                 unset(self::$localConnections[$poolKey][$connId]);
+                
+                Log::channel('gps_pool')->debug("Removed invalid local connection", [
+                    'connection_id' => $connId,
+                    'pool_key' => $poolKey,
+                    'process_id' => self::$processId
+                ]);
             }
         }
+
+        Log::channel('gps_pool')->debug("No valid local connections found", [
+            'pool_key' => $poolKey,
+            'process_id' => self::$processId
+        ]);
 
         return null;
     }
@@ -277,17 +320,48 @@ class ConnectionPoolService
     }
 
     /**
-     * Quick connection validation
+     * Improved connection validation - more lenient for reuse
      */
     private static function isConnectionValidQuick(array $connection): bool
     {
         if (!is_resource($connection['socket'])) {
+            Log::channel('gps_pool')->debug("Connection invalid - not a resource", [
+                'connection_id' => $connection['id']
+            ]);
             return false;
         }
 
-        // Quick age check only
+        // Check socket error status
+        $error = socket_get_option($connection['socket'], SOL_SOCKET, SO_ERROR);
+        if ($error !== 0) {
+            Log::channel('gps_pool')->debug("Connection invalid - socket error", [
+                'connection_id' => $connection['id'],
+                'error' => $error
+            ]);
+            return false;
+        }
+
+        // More lenient age check for better reuse
         $age = time() - $connection['created_at'];
-        return $age < self::$config['connection_timeout'];
+        if ($age > self::$config['connection_timeout']) {
+            Log::channel('gps_pool')->debug("Connection invalid - too old", [
+                'connection_id' => $connection['id'],
+                'age' => $age
+            ]);
+            return false;
+        }
+
+        // Check idle time
+        $idleTime = time() - $connection['last_used'];
+        if ($idleTime > self::$config['idle_timeout']) {
+            Log::channel('gps_pool')->debug("Connection invalid - idle too long", [
+                'connection_id' => $connection['id'],
+                'idle_time' => $idleTime
+            ]);
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -330,29 +404,42 @@ class ConnectionPoolService
     }
 
     /**
-     * Quick local connection storage
+     * Store ALL connections for reuse (including force-created)
      */
     private static function storeLocalConnectionQuick(string $poolKey, array $connection): void
     {
-        if (isset($connection['force_created']) && $connection['force_created']) {
-            return; // Don't store force-created connections
-        }
-        
+        // Store ALL connections for maximum reuse
         if (!isset(self::$localConnections[$poolKey])) {
             self::$localConnections[$poolKey] = [];
         }
 
-        // Limit local connections but allow more for high volume
+        // Increased limit for better reuse
         if (count(self::$localConnections[$poolKey]) >= self::$config['local_connection_limit']) {
+            // Remove oldest connection to make room
             $oldest = array_key_first(self::$localConnections[$poolKey]);
             $oldConn = self::$localConnections[$poolKey][$oldest];
             if (is_resource($oldConn['socket'])) {
                 socket_close($oldConn['socket']);
             }
             unset(self::$localConnections[$poolKey][$oldest]);
+            
+            Log::channel('gps_pool')->debug("Replaced oldest local connection", [
+                'pool_key' => $poolKey,
+                'old_connection_id' => $oldest,
+                'process_id' => self::$processId
+            ]);
         }
 
+        // Store connection for reuse
         self::$localConnections[$poolKey][$connection['id']] = $connection;
+        
+        Log::channel('gps_pool')->debug("STORED connection for reuse", [
+            'connection_id' => $connection['id'],
+            'pool_key' => $poolKey,
+            'local_pool_size' => count(self::$localConnections[$poolKey]),
+            'force_created' => $connection['force_created'] ?? false,
+            'process_id' => self::$processId
+        ]);
     }
 
     /**
