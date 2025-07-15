@@ -477,6 +477,14 @@ public static function testGPSServerBehavior(string $host = '10.21.14.8', int $p
             ['gps_data' => '$test4,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST4', 'vehicle_id' => 'TEST4'],
             ['gps_data' => '$test5,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST5', 'vehicle_id' => 'TEST5']
         ];
+
+        $messages2 = [
+            ['gps_data' => '$test11,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST11', 'vehicle_id' => 'TEST11'],
+            ['gps_data' => '$test22,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST22', 'vehicle_id' => 'TEST22'],
+            ['gps_data' => '$test33,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST33', 'vehicle_id' => 'TEST33'],
+            ['gps_data' => '$test44,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST44', 'vehicle_id' => 'TEST44'],
+            ['gps_data' => '$test55,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST55', 'vehicle_id' => 'TEST55']
+        ]
         
         // Test 1: Multiple connections (current approach)
         $multiStart = microtime(true);
@@ -506,7 +514,7 @@ public static function testGPSServerBehavior(string $host = '10.21.14.8', int $p
         $singleConnResult = [];
         
         try {
-            $singleConnResult = self::sendDataWithPooling($host, $port, $messages);
+            $singleConnResult = self::sendDataWithPooling($host, $port, $messages2);
         } catch (\Exception $e) {
             $singleConnResult = [
                 'total_messages' => count($messages),
