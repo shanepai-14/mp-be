@@ -611,28 +611,6 @@ class ConnectionPoolService
     }
 
     /**
-     * Store connection locally for immediate reuse
-     */
-    private static function storeLocalConnection(string $poolKey, array $connection): void
-    {
-        if (!isset(self::$localConnections[$poolKey])) {
-            self::$localConnections[$poolKey] = [];
-        }
-
-        // Limit local connections per pool
-        if (count(self::$localConnections[$poolKey]) >= 2) {
-            $oldest = array_key_first(self::$localConnections[$poolKey]);
-            $oldConn = self::$localConnections[$poolKey][$oldest];
-            if (is_resource($oldConn['socket'])) {
-                socket_close($oldConn['socket']);
-            }
-            unset(self::$localConnections[$poolKey][$oldest]);
-        }
-
-        self::$localConnections[$poolKey][$connection['id']] = $connection;
-    }
-
-    /**
      * Release connection back to shared pool
      */
     private static function releaseConnectionProper(string $poolKey, array $connection): void
