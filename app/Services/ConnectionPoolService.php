@@ -484,7 +484,7 @@ public static function testGPSServerBehavior(string $host = '10.21.14.8', int $p
             ['gps_data' => '$test33,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST33', 'vehicle_id' => 'TEST33'],
             ['gps_data' => '$test44,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST44', 'vehicle_id' => 'TEST44'],
             ['gps_data' => '$test55,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST55', 'vehicle_id' => 'TEST55']
-        ]
+        ];
         
         // Test 1: Multiple connections (current approach)
         $multiStart = microtime(true);
