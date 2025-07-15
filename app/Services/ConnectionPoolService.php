@@ -125,7 +125,7 @@ class ConnectionPoolService
         }
     }
 
-     public static function sendDataWithPooling(string $host, int $port, array $messages): array
+    public static function sendDataWithPooling(string $host, int $port, array $messages, int $delayMs = 0): array
     {
         $socket = self::createFastSocket($host, $port);
         $results = [];
@@ -136,6 +136,11 @@ class ConnectionPoolService
         
         try {
             foreach ($messages as $index => $messageData) {
+                // Add delay before each message (except the first one)
+                if ($index > 0 && $delayMs > 0) {
+                    usleep($delayMs * 1000); // Convert ms to microseconds
+                }
+                
                 // Check if socket is still alive before each message
                 if (!self::isSocketAlive($socket)) {
                     $results[$index] = [
@@ -177,9 +182,11 @@ class ConnectionPoolService
             'total_messages' => count($messages),
             'processed_messages' => count($results),
             'successful_messages' => count(array_filter($results, fn($r) => $r['success'] ?? false)),
+            'delay_between_messages_ms' => $delayMs,
             'results' => $results
         ];
     }
+}
 
     private static function sendDataToSocket($socket, string $gpsData, string $vehicleId): array
     {
@@ -467,7 +474,7 @@ public static function testGPSServerBehavior(string $host = '10.21.14.8', int $p
     /**
      * Compare single connection vs multiple connections performance
      */
-    public static function testConnectionPoolingBenefit(string $host = '10.21.14.8', int $port = 1403): array
+    public static function testConnectionPoolingBenefit(string $host = '10.21.14.8', int $port = 1403, int $delayMs = 0): array
     {
         // Prepare test messages
         $messages = [
@@ -492,6 +499,11 @@ public static function testGPSServerBehavior(string $host = '10.21.14.8', int $p
         
         foreach ($messages as $index => $messageData) {
             try {
+
+                    if ($index > 0 && $delayMs > 0) {
+                usleep($delayMs * 1000);
+            }
+
                 $result = self::sendDataDirectConnection(
                     $host, 
                     $port, 
@@ -514,7 +526,7 @@ public static function testGPSServerBehavior(string $host = '10.21.14.8', int $p
         $singleConnResult = [];
         
         try {
-            $singleConnResult = self::sendDataWithPooling($host, $port, $messages2);
+            $singleConnResult = self::sendDataWithPooling($host, $port, $messages2 , $delayMs);
         } catch (\Exception $e) {
             $singleConnResult = [
                 'total_messages' => count($messages),
