@@ -186,7 +186,7 @@ class ConnectionPoolService
             'results' => $results
         ];
     }
-}
+
 
     private static function sendDataToSocket($socket, string $gpsData, string $vehicleId): array
     {
