@@ -5,14 +5,19 @@ namespace App\Services;
 use App\Models\ConnectionPoolStat;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Redis;
 
 class ConnectionPoolService
 {
     private static array $config = [];
     private static string $processId = '';
-    private static array $connectionPools = []; // Store connection pools by server
-    private static array $poolStats = []; // Track pool statistics
+    private static array $localConnections = []; // Process-local connections only
+    private static ?Redis $redis = null;
+    
+    // Redis keys for shared pool management
+    private const POOL_KEY_PREFIX = 'gps_pool:';
+    private const POOL_STATS_KEY = 'gps_pool_stats:';
+    private const POOL_LOCK_KEY = 'gps_pool_lock:';
     
     public static function init(array $config = []): void
     {
@@ -22,29 +27,42 @@ class ConnectionPoolService
             'max_retry_attempts' => 3,
             'retry_delay_ms' => 50,
             'connection_cache_seconds' => 30,
-            // Connection pooling settings
-            'pool_size' => 5,                    // Max connections per server
-            'pool_idle_timeout' => 300,          // 5 minutes idle timeout
-            'pool_max_lifetime' => 3600,         // 1 hour max connection lifetime
-            'batch_size' => 20,                  // Optimal batch size for pooling
-            'batch_delay_ms' => 50,              // Delay between messages in batch
-            'pool_cleanup_interval' => 60,       // Cleanup every minute
+            // Shared pool settings
+            'shared_pool_enabled' => true,
+            'shared_pool_size' => 20,              // Total connections across all processes
+            'local_pool_size' => 3,               // Max connections per process
+            'pool_idle_timeout' => 300,
+            'pool_max_lifetime' => 3600,
+            'batch_size' => 20,
+            'batch_delay_ms' => 50,
+            'pool_cleanup_interval' => 60,
+            'connection_lease_time' => 30,        // How long a process can hold a connection
         ], $config);
 
         self::$processId = (string) getmypid();
+        self::$localConnections = [];
         
-        // Initialize pools array
-        self::$connectionPools = [];
-        self::$poolStats = [];
+        // Initialize Redis connection for shared pool
+        if (self::$config['shared_pool_enabled']) {
+            try {
+                self::$redis = Redis::connection('default');
+            } catch (\Exception $e) {
+                Log::warning("Redis not available, falling back to local pools", [
+                    'error' => $e->getMessage()
+                ]);
+                self::$config['shared_pool_enabled'] = false;
+            }
+        }
         
-        Log::channel('gps_pool')->info("ConnectionPoolService initialized with pooling enabled", [
+        Log::channel('gps_pool')->info("SharedConnectionPoolService initialized", [
             'process_id' => self::$processId,
+            'shared_pool_enabled' => self::$config['shared_pool_enabled'],
             'config' => self::$config
         ]);
     }
 
     /**
-     * Send single GPS message (will use pooling when possible)
+     * Send GPS data using shared connection pool
      */
     public static function sendGPSData(string $host, int $port, string $gpsData, string $vehicleId): array
     {
@@ -62,89 +80,50 @@ class ConnectionPoolService
                 'error' => 'GPS server unavailable',
                 'vehicle_id' => $vehicleId,
                 'process_id' => self::$processId,
-                'attempts' => 0,
-                'duration_ms' => 0,
                 'connection_reused' => false
             ];
         }
 
-        // Try to get connection from pool
-        $connection = self::getPooledConnection($serverKey, $host, $port);
+        // Try to get connection (shared or local)
+        $connection = self::acquireConnection($serverKey, $host, $port);
         
         if (!$connection) {
-            // Fallback to single-use connection
+            // Fallback to direct connection
             return self::sendDataDirectConnection($host, $port, $gpsData, $vehicleId);
         }
 
-        $attempts = 0;
-        $lastError = '';
-        
-        while ($attempts < self::$config['max_retry_attempts']) {
-            $attempts++;
+        try {
+            $result = self::sendDataToSocket($connection['socket'], $gpsData, $vehicleId);
             
-            try {
-                // Check if pooled connection is still alive
-                if (!self::isSocketAlive($connection['socket'])) {
-                    self::removeFromPool($serverKey, $connection['id']);
-                    throw new \Exception('Pooled connection died');
-                }
-
-                $result = self::sendDataToSocket(
-                    $connection['socket'], 
-                    $gpsData, 
-                    $vehicleId
-                );
-
-                // Update connection stats
-                $connection['last_used'] = time();
-                $connection['message_count']++;
-                
-                // Return connection to pool if still alive
-                if ($result['socket_alive_after']) {
-                    self::returnToPool($serverKey, $connection);
-                } else {
-                    self::removeFromPool($serverKey, $connection['id']);
-                }
-
-                return array_merge($result, [
-                    'process_id' => self::$processId,
-                    'attempts' => $attempts,
-                    'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
-                    'connection_reused' => true,
-                    'connection_id' => $connection['id'],
-                    'pool_stats' => self::getPoolStats($serverKey)
-                ]);
-
-            } catch (\Exception $e) {
-                $lastError = $e->getMessage();
-                self::removeFromPool($serverKey, $connection['id']);
-                
-                if ($attempts < self::$config['max_retry_attempts']) {
-                    // Try to get another connection from pool
-                    $connection = self::getPooledConnection($serverKey, $host, $port);
-                    if (!$connection) {
-                        // No more pooled connections, fallback to direct
-                        return self::sendDataDirectConnection($host, $port, $gpsData, $vehicleId);
-                    }
-                    usleep(self::$config['retry_delay_ms'] * 1000);
-                    continue;
-                }
+            // Update connection stats
+            $connection['last_used'] = time();
+            $connection['message_count']++;
+            
+            // Return or remove connection based on health
+            if ($result['socket_alive_after']) {
+                self::releaseConnection($serverKey, $connection);
+            } else {
+                self::removeConnection($serverKey, $connection['id']);
             }
-        }
 
-        return [
-            'success' => false,
-            'error' => $lastError,
-            'vehicle_id' => $vehicleId,
-            'process_id' => self::$processId,
-            'attempts' => $attempts,
-            'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
-            'connection_reused' => false
-        ];
+            return array_merge($result, [
+                'process_id' => self::$processId,
+                'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'connection_reused' => true,
+                'connection_id' => $connection['id'],
+                'connection_source' => $connection['source'] ?? 'unknown'
+            ]);
+
+        } catch (\Exception $e) {
+            self::removeConnection($serverKey, $connection['id']);
+            
+            // Fallback to direct connection
+            return self::sendDataDirectConnection($host, $port, $gpsData, $vehicleId);
+        }
     }
 
     /**
-     * Send batch of GPS messages using connection pooling (RECOMMENDED)
+     * Send batch using connection pooling
      */
     public static function sendGPSDataBatch(string $host, int $port, array $messages): array
     {
@@ -157,37 +136,71 @@ class ConnectionPoolService
         $results = [];
         $totalMessages = count($messages);
 
-        // Quick server availability check
-        if (!self::isServerAvailableCached($serverKey, $host, $port)) {
-            return [
-                'success' => false,
-                'error' => 'GPS server unavailable',
-                'total_messages' => $totalMessages,
-                'processed_messages' => 0,
-                'successful_messages' => 0,
-                'results' => []
-            ];
-        }
-
-        // Process messages in optimal batches
+        // Process in batches to maximize connection reuse
         $batches = array_chunk($messages, self::$config['batch_size']);
         $processedCount = 0;
         $successCount = 0;
 
-        foreach ($batches as $batchIndex => $batch) {
-            $batchResult = self::processBatch($serverKey, $host, $port, $batch);
+        foreach ($batches as $batch) {
+            $connection = self::acquireConnection($serverKey, $host, $port);
             
-            foreach ($batchResult['results'] as $index => $result) {
-                $results[$processedCount] = $result;
-                $processedCount++;
-                if ($result['success']) {
-                    $successCount++;
+            if (!$connection) {
+                // Process batch with direct connections
+                foreach ($batch as $messageData) {
+                    try {
+                        $result = self::sendDataDirectConnection($host, $port, $messageData['gps_data'], $messageData['vehicle_id']);
+                        $results[] = $result;
+                        if ($result['success']) $successCount++;
+                    } catch (\Exception $e) {
+                        $results[] = [
+                            'success' => false,
+                            'error' => $e->getMessage(),
+                            'vehicle_id' => $messageData['vehicle_id'],
+                            'connection_reused' => false
+                        ];
+                    }
+                    $processedCount++;
                 }
+                continue;
             }
 
-            // Small delay between batches to avoid overwhelming server
-            if ($batchIndex < count($batches) - 1) {
-                usleep(10000); // 10ms between batches
+            // Process batch with pooled connection
+            try {
+                foreach ($batch as $index => $messageData) {
+                    if ($index > 0) {
+                        usleep(self::$config['batch_delay_ms'] * 1000);
+                    }
+
+                    if (!self::isSocketAlive($connection['socket'])) {
+                        self::removeConnection($serverKey, $connection['id']);
+                        throw new \Exception('Connection died during batch');
+                    }
+
+                    $result = self::sendDataToSocket($connection['socket'], $messageData['gps_data'], $messageData['vehicle_id']);
+                    $results[] = array_merge($result, [
+                        'connection_reused' => true,
+                        'connection_id' => $connection['id']
+                    ]);
+                    
+                    $connection['last_used'] = time();
+                    $connection['message_count']++;
+                    $processedCount++;
+                    
+                    if ($result['success']) $successCount++;
+                    
+                    if (!$result['socket_alive_after']) {
+                        self::removeConnection($serverKey, $connection['id']);
+                        break;
+                    }
+                }
+                
+                // Return healthy connection
+                if (isset($connection['socket']) && self::isSocketAlive($connection['socket'])) {
+                    self::releaseConnection($serverKey, $connection);
+                }
+                
+            } catch (\Exception $e) {
+                self::removeConnection($serverKey, $connection['id']);
             }
         }
 
@@ -196,171 +209,63 @@ class ConnectionPoolService
             'total_messages' => $totalMessages,
             'processed_messages' => $processedCount,
             'successful_messages' => $successCount,
-            'failed_messages' => $totalMessages - $successCount,
             'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
-            'avg_time_per_message_ms' => $processedCount > 0 ? 
-                round(((microtime(true) - $startTime) * 1000) / $processedCount, 2) : 0,
-            'batches_processed' => count($batches),
             'connection_pooling_used' => true,
-            'pool_stats' => self::getPoolStats($serverKey),
             'results' => $results
         ];
     }
 
     /**
-     * Process a batch of messages using pooled connection
+     * Acquire connection from shared or local pool
      */
-    private static function processBatch(string $serverKey, string $host, int $port, array $batch): array
+    private static function acquireConnection(string $serverKey, string $host, int $port): ?array
     {
-        $connection = self::getPooledConnection($serverKey, $host, $port);
-        $results = [];
-        
-        if (!$connection) {
-            // Fallback to multiple single connections
-            foreach ($batch as $index => $messageData) {
-                try {
-                    $result = self::sendDataDirectConnection($host, $port, $messageData['gps_data'], $messageData['vehicle_id']);
-                    $results[$index] = $result;
-                } catch (\Exception $e) {
-                    $results[$index] = [
-                        'success' => false,
-                        'error' => $e->getMessage(),
-                        'vehicle_id' => $messageData['vehicle_id'],
-                        'connection_reused' => false
-                    ];
-                }
-            }
-            return ['results' => $results];
+        // Try local pool first (fastest)
+        $connection = self::getLocalConnection($serverKey);
+        if ($connection) {
+            Log::channel('gps_pool')->debug("Using local pooled connection", [
+                'server_key' => $serverKey,
+                'connection_id' => $connection['id'],
+                'process_id' => self::$processId
+            ]);
+            return $connection;
         }
 
-        try {
-            foreach ($batch as $index => $messageData) {
-                // Add delay between messages
-                if ($index > 0) {
-                    usleep(self::$config['batch_delay_ms'] * 1000);
-                }
-
-                // Check connection health
-                if (!self::isSocketAlive($connection['socket'])) {
-                    self::removeFromPool($serverKey, $connection['id']);
-                    throw new \Exception('Connection died during batch processing');
-                }
-
-                try {
-                    $result = self::sendDataToSocket(
-                        $connection['socket'], 
-                        $messageData['gps_data'], 
-                        $messageData['vehicle_id']
-                    );
-                    
-                    $results[$index] = array_merge($result, [
-                        'connection_reused' => true,
-                        'connection_id' => $connection['id']
-                    ]);
-                    
-                    $connection['last_used'] = time();
-                    $connection['message_count']++;
-                    
-                    // If socket died, stop processing this batch
-                    if (!$result['socket_alive_after']) {
-                        self::removeFromPool($serverKey, $connection['id']);
-                        break;
-                    }
-                    
-                } catch (\Exception $e) {
-                    $results[$index] = [
-                        'success' => false,
-                        'error' => $e->getMessage(),
-                        'vehicle_id' => $messageData['vehicle_id'],
-                        'connection_reused' => false
-                    ];
-                    break;
-                }
-            }
-            
-            // Return healthy connection to pool
-            if (isset($connection['socket']) && self::isSocketAlive($connection['socket'])) {
-                self::returnToPool($serverKey, $connection);
-            }
-            
-        } catch (\Exception $e) {
-            // Connection failed, remove from pool
-            self::removeFromPool($serverKey, $connection['id']);
-            
-            // Process remaining messages with direct connections
-            $remainingMessages = array_slice($batch, count($results));
-            foreach ($remainingMessages as $index => $messageData) {
-                try {
-                    $result = self::sendDataDirectConnection($host, $port, $messageData['gps_data'], $messageData['vehicle_id']);
-                    $results[count($results)] = $result;
-                } catch (\Exception $e) {
-                    $results[count($results)] = [
-                        'success' => false,
-                        'error' => $e->getMessage(),
-                        'vehicle_id' => $messageData['vehicle_id'],
-                        'connection_reused' => false
-                    ];
-                }
+        // Try shared pool if enabled
+        if (self::$config['shared_pool_enabled'] && self::$redis) {
+            $connection = self::getSharedConnection($serverKey, $host, $port);
+            if ($connection) {
+                Log::channel('gps_pool')->debug("Using shared pooled connection", [
+                    'server_key' => $serverKey,
+                    'connection_id' => $connection['id'],
+                    'process_id' => self::$processId
+                ]);
+                return $connection;
             }
         }
 
-        return ['results' => $results];
+        // Create new local connection if under limit
+        if (count(self::$localConnections[$serverKey] ?? []) < self::$config['local_pool_size']) {
+            return self::createNewConnection($serverKey, $host, $port);
+        }
+
+        return null;
     }
 
     /**
-     * Get connection from pool or create new one
+     * Get connection from local process pool
      */
-    private static function getPooledConnection(string $serverKey, string $host, int $port): ?array
+    private static function getLocalConnection(string $serverKey): ?array
     {
-        self::cleanupExpiredConnections($serverKey);
-        
-        if (!isset(self::$connectionPools[$serverKey])) {
-            self::$connectionPools[$serverKey] = [];
+        if (!isset(self::$localConnections[$serverKey])) {
+            return null;
         }
 
-        $pool = &self::$connectionPools[$serverKey];
-        
-        // Try to get existing connection
-        foreach ($pool as $index => $connection) {
+        foreach (self::$localConnections[$serverKey] as $index => $connection) {
             if (!$connection['in_use'] && self::isSocketAlive($connection['socket'])) {
-                $pool[$index]['in_use'] = true;
-                $pool[$index]['last_used'] = time();
-                
-                Log::channel('gps_pool')->debug("Reusing pooled connection", [
-                    'server_key' => $serverKey,
-                    'connection_id' => $connection['id'],
-                    'message_count' => $connection['message_count']
-                ]);
-                
-                return $pool[$index];
-            }
-        }
-
-        // Create new connection if pool not full
-        if (count($pool) < self::$config['pool_size']) {
-            $socket = self::createFastSocket($host, $port);
-            if ($socket) {
-                $connectionId = uniqid('pool_');
-                $newConnection = [
-                    'id' => $connectionId,
-                    'socket' => $socket,
-                    'created_at' => time(),
-                    'last_used' => time(),
-                    'message_count' => 0,
-                    'in_use' => true,
-                    'host' => $host,
-                    'port' => $port
-                ];
-                
-                $pool[] = $newConnection;
-                
-                Log::channel('gps_pool')->info("Created new pooled connection", [
-                    'server_key' => $serverKey,
-                    'connection_id' => $connectionId,
-                    'pool_size' => count($pool)
-                ]);
-                
-                return $newConnection;
+                self::$localConnections[$serverKey][$index]['in_use'] = true;
+                self::$localConnections[$serverKey][$index]['last_used'] = time();
+                return self::$localConnections[$serverKey][$index];
             }
         }
 
@@ -368,20 +273,129 @@ class ConnectionPoolService
     }
 
     /**
-     * Return connection to pool
+     * Get connection from shared Redis pool
      */
-    private static function returnToPool(string $serverKey, array $connection): void
+    private static function getSharedConnection(string $serverKey, string $host, int $port): ?array
     {
-        if (!isset(self::$connectionPools[$serverKey])) {
-            return;
+        if (!self::$redis) return null;
+
+        $poolKey = self::POOL_KEY_PREFIX . $serverKey;
+        $lockKey = self::POOL_LOCK_KEY . $serverKey;
+        
+        try {
+            // Try to acquire lock
+            if (!self::$redis->set($lockKey, self::$processId, 'EX', 2, 'NX')) {
+                return null; // Another process is modifying pool
+            }
+
+            // Get available connections
+            $connections = self::$redis->hgetall($poolKey);
+            
+            foreach ($connections as $connectionId => $connectionData) {
+                $connection = json_decode($connectionData, true);
+                
+                if (!$connection['in_use'] && time() - $connection['last_used'] < self::$config['connection_lease_time']) {
+                    // Lease this connection to current process
+                    $connection['in_use'] = true;
+                    $connection['leased_to'] = self::$processId;
+                    $connection['lease_expires'] = time() + self::$config['connection_lease_time'];
+                    
+                    // Create new socket in this process (can't share socket handles)
+                    $socket = self::createFastSocket($host, $port);
+                    if ($socket) {
+                        $connection['socket'] = $socket;
+                        $connection['source'] = 'shared_pool';
+                        
+                        // Update in Redis
+                        self::$redis->hset($poolKey, $connectionId, json_encode($connection));
+                        self::$redis->del($lockKey);
+                        
+                        return $connection;
+                    }
+                }
+            }
+            
+            self::$redis->del($lockKey);
+            
+        } catch (\Exception $e) {
+            Log::warning("Shared pool access failed", ['error' => $e->getMessage()]);
+            self::$redis->del($lockKey);
         }
 
-        foreach (self::$connectionPools[$serverKey] as &$poolConnection) {
-            if ($poolConnection['id'] === $connection['id']) {
-                $poolConnection['in_use'] = false;
-                $poolConnection['last_used'] = $connection['last_used'];
-                $poolConnection['message_count'] = $connection['message_count'];
-                break;
+        return null;
+    }
+
+    /**
+     * Create new connection
+     */
+    private static function createNewConnection(string $serverKey, string $host, int $port): ?array
+    {
+        $socket = self::createFastSocket($host, $port);
+        if (!$socket) return null;
+
+        $connectionId = uniqid('pool_' . self::$processId . '_');
+        $connection = [
+            'id' => $connectionId,
+            'socket' => $socket,
+            'created_at' => time(),
+            'last_used' => time(),
+            'message_count' => 0,
+            'in_use' => true,
+            'host' => $host,
+            'port' => $port,
+            'process_id' => self::$processId,
+            'source' => 'local_pool'
+        ];
+
+        // Add to local pool
+        if (!isset(self::$localConnections[$serverKey])) {
+            self::$localConnections[$serverKey] = [];
+        }
+        self::$localConnections[$serverKey][] = $connection;
+
+        Log::channel('gps_pool')->info("Created new local connection", [
+            'server_key' => $serverKey,
+            'connection_id' => $connectionId,
+            'process_id' => self::$processId,
+            'local_pool_size' => count(self::$localConnections[$serverKey])
+        ]);
+
+        return $connection;
+    }
+
+    /**
+     * Release connection back to pool
+     */
+    private static function releaseConnection(string $serverKey, array $connection): void
+    {
+        if ($connection['source'] === 'local_pool') {
+            // Return to local pool
+            foreach (self::$localConnections[$serverKey] ?? [] as &$localConn) {
+                if ($localConn['id'] === $connection['id']) {
+                    $localConn['in_use'] = false;
+                    $localConn['last_used'] = $connection['last_used'];
+                    $localConn['message_count'] = $connection['message_count'];
+                    break;
+                }
+            }
+        } elseif ($connection['source'] === 'shared_pool' && self::$redis) {
+            // Return to shared pool
+            $poolKey = self::POOL_KEY_PREFIX . $serverKey;
+            $lockKey = self::POOL_LOCK_KEY . $serverKey;
+            
+            try {
+                if (self::$redis->set($lockKey, self::$processId, 'EX', 2, 'NX')) {
+                    $connection['in_use'] = false;
+                    $connection['leased_to'] = null;
+                    $connection['lease_expires'] = null;
+                    unset($connection['socket']); // Can't store socket handle in Redis
+                    
+                    self::$redis->hset($poolKey, $connection['id'], json_encode($connection));
+                    self::$redis->del($lockKey);
+                }
+            } catch (\Exception $e) {
+                Log::warning("Failed to return connection to shared pool", ['error' => $e->getMessage()]);
+                self::$redis->del($lockKey);
             }
         }
     }
@@ -389,168 +403,70 @@ class ConnectionPoolService
     /**
      * Remove connection from pool
      */
-    private static function removeFromPool(string $serverKey, string $connectionId): void
+    private static function removeConnection(string $serverKey, string $connectionId): void
     {
-        if (!isset(self::$connectionPools[$serverKey])) {
-            return;
-        }
-
-        foreach (self::$connectionPools[$serverKey] as $index => $connection) {
-            if ($connection['id'] === $connectionId) {
-                if (isset($connection['socket'])) {
-                    socket_close($connection['socket']);
+        // Remove from local pool
+        if (isset(self::$localConnections[$serverKey])) {
+            foreach (self::$localConnections[$serverKey] as $index => $connection) {
+                if ($connection['id'] === $connectionId) {
+                    if (isset($connection['socket'])) {
+                        socket_close($connection['socket']);
+                    }
+                    unset(self::$localConnections[$serverKey][$index]);
+                    self::$localConnections[$serverKey] = array_values(self::$localConnections[$serverKey]);
+                    break;
                 }
-                unset(self::$connectionPools[$serverKey][$index]);
-                
-                Log::channel('gps_pool')->debug("Removed connection from pool", [
-                    'server_key' => $serverKey,
-                    'connection_id' => $connectionId
-                ]);
-                break;
             }
         }
-        
-        // Reindex array
-        self::$connectionPools[$serverKey] = array_values(self::$connectionPools[$serverKey]);
-    }
 
-    /**
-     * Clean up expired connections
-     */
-    private static function cleanupExpiredConnections(string $serverKey): void
-    {
-        if (!isset(self::$connectionPools[$serverKey])) {
-            return;
-        }
-
-        $now = time();
-        $pool = &self::$connectionPools[$serverKey];
-        
-        foreach ($pool as $index => $connection) {
-            $shouldRemove = false;
+        // Remove from shared pool
+        if (self::$redis) {
+            $poolKey = self::POOL_KEY_PREFIX . $serverKey;
+            $lockKey = self::POOL_LOCK_KEY . $serverKey;
             
-            // Check if connection is too old
-            if ($now - $connection['created_at'] > self::$config['pool_max_lifetime']) {
-                $shouldRemove = true;
-            }
-            
-            // Check if connection has been idle too long
-            if ($now - $connection['last_used'] > self::$config['pool_idle_timeout']) {
-                $shouldRemove = true;
-            }
-            
-            // Check if connection is dead
-            if (!self::isSocketAlive($connection['socket'])) {
-                $shouldRemove = true;
-            }
-            
-            if ($shouldRemove) {
-                if (isset($connection['socket'])) {
-                    socket_close($connection['socket']);
+            try {
+                if (self::$redis->set($lockKey, self::$processId, 'EX', 2, 'NX')) {
+                    self::$redis->hdel($poolKey, $connectionId);
+                    self::$redis->del($lockKey);
                 }
-                unset($pool[$index]);
-                
-                Log::channel('gps_pool')->debug("Cleaned up expired connection", [
-                    'server_key' => $serverKey,
-                    'connection_id' => $connection['id']
-                ]);
+            } catch (\Exception $e) {
+                self::$redis->del($lockKey);
             }
         }
-        
-        // Reindex array
-        self::$connectionPools[$serverKey] = array_values(self::$connectionPools[$serverKey]);
     }
 
-    /**
-     * Get pool statistics
-     */
-    private static function getPoolStats(string $serverKey): array
+    // ... (keep all the other methods: createFastSocket, sendDataToSocket, 
+    //      sendDataDirectConnection, readResponseFast, isSocketAlive, etc.)
+    
+    private static function createFastSocket(string $host, int $port)
     {
-        if (!isset(self::$connectionPools[$serverKey])) {
-            return [
-                'total_connections' => 0,
-                'active_connections' => 0,
-                'idle_connections' => 0
-            ];
-        }
+        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        if ($socket === false) return null;
 
-        $pool = self::$connectionPools[$serverKey];
-        $activeCount = 0;
-        $totalMessages = 0;
+        socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
+        socket_set_option($socket, SOL_TCP, TCP_NODELAY, 1);
+        socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, [
+            "sec" => self::$config['socket_timeout'], "usec" => 0
+        ]);
+        socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, [
+            "sec" => self::$config['socket_timeout'], "usec" => 0
+        ]);
 
-        foreach ($pool as $connection) {
-            if ($connection['in_use']) {
-                $activeCount++;
-            }
-            $totalMessages += $connection['message_count'];
-        }
-
-        return [
-            'total_connections' => count($pool),
-            'active_connections' => $activeCount,
-            'idle_connections' => count($pool) - $activeCount,
-            'total_messages_processed' => $totalMessages,
-            'pool_efficiency' => count($pool) > 0 ? round($totalMessages / count($pool), 2) : 0
-        ];
-    }
-
-    /**
-     * Fallback to single-use connection
-     */
-    private static function sendDataDirectConnection(string $host, int $port, string $gpsData, string $vehicleId): array
-    {
-        $socket = self::createFastSocket($host, $port);
-        
-        if (!$socket) {
-            throw new \Exception('Failed to create socket connection');
-        }
-
-        try {
-            $message = $gpsData . "\r";
-            $bytesWritten = socket_write($socket, $message, strlen($message));
-            
-            if ($bytesWritten === false) {
-                throw new \Exception('Failed to write data: ' . socket_strerror(socket_last_error($socket)));
-            }
-            
-            if ($bytesWritten === 0) {
-                throw new \Exception('No bytes written to socket');
-            }
-
-            $response = self::readResponseFast($socket);
-            
-            return [
-                'success' => true,
-                'response' => $response,
-                'bytes_written' => $bytesWritten,
-                'vehicle_id' => $vehicleId,
-                'connection_id' => 'single_use_' . uniqid(),
-                'connection_reused' => false
-            ];
-            
-        } finally {
+        if (!socket_connect($socket, $host, $port)) {
             socket_close($socket);
+            return null;
         }
+        
+        return $socket;
     }
-
-    /**
-     * Send data to existing socket
-     */
+    
     private static function sendDataToSocket($socket, string $gpsData, string $vehicleId): array
     {
-        if (!$socket) {
-            throw new \Exception('Invalid socket provided');
-        }
-
         $message = $gpsData . "\r";
         $bytesWritten = socket_write($socket, $message, strlen($message));
         
         if ($bytesWritten === false) {
             throw new \Exception('Failed to write data: ' . socket_strerror(socket_last_error($socket)));
-        }
-        
-        if ($bytesWritten === 0) {
-            throw new \Exception('No bytes written to socket');
         }
         
         $response = self::readResponseFast($socket);
@@ -563,40 +479,24 @@ class ConnectionPoolService
             'socket_alive_after' => self::isSocketAlive($socket)
         ];
     }
-
-    /**
-     * Create optimized socket
-     */
-    private static function createFastSocket(string $host, int $port)
+    
+    private static function sendDataDirectConnection(string $host, int $port, string $gpsData, string $vehicleId): array
     {
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        
-        if ($socket === false) {
-            return null;
+        $socket = self::createFastSocket($host, $port);
+        if (!$socket) {
+            throw new \Exception('Failed to create socket connection');
         }
 
-        socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1);
-        socket_set_option($socket, SOL_TCP, TCP_NODELAY, 1);
-        socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, [
-            "sec" => self::$config['socket_timeout'], 
-            "usec" => 0
-        ]);
-        socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, [
-            "sec" => self::$config['socket_timeout'], 
-            "usec" => 0
-        ]);
-
-        if (!socket_connect($socket, $host, $port)) {
+        try {
+            return array_merge(
+                self::sendDataToSocket($socket, $gpsData, $vehicleId),
+                ['connection_reused' => false, 'connection_id' => 'single_use_' . uniqid()]
+            );
+        } finally {
             socket_close($socket);
-            return null;
         }
-        
-        return $socket;
     }
-
-    /**
-     * Fast response reading
-     */
+    
     private static function readResponseFast($socket): string
     {
         $response = '';
@@ -614,10 +514,7 @@ class ConnectionPoolService
         
         return $response;
     }
-
-    /**
-     * Check if socket is alive
-     */
+    
     private static function isSocketAlive($socket): bool
     {
         if (!$socket) return false;
@@ -626,16 +523,9 @@ class ConnectionPoolService
         $write = [$socket];
         
         $result = socket_select($read, $write, $except, 0, 1000);
-        
-        if ($result === false) return false;
-        if ($result === 0) return true;
-        
-        return in_array($socket, $write);
+        return $result !== false && ($result === 0 || in_array($socket, $write));
     }
-
-    /**
-     * Cached server availability check
-     */
+    
     private static function isServerAvailableCached(string $serverKey, string $host, int $port): bool
     {
         $cacheKey = "gps_server_available_{$serverKey}";
@@ -645,8 +535,6 @@ class ConnectionPoolService
             if (!$socket) return false;
             
             socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, ["sec" => 1, "usec" => 0]);
-            socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ["sec" => 1, "usec" => 0]);
-            
             $result = @socket_connect($socket, $host, $port);
             socket_close($socket);
             
@@ -654,89 +542,40 @@ class ConnectionPoolService
         });
     }
 
-    /**
-     * Get comprehensive statistics
-     */
     public static function getStats(): array
     {
-        $totalConnections = 0;
-        $totalMessages = 0;
-        $serverStats = [];
-
-        foreach (self::$connectionPools as $serverKey => $pool) {
-            $stats = self::getPoolStats($serverKey);
-            $totalConnections += $stats['total_connections'];
-            $totalMessages += $stats['total_messages_processed'];
-            $serverStats[$serverKey] = $stats;
+        $localStats = [];
+        $totalLocal = 0;
+        
+        foreach (self::$localConnections as $serverKey => $connections) {
+            $localStats[$serverKey] = count($connections);
+            $totalLocal += count($connections);
         }
 
         return [
             'process_id' => self::$processId,
-            'connection_strategy' => 'connection_pooling_enabled',
-            'server_behavior' => 'supports_persistent_connections',
-            'total_pools' => count(self::$connectionPools),
-            'total_connections' => $totalConnections,
-            'total_messages_processed' => $totalMessages,
-            'server_stats' => $serverStats,
+            'connection_strategy' => 'shared_connection_pooling',
+            'shared_pool_enabled' => self::$config['shared_pool_enabled'],
+            'local_connections' => $localStats,
+            'total_local_connections' => $totalLocal,
             'config' => self::$config
         ];
     }
 
-    /**
-     * Health check
-     */
-    public static function healthCheck(string $host, int $port): array
-    {
-        $startTime = microtime(true);
-        $serverKey = "{$host}:{$port}";
-        
-        $available = self::isServerAvailableCached($serverKey, $host, $port);
-        $checkTime = microtime(true) - $startTime;
-        
-        return [
-            'server_available' => $available,
-            'check_time_ms' => round($checkTime * 1000, 2),
-            'process_id' => self::$processId,
-            'server_type' => 'pooled_connections',
-            'connection_reuse_possible' => true,
-            'pool_stats' => self::getPoolStats($serverKey)
-        ];
-    }
-
-    /**
-     * Cleanup all connections
-     */
     public static function cleanup(): void
     {
-        foreach (self::$connectionPools as $serverKey => $pool) {
-            foreach ($pool as $connection) {
+        foreach (self::$localConnections as $serverKey => $connections) {
+            foreach ($connections as $connection) {
                 if (isset($connection['socket'])) {
                     socket_close($connection['socket']);
                 }
             }
         }
         
-        self::$connectionPools = [];
+        self::$localConnections = [];
         
-        Log::channel('gps_pool')->info("Connection pool cleanup completed", [
+        Log::channel('gps_pool')->info("Shared connection pool cleanup completed", [
             'process_id' => self::$processId
         ]);
-    }
-
-    /**
-     * Force cleanup of specific server pool
-     */
-    public static function cleanupServer(string $host, int $port): void
-    {
-        $serverKey = "{$host}:{$port}";
-        
-        if (isset(self::$connectionPools[$serverKey])) {
-            foreach (self::$connectionPools[$serverKey] as $connection) {
-                if (isset($connection['socket'])) {
-                    socket_close($connection['socket']);
-                }
-            }
-            unset(self::$connectionPools[$serverKey]);
-        }
     }
 }
