@@ -181,6 +181,34 @@ class ConnectionPoolService
         ];
     }
 
+    private static function sendDataToSocket($socket, string $gpsData, string $vehicleId): array
+    {
+        if (!$socket) {
+            throw new \Exception('Invalid socket provided');
+        }
+
+        $message = $gpsData . "\r";
+        $bytesWritten = socket_write($socket, $message, strlen($message));
+        
+        if ($bytesWritten === false) {
+            throw new \Exception('Failed to write data: ' . socket_strerror(socket_last_error($socket)));
+        }
+        
+        if ($bytesWritten === 0) {
+            throw new \Exception('No bytes written to socket');
+        }
+        
+        $response = self::readResponseFast($socket);
+        
+        return [
+            'success' => true,
+            'response' => $response,
+            'bytes_written' => $bytesWritten,
+            'vehicle_id' => $vehicleId,
+            'socket_alive_after' => self::isSocketAlive($socket)
+        ];
+    }
+
 
     /**
      * Create socket optimized for single-use with GPS server
