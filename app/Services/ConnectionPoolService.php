@@ -670,32 +670,6 @@ class ConnectionPoolService
     }
 
     /**
-     * Simplified local connection storage
-     */
-    private static function storeLocalConnection(string $poolKey, array $connection): void
-    {
-        if (isset($connection['direct']) && $connection['direct']) {
-            return; // Don't store direct connections
-        }
-        
-        if (!isset(self::$localConnections[$poolKey])) {
-            self::$localConnections[$poolKey] = [];
-        }
-
-        // Limit and clean local connections
-        if (count(self::$localConnections[$poolKey]) >= 1) {
-            foreach (self::$localConnections[$poolKey] as $connId => $oldConn) {
-                if (is_resource($oldConn['socket'])) {
-                    socket_close($oldConn['socket']);
-                }
-            }
-            self::$localConnections[$poolKey] = [];
-        }
-
-        self::$localConnections[$poolKey][$connection['id']] = $connection;
-    }
-
-    /**
      * Health check method for monitoring
      */
     public static function healthCheck(string $host, int $port): array
