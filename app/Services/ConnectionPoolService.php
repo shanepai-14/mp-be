@@ -348,13 +348,24 @@ class ConnectionPoolService
     }
 
     /**
-     * Improved connection validation - more lenient for reuse
+     * Enhanced connection validation with detailed socket checking
      */
     private static function isConnectionValidQuick(array $connection): bool
     {
         if (!is_resource($connection['socket'])) {
             Log::channel('gps_pool')->debug("Connection invalid - not a resource", [
-                'connection_id' => $connection['id']
+                'connection_id' => $connection['id'],
+                'socket_type' => gettype($connection['socket'])
+            ]);
+            return false;
+        }
+
+        // Check if socket is still connected
+        $socketInfo = socket_get_option($connection['socket'], SOL_SOCKET, SO_TYPE);
+        if ($socketInfo === false) {
+            Log::channel('gps_pool')->debug("Connection invalid - cannot get socket info", [
+                'connection_id' => $connection['id'],
+                'error' => socket_strerror(socket_last_error($connection['socket']))
             ]);
             return false;
         }
@@ -364,7 +375,8 @@ class ConnectionPoolService
         if ($error !== 0) {
             Log::channel('gps_pool')->debug("Connection invalid - socket error", [
                 'connection_id' => $connection['id'],
-                'error' => $error
+                'error' => $error,
+                'error_string' => socket_strerror($error)
             ]);
             return false;
         }
@@ -374,7 +386,8 @@ class ConnectionPoolService
         if ($age > self::$config['connection_timeout']) {
             Log::channel('gps_pool')->debug("Connection invalid - too old", [
                 'connection_id' => $connection['id'],
-                'age' => $age
+                'age' => $age,
+                'timeout' => self::$config['connection_timeout']
             ]);
             return false;
         }
@@ -384,10 +397,17 @@ class ConnectionPoolService
         if ($idleTime > self::$config['idle_timeout']) {
             Log::channel('gps_pool')->debug("Connection invalid - idle too long", [
                 'connection_id' => $connection['id'],
-                'idle_time' => $idleTime
+                'idle_time' => $idleTime,
+                'idle_timeout' => self::$config['idle_timeout']
             ]);
             return false;
         }
+
+        Log::channel('gps_pool')->debug("Connection is valid", [
+            'connection_id' => $connection['id'],
+            'age' => $age,
+            'idle_time' => $idleTime
+        ]);
 
         return true;
     }
@@ -530,48 +550,74 @@ class ConnectionPoolService
     }
 
     /**
-     * Optimized send and receive for high volume
+     * Optimized send and receive for high volume - DON'T close sockets
      */
     private static function sendAndReceive(array $connection, string $gpsData, string $vehicleId): array
     {
         $socket = $connection['socket'];
         $message = $gpsData . "\r";
         
+        Log::channel('gps_pool')->debug("Starting sendAndReceive", [
+            'connection_id' => $connection['id'],
+            'socket_valid_before' => is_resource($socket),
+            'process_id' => self::$processId
+        ]);
+        
         $bytesWritten = socket_write($socket, $message, strlen($message));
         
         if ($bytesWritten === false) {
-            throw new \Exception("Write failed: " . socket_strerror(socket_last_error($socket)));
+            $error = socket_strerror(socket_last_error($socket));
+            Log::channel('gps_pool')->error("Socket write failed", [
+                'connection_id' => $connection['id'],
+                'error' => $error,
+                'socket_valid_after_write' => is_resource($socket),
+                'process_id' => self::$processId
+            ]);
+            throw new \Exception("Write failed: " . $error);
         }
         
         if ($bytesWritten === 0) {
+            Log::channel('gps_pool')->error("No bytes written", [
+                'connection_id' => $connection['id'],
+                'socket_valid_after_write' => is_resource($socket),
+                'process_id' => self::$processId
+            ]);
             throw new \Exception("No bytes written");
         }
 
-        // Very quick response read - don't wait long
-        socket_set_nonblock($socket);
+        Log::channel('gps_pool')->debug("Data written successfully", [
+            'connection_id' => $connection['id'],
+            'bytes_written' => $bytesWritten,
+            'socket_valid_after_write' => is_resource($socket),
+            'process_id' => self::$processId
+        ]);
+
+        // Very quick response read - don't wait long and DON'T use socket_set_nonblock
         $response = '';
         $startTime = microtime(true);
         
-        while ((microtime(true) - $startTime) < 0.05) { // 50ms timeout
+        // Try to read response with very short timeout
+        $read = [$socket];
+        $write = $except = [];
+        $timeout_sec = 0;
+        $timeout_usec = 50000; // 50ms
+        
+        $selectResult = socket_select($read, $write, $except, $timeout_sec, $timeout_usec);
+        
+        if ($selectResult > 0 && in_array($socket, $read)) {
             $data = socket_read($socket, 1024);
-            
             if ($data !== false && $data !== '') {
                 $response = $data;
-                break;
             }
-            
-            if ($data === false) {
-                $error = socket_last_error($socket);
-                if ($error !== SOCKET_EAGAIN && $error !== SOCKET_EWOULDBLOCK) {
-                    socket_set_block($socket);
-                    throw new \Exception("Read failed: " . socket_strerror($error));
-                }
-            }
-            
-            usleep(500); // 0.5ms sleep
         }
         
-        socket_set_block($socket);
+        Log::channel('gps_pool')->debug("Finished sendAndReceive", [
+            'connection_id' => $connection['id'],
+            'socket_valid_after_read' => is_resource($socket),
+            'response_length' => strlen($response),
+            'duration_ms' => round((microtime(true) - $startTime) * 1000, 2),
+            'process_id' => self::$processId
+        ]);
 
         return [
             'success' => true,
@@ -647,32 +693,72 @@ class ConnectionPoolService
     }
 
     /**
-     * Debug method to check why connections are being lost
+     * Debug method to test socket behavior
      */
-    public static function debugConnectionPool(string $poolKey = '10.21.14.8:1403'): array
+    public static function testSocketBehavior(string $host = '10.21.14.8', int $port = 1403): array
     {
         $result = [
             'process_id' => self::$processId,
-            'pool_key' => $poolKey,
-            'pool_exists' => isset(self::$localConnections[$poolKey]),
-            'connection_count' => isset(self::$localConnections[$poolKey]) ? count(self::$localConnections[$poolKey]) : 0,
-            'connections' => []
+            'test_time' => date('Y-m-d H:i:s'),
+            'steps' => []
         ];
         
-        if (isset(self::$localConnections[$poolKey])) {
-            foreach (self::$localConnections[$poolKey] as $connId => $connection) {
-                $result['connections'][$connId] = [
-                    'socket_resource' => is_resource($connection['socket']),
-                    'created_at' => $connection['created_at'],
-                    'last_used' => $connection['last_used'],
-                    'age' => time() - $connection['created_at'],
-                    'idle_time' => time() - $connection['last_used'],
-                    'use_count' => $connection['use_count'] ?? 0,
-                    'force_created' => $connection['force_created'] ?? false,
-                    'is_valid' => self::isConnectionValidQuick($connection)
-                ];
+        // Step 1: Create socket
+        $socket = self::createSocketFast($host, $port);
+        $result['steps']['create'] = [
+            'success' => $socket !== null,
+            'socket_valid' => $socket ? is_resource($socket) : false
+        ];
+        
+        if (!$socket) {
+            return $result;
+        }
+        
+        // Step 2: Test write
+        $testMessage = '$test,1,1.0,2.0,0,0,0,5,0,0,10,0,0,TEST' . "\r";
+        $bytesWritten = socket_write($socket, $testMessage, strlen($testMessage));
+        $result['steps']['write'] = [
+            'success' => $bytesWritten !== false,
+            'bytes_written' => $bytesWritten,
+            'socket_valid_after_write' => is_resource($socket)
+        ];
+        
+        // Step 3: Test read attempt (quick)
+        $read = [$socket];
+        $write = $except = [];
+        $selectResult = socket_select($read, $write, $except, 0, 50000); // 50ms
+        $response = '';
+        
+        if ($selectResult > 0 && in_array($socket, $read)) {
+            $data = socket_read($socket, 1024);
+            if ($data !== false && $data !== '') {
+                $response = $data;
             }
         }
+        
+        $result['steps']['read'] = [
+            'select_result' => $selectResult,
+            'response_length' => strlen($response),
+            'socket_valid_after_read' => is_resource($socket)
+        ];
+        
+        // Step 4: Test socket status
+        if (is_resource($socket)) {
+            $error = socket_get_option($socket, SOL_SOCKET, SO_ERROR);
+            $result['steps']['status'] = [
+                'socket_error' => $error,
+                'socket_valid' => is_resource($socket)
+            ];
+        }
+        
+        // Step 5: Keep socket open (don't close)
+        $result['steps']['final'] = [
+            'socket_kept_open' => is_resource($socket),
+            'action' => 'socket not closed for testing'
+        ];
+        
+        // Don't close the socket to test if it survives
+        // socket_close($socket);
         
         return $result;
     }
