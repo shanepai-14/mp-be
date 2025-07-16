@@ -294,8 +294,17 @@ class SocketPoolClient
     private function sendRequest(array $request): array
     {
         $socket = null;
-        
+
         try {
+            // Check if socket file exists and is readable
+            if (!file_exists($this->socketPath)) {
+                Log::error("Socket file not found at path: {$this->socketPath}");
+            } elseif (!is_readable($this->socketPath)) {
+                Log::error("Socket file is not readable at path: {$this->socketPath}");
+            } else {
+                Log::debug("Socket file found and readable at path: {$this->socketPath}");
+            }
+
             // Create Unix domain socket
             $socket = socket_create(AF_UNIX, SOCK_STREAM, 0);
             if (!$socket) {
@@ -314,7 +323,7 @@ class SocketPoolClient
             // Send request
             $requestJson = json_encode($request);
             $bytesWritten = socket_write($socket, $requestJson, strlen($requestJson));
-            
+
             if ($bytesWritten === false) {
                 throw new ConnectionException("Failed to write to socket: " . socket_strerror(socket_last_error()));
             }
@@ -341,6 +350,7 @@ class SocketPoolClient
             }
         }
     }
+
 
     /**
      * Check if the socket pool service is running
