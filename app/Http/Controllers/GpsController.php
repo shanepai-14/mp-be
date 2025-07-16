@@ -424,6 +424,53 @@ class GpsController extends Controller
         return $response->ErrorResponse('MySQL Server is offline!', 500);
     }
 
+
+    private function debugSocketPath()
+    {
+        $socketPath = '/tmp/socket_pool_service.sock';
+        
+        \Log::info("Socket Path Debug", [
+            'socket_path' => $socketPath,
+            'realpath' => realpath($socketPath),
+            'file_exists' => file_exists($socketPath),
+            'is_readable' => is_readable($socketPath),
+            'is_writable' => is_writable($socketPath),
+            'current_user' => posix_getpwuid(posix_geteuid())['name'] ?? 'unknown',
+            'current_working_dir' => getcwd(),
+            'laravel_base_path' => base_path(),
+            'stat_info' => file_exists($socketPath) ? stat($socketPath) : null
+        ]);
+        
+        // Test socket creation directly
+        $socket = socket_create(AF_UNIX, SOCK_STREAM, 0);
+        if ($socket) {
+            socket_set_option($socket, SOL_SOCKET, SO_SNDTIMEO, ["sec" => 3, "usec" => 0]);
+            socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ["sec" => 3, "usec" => 0]);
+            
+            if (socket_connect($socket, $socketPath)) {
+                \Log::info("Direct socket connection successful");
+                
+                // Test health check
+                $request = json_encode(['action' => 'health_check']);
+                if (socket_write($socket, $request, strlen($request))) {
+                    $response = socket_read($socket, 1024);
+                    \Log::info("Direct health check response", ['response' => $response]);
+                } else {
+                    \Log::error("Failed to write to socket in direct test");
+                }
+            } else {
+                \Log::error("Direct socket connection failed", [
+                    'error' => socket_strerror(socket_last_error()),
+                    'error_code' => socket_last_error()
+                ]);
+            }
+            socket_close($socket);
+        } else {
+            \Log::error("Failed to create socket in direct test", [
+                'error' => socket_strerror(socket_last_error())
+            ]);
+        }
+    }
     /**
      * Check Socket Pool Service status
      */
@@ -529,6 +576,8 @@ class GpsController extends Controller
             'host' => 'required|string',
             'port' => 'required|integer|min:1|max:65535'
         ]);
+
+        $this->debugSocketPath();
         
         if ($validator->fails()) {
             return $response->ErrorResponse($validator->errors(), 400);
