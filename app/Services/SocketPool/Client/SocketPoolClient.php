@@ -295,14 +295,20 @@ class SocketPoolClient
     {
         $socket = null;
 
+        $actualSocketPath = '/var/www/html/management-portal-backend/storage/app/socket_pool_service.sock';
+
+        if (file_exists($actualSocketPath)) {
+            unlink($actualSocketPath);
+        }
+
         try {
             // Check if socket file exists and is readable
-            if (!file_exists($this->socketPath)) {
-                Log::error("Socket file not found at path: {$this->socketPath}");
-            } elseif (!is_readable($this->socketPath)) {
-                Log::error("Socket file is not readable at path: {$this->socketPath}");
+            if (!file_exists($actualSocketPath)) {
+                Log::error("Socket file not found at path: {$actualSocketPath}");
+            } elseif (!is_readable($actualSocketPath)) {
+                Log::error("Socket file is not readable at path: {$actualSocketPath}");
             } else {
-                Log::debug("Socket file found and readable at path: {$this->socketPath}");
+                Log::debug("Socket file found and readable at path: {$actualSocketPath}");
             }
 
             // Create Unix domain socket
@@ -316,7 +322,7 @@ class SocketPoolClient
             socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, ["sec" => $this->timeout, "usec" => 0]);
 
             // Connect to service
-            if (!socket_connect($socket, $this->socketPath)) {
+            if (!socket_connect($socket, $actualSocketPath)) {
                 throw new ConnectionException("Failed to connect to socket service: " . socket_strerror(socket_last_error()));
             }
 
