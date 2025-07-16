@@ -11,7 +11,7 @@ return [
     */
 
     // Basic connection settings
-    'socket_path' => env('SOCKET_POOL_UNIX_PATH', '/tmp/socket_pool_service.sock'),
+    'socket_path' => env('SOCKET_POOL_UNIX_PATH', '/var/run/socket_pool_service.sock'),
     'timeout' => env('SOCKET_POOL_TIMEOUT', 5),
 
     // Pool configuration

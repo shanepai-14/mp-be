@@ -22,7 +22,7 @@ class SocketPoolClient
     private array $config = [];
     private static ?SocketPoolClient $instance = null;
 
-    public function __construct(string $socketPath = '/tmp/socket_pool_service.sock', int $timeout = 5)
+    public function __construct(string $socketPath = '/var/run/socket_pool_service.sock', int $timeout = 5)
     {
         $this->socketPath = $socketPath;
         $this->timeout = $timeout;
@@ -48,7 +48,7 @@ class SocketPoolClient
             'circuit_breaker_threshold' => (int) config('socket_pool.circuit_breaker_threshold', 5),
             'circuit_breaker_timeout' => (int) config('socket_pool.circuit_breaker_timeout', 60),
             'metrics_enabled' => config('socket_pool.metrics_enabled', true),
-            'socket_path' => config('socket_pool.socket_path', '/tmp/socket_pool_service.sock'),
+            'socket_path' => config('socket_pool.socket_path', '/var/run/socket_pool_service.sock'),
             'timeout' => (int) config('socket_pool.timeout', 5),
         ];
         

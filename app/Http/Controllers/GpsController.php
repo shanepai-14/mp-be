@@ -427,7 +427,7 @@ class GpsController extends Controller
 
     private function debugSocketPath()
     {
-        $socketPath = '/tmp/socket_pool_service.sock';
+        $socketPath = '/var/run/socket_pool_service.sock';
         
         \Log::info("Socket Path Debug", [
             'socket_path' => $socketPath,
