@@ -97,7 +97,7 @@ class SocketPoolClient
                 'options' => $options
             ];
 
-            // $result = $this->sendRequestWithRetry($request);
+            $result = $this->sendRequestWithRetry($request);
             
             // Cache successful results if enabled
             if ($result['success'] && $this->config['cache_enabled'] && isset($options['use_cache']) && $options['use_cache']) {
