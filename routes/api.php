@@ -118,7 +118,10 @@ Route::group([
     Route::put('/reject/{id}', [VehicleAssignmentsController::class, 'reject'])->middleware('throttle:250,1');
 });
 
-Route::prefix('gps')->group(function () {
+Route::group([
+    'middleware' => 'auth:api',
+    'prefix' => 'gps'
+], function(){
 
 Route::get('/socket-pool/stats', [GpsController::class, 'getSocketPoolStats']);
 Route::post('/test-gps-connection', [GpsController::class, 'testGpsConnection']);
