@@ -212,7 +212,120 @@ class GpsController extends Controller
     /**
      * Forward GPS data to WLocate using Socket Pool Service
      */
-    private function forwardToWLocate(Request $request, VehicleAssignment $vehicleAssignment): void
+    // private function forwardToWLocate(Request $request, VehicleAssignment $vehicleAssignment): void
+    // {
+    //     $currentCustomer = CurrentCustomer::with(['ipport'])
+    //         ->where('vehicle_assignment_id', $vehicleAssignment->id)
+    //         ->first();
+
+    //     if (!$currentCustomer || !$currentCustomer->ipport) {
+    //         return;
+    //     }
+
+    //     $transformedData = $this->dataTransformation($request->all());
+    //     $requestId = Str::uuid();
+        
+    //     try {
+    //         // Send GPS data using Socket Pool Service
+    //         $result = $this->socketPoolClient->sendGpsData(
+    //             $transformedData,
+    //             $currentCustomer->ipport->ip,
+    //             $currentCustomer->ipport->port,
+    //             $request->Vehicle_ID,
+    //             [
+    //                 'request_id' => $requestId,
+    //                 'priority' => 'high',
+    //                 'timeout' => 5
+    //             ]
+    //         );
+            
+    //         // Log results based on success/failure
+    //         if ($result['success']) {
+    //             Log::channel('gpssuccesslog')->info([
+    //                 'vehicle' => $request->Vehicle_ID,
+    //                 'date' => now()->toISOString(),
+    //                 'position' => preg_replace('/\s+/', '', $transformedData),
+    //                 'response' => $result['response'] ?? '',
+    //                 'request_id' => $result['request_id'] ?? $requestId,
+    //                 'bytes_sent' => $result['bytes_sent'] ?? 0,
+    //                 'hex_response' => $result['hex_response'] ?? '',
+    //                 'process_id' => getmypid(),
+    //                 'ip' => $currentCustomer->ipport->ip,
+    //                 'port' => $currentCustomer->ipport->port,
+    //                 'duration_ms' => $result['processing_time'] ?? $result['duration'] ?? 0,
+    //                 'socket_pool_used' => true,
+    //                 'timestamp' => $result['timestamp'] ?? time(),
+    //                 'vehicle_id' => $result['vehicle_id'] ?? $request->Vehicle_ID
+    //             ]);
+                
+    //         } else {
+    //             // Log failure with Socket Pool context
+    //             Log::channel('gpserrorlog')->error([
+    //                 'vehicle' => $request->Vehicle_ID,
+    //                 'date' => now()->toISOString(),
+    //                 'host' => $currentCustomer->ipport->ip,
+    //                 'port' => $currentCustomer->ipport->port,
+    //                 'gps_data' => $transformedData,
+    //                 'error' => $result['error'] ?? 'Unknown error',
+    //                 'request_id' => $result['request_id'] ?? $requestId,
+    //                 'process_id' => getmypid(),
+    //                 'duration_ms' => $result['processing_time'] ?? $result['duration'] ?? 0,
+    //                 'socket_pool_used' => true,
+    //                 'service_running' => $this->socketPoolClient->isServiceRunning()
+    //             ]);
+    //         }
+            
+    //     } catch (SocketPoolException $e) {
+    //         // Handle Socket Pool specific exceptions
+    //         Log::channel('gpserrorlog')->error([
+    //             'vehicle' => $request->Vehicle_ID,
+    //             'date' => now()->toISOString(),
+    //             'host' => $currentCustomer->ipport->ip,
+    //             'port' => $currentCustomer->ipport->port,
+    //             'gps_data' => $transformedData,
+    //             'error' => 'Socket Pool Error: ' . $e->getMessage(),
+    //             'request_id' => $requestId,
+    //             'process_id' => getmypid(),
+    //             'exception_type' => get_class($e),
+    //             'socket_pool_used' => true,
+    //             'service_running' => $this->socketPoolClient->isServiceRunning()
+    //         ]);
+            
+    //     } catch (ConnectionException $e) {
+    //         // Handle connection specific exceptions
+    //         Log::channel('gpserrorlog')->error([
+    //             'vehicle' => $request->Vehicle_ID,
+    //             'date' => now()->toISOString(),
+    //             'host' => $currentCustomer->ipport->ip,
+    //             'port' => $currentCustomer->ipport->port,
+    //             'gps_data' => $transformedData,
+    //             'error' => 'Connection Error: ' . $e->getMessage(),
+    //             'request_id' => $requestId,
+    //             'process_id' => getmypid(),
+    //             'exception_type' => get_class($e),
+    //             'socket_pool_used' => true,
+    //             'service_running' => $this->socketPoolClient->isServiceRunning()
+    //         ]);
+            
+    //     } catch (\Exception $e) {
+    //         // Handle any other exceptions
+    //         Log::channel('gpserrorlog')->error([
+    //             'vehicle' => $request->Vehicle_ID,
+    //             'date' => now()->toISOString(),
+    //             'host' => $currentCustomer->ipport->ip,
+    //             'port' => $currentCustomer->ipport->port,
+    //             'gps_data' => $transformedData,
+    //             'error' => 'Unexpected Error: ' . $e->getMessage(),
+    //             'request_id' => $requestId,
+    //             'process_id' => getmypid(),
+    //             'exception_type' => get_class($e),
+    //             'socket_pool_used' => true,
+    //             'service_running' => false // Assume service is down on unexpected errors
+    //         ]);
+    //     }
+    // }
+
+     private function forwardToWLocate(Request $request, VehicleAssignment $vehicleAssignment): void
     {
         $currentCustomer = CurrentCustomer::with(['ipport'])
             ->where('vehicle_assignment_id', $vehicleAssignment->id)
@@ -223,104 +336,49 @@ class GpsController extends Controller
         }
 
         $transformedData = $this->dataTransformation($request->all());
-        $requestId = Str::uuid();
         
-        try {
-            // Send GPS data using Socket Pool Service
-            $result = $this->socketPoolClient->sendGpsData(
-                $transformedData,
-                $currentCustomer->ipport->ip,
-                $currentCustomer->ipport->port,
-                $request->Vehicle_ID,
-                [
-                    'request_id' => $requestId,
-                    'priority' => 'high',
-                    'timeout' => 5
-                ]
-            );
-            
-            // Log results based on success/failure
-            if ($result['success']) {
-                Log::channel('gpssuccesslog')->info([
-                    'vehicle' => $request->Vehicle_ID,
-                    'date' => now()->toISOString(),
-                    'position' => preg_replace('/\s+/', '', $transformedData),
-                    'response' => $result['response'] ?? '',
-                    'request_id' => $result['request_id'] ?? $requestId,
-                    'bytes_sent' => $result['bytes_sent'] ?? 0,
-                    'hex_response' => $result['hex_response'] ?? '',
-                    'process_id' => getmypid(),
-                    'ip' => $currentCustomer->ipport->ip,
-                    'port' => $currentCustomer->ipport->port,
-                    'duration_ms' => $result['processing_time'] ?? $result['duration'] ?? 0,
-                    'socket_pool_used' => true,
-                    'timestamp' => $result['timestamp'] ?? time(),
-                    'vehicle_id' => $result['vehicle_id'] ?? $request->Vehicle_ID
-                ]);
-                
-            } else {
-                // Log failure with Socket Pool context
-                Log::channel('gpserrorlog')->error([
-                    'vehicle' => $request->Vehicle_ID,
-                    'date' => now()->toISOString(),
-                    'host' => $currentCustomer->ipport->ip,
-                    'port' => $currentCustomer->ipport->port,
-                    'gps_data' => $transformedData,
-                    'error' => $result['error'] ?? 'Unknown error',
-                    'request_id' => $result['request_id'] ?? $requestId,
-                    'process_id' => getmypid(),
-                    'duration_ms' => $result['processing_time'] ?? $result['duration'] ?? 0,
-                    'socket_pool_used' => true,
-                    'service_running' => $this->socketPoolClient->isServiceRunning()
-                ]);
-            }
-            
-        } catch (SocketPoolException $e) {
-            // Handle Socket Pool specific exceptions
-            Log::channel('gpserrorlog')->error([
+        // Try to send GPS data with aggressive connection creation
+        $result = ConnectionPoolService::sendGPSData(
+            $currentCustomer->ipport->ip,
+            $currentCustomer->ipport->port,
+            $transformedData,
+            $request->Vehicle_ID
+        );
+        
+        // Log results based on success/failure
+        if ($result['success']) {
+            Log::channel('gpssuccesslog')->info([
                 'vehicle' => $request->Vehicle_ID,
                 'date' => now()->toISOString(),
-                'host' => $currentCustomer->ipport->ip,
-                'port' => $currentCustomer->ipport->port,
-                'gps_data' => $transformedData,
-                'error' => 'Socket Pool Error: ' . $e->getMessage(),
-                'request_id' => $requestId,
+                'position' => preg_replace('/\s+/', '', $transformedData),
+                'response' => $result['response'] ?? '',
+                'connection_id' => $result['connection_id'] ?? 'unknown',
+                'bytes_written' => $result['bytes_written'] ?? 0,
+                'attempts' => $result['attempts'] ?? 1,
+                'connection_reused' => $result['reused'] ?? false,
                 'process_id' => getmypid(),
-                'exception_type' => get_class($e),
-                'socket_pool_used' => true,
-                'service_running' => $this->socketPoolClient->isServiceRunning()
+                'ip' => $currentCustomer->ipport->ip,
+                'port' => $currentCustomer->ipport->port,
+                'duration_ms' => $result['duration_ms'] ?? 0,
+                'emergency_mode' => $result['emergency_mode'] ?? false,
+                'direct_connection' => $result['direct_connection'] ?? false,
+                'force_created' => $result['force_created'] ?? false
             ]);
             
-        } catch (ConnectionException $e) {
-            // Handle connection specific exceptions
+        } else {
+            // Log failure but keep trying - no circuit breaker
             Log::channel('gpserrorlog')->error([
                 'vehicle' => $request->Vehicle_ID,
                 'date' => now()->toISOString(),
                 'host' => $currentCustomer->ipport->ip,
                 'port' => $currentCustomer->ipport->port,
                 'gps_data' => $transformedData,
-                'error' => 'Connection Error: ' . $e->getMessage(),
-                'request_id' => $requestId,
+                'error' => $result['error'],
+                'attempts' => $result['attempts'] ?? 1,
                 'process_id' => getmypid(),
-                'exception_type' => get_class($e),
-                'socket_pool_used' => true,
-                'service_running' => $this->socketPoolClient->isServiceRunning()
-            ]);
-            
-        } catch (\Exception $e) {
-            // Handle any other exceptions
-            Log::channel('gpserrorlog')->error([
-                'vehicle' => $request->Vehicle_ID,
-                'date' => now()->toISOString(),
-                'host' => $currentCustomer->ipport->ip,
-                'port' => $currentCustomer->ipport->port,
-                'gps_data' => $transformedData,
-                'error' => 'Unexpected Error: ' . $e->getMessage(),
-                'request_id' => $requestId,
-                'process_id' => getmypid(),
-                'exception_type' => get_class($e),
-                'socket_pool_used' => true,
-                'service_running' => false // Assume service is down on unexpected errors
+                'duration_ms' => $result['duration_ms'] ?? 0,
+                'emergency_mode' => $result['emergency_mode'] ?? false,
+                'consecutive_failures' => $result['consecutive_failures'] ?? 0
             ]);
         }
     }

@@ -118,18 +118,16 @@ Route::group([
     Route::put('/reject/{id}', [VehicleAssignmentsController::class, 'reject'])->middleware('throttle:250,1');
 });
 
-Route::prefix('gps/pool')->group(function () {
-    // Statistics and monitoring
-    Route::get('stats', [PooledGPSSocketController::class, 'getPoolStats']);
-    Route::get('analytics', [PooledGPSSocketController::class, 'getAnalytics']);
-    Route::get('global-stats', [PooledGPSSocketController::class, 'getGlobalStats']);
-    Route::get('health', [PooledGPSSocketController::class, 'healthCheck']);
-    
-    // Management operations
-    Route::post('cleanup', [PooledGPSSocketController::class, 'cleanupPools']);
-    Route::post('test', [PooledGPSSocketController::class, 'testConnection']);
-    Route::delete('stats/cleanup', [PooledGPSSocketController::class, 'cleanupStats']);
+Route::prefix('gps')->group(function () {
+
+Route::get('/socket-pool/stats', [GpsController::class, 'getSocketPoolStats']);
+Route::post('/test-gps-connection', [GpsController::class, 'testGpsConnection']);
+Route::delete('/socket-pool/connection', [GpsController::class, 'closeSocketPoolConnection']);
+Route::post('/batch-gps', [GpsController::class, 'batchSendGPS']);
+
 });
+
+
 
 //This will catch GET request to /api/register but  PUT,DELETE, OPTIONS etc. fails
 Route::fallback(function () {
