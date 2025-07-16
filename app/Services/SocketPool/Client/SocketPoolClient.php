@@ -61,7 +61,7 @@ class SocketPoolClient
      */
     public function sendGpsData(string $gpsData, string $host, int $port, string $vehicleId, array $options = []): array
     {
-        $requestId = Str::uuid();
+        $requestId = (string) Str::uuid();
         $startTime = microtime(true);
         
         Log::debug("Sending GPS data via Socket Pool", [
