@@ -39,17 +39,17 @@ class SocketPoolClient
 
     private function loadConfiguration(): void
     {
-        $this->config = [
+      $this->config = [
             'cache_enabled' => config('socket_pool.cache_enabled', true),
-            'cache_ttl' => config('socket_pool.cache_ttl', 300),
-            'retry_attempts' => config('socket_pool.retry_attempts', 3),
-            'retry_delay' => config('socket_pool.retry_delay', 100), // milliseconds
+            'cache_ttl' => (int) config('socket_pool.cache_ttl', 300),
+            'retry_attempts' => (int) config('socket_pool.retry_attempts', 3),
+            'retry_delay' => (int) config('socket_pool.retry_delay', 100),
             'circuit_breaker_enabled' => config('socket_pool.circuit_breaker_enabled', true),
-            'circuit_breaker_threshold' => config('socket_pool.circuit_breaker_threshold', 5),
-            'circuit_breaker_timeout' => config('socket_pool.circuit_breaker_timeout', 60),
+            'circuit_breaker_threshold' => (int) config('socket_pool.circuit_breaker_threshold', 5),
+            'circuit_breaker_timeout' => (int) config('socket_pool.circuit_breaker_timeout', 60),
             'metrics_enabled' => config('socket_pool.metrics_enabled', true),
             'socket_path' => config('socket_pool.socket_path', '/tmp/socket_pool_service.sock'),
-            'timeout' => config('socket_pool.timeout', 5),
+            'timeout' => (int) config('socket_pool.timeout', 5),
         ];
         
         $this->socketPath = $this->config['socket_path'];
