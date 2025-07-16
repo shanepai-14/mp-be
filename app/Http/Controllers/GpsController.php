@@ -577,7 +577,7 @@ class GpsController extends Controller
             'port' => 'required|integer|min:1|max:65535'
         ]);
 
-        $this->debugSocketPath();
+        // $this->debugSocketPath();
         
         if ($validator->fails()) {
             return $response->ErrorResponse($validator->errors(), 400);

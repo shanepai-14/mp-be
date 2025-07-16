@@ -105,13 +105,13 @@ class SocketPoolClient
             }
 
             // Record metrics
-            $this->recordMetric('gps_send', [
-                'success' => $result['success'],
-                'host' => $host,
-                'port' => $port,
-                'duration' => (microtime(true) - $startTime) * 1000,
-                'vehicle_id' => $vehicleId
-            ]);
+            // $this->recordMetric('gps_send', [
+            //     'success' => $result['success'],
+            //     'host' => $host,
+            //     'port' => $port,
+            //     'duration' => (microtime(true) - $startTime) * 1000,
+            //     'vehicle_id' => $vehicleId
+            // ]);
 
             // Update circuit breaker
             $this->updateCircuitBreaker($host, $port, $result['success']);
