@@ -209,6 +209,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         Jenssegers\Mongodb\MongodbServiceProvider::class,
          Maatwebsite\Excel\ExcelServiceProvider::class,
+         App\Providers\SocketPoolServiceProvider::class,
          
     ],
 
@@ -226,6 +227,7 @@ return [
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
+        'SocketPool' => App\Services\SocketPool\Facades\SocketPool::class,
     ])->toArray(),
 
 ];
