@@ -9,6 +9,7 @@ use App\Models\Vehicle;
 use App\Models\Transporter;
 use App\Models\VehicleAssignment;
 use App\Services\SocketPool\Client\SocketPoolClient;
+use App\Services\ConnectionPoolService;
 use App\Services\SocketPool\Exceptions\SocketPoolException;
 use App\Services\SocketPool\Exceptions\ConnectionException;
 use Illuminate\Http\Request;
